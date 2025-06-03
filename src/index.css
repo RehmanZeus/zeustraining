@@ -1,0 +1,55 @@
+body{
+    background-color: rgb(255, 255, 197);
+    font-family: Arial, Helvetica, sans-serif
+}
+.header{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-style: italic;
+    letter-spacing: 1em;
+    background-color: maroon;
+    color: rgb(255, 255, 197);
+}
+
+.header-dummy{
+    background-color: red;
+    height: 1.6em;
+    color: red;
+}
+
+.title{
+    background-color: green;
+    color: white;
+    padding: 10px;
+    letter-spacing: 2px;
+}
+
+.about-hero{
+    text-transform: uppercase;
+}
+
+.brief-about{
+    color: red;
+}
+
+#zeus-link{
+    text-decoration: none;
+    color: rgb(129, 7, 7);
+}
+
+.image-with-link{
+    border: 2px dotted;
+}
+
+.title2{
+    color: gray
+}
+
+.dummy-table{
+    background-color: rgb(173, 170, 170);
+}
+
+#dummy-submit-btn{
+    padding: 4px;
+}

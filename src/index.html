@@ -5,21 +5,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Zeus Training</title>
+    <link href="./index.css" rel="stylesheet"/>
 </head>
 
 <body>
     <header class="header">
         <h1>My first web page</h1>
+        <br/>
+       
     </header>
+     <div class="header-dummy">
+            hello
+        </div>
     <main>
         <div class="intro">
-            <h3 class="intro-head">What this is</h3>
+            <h3 class="intro-head title">What this is</h3>
             <p class="intro-about">Welcome to my first web page. I created this webpage without the assistance of a
-                webpage editor. Just my little text editor and a keen understanding of html</p>
+                webpage editor. Just my little text editor and a keen <span class="about-hero"><b>understanding of html</b></span></p>
         </div>
 
         <div class="brief">
-            <h3 class="brief-head">
+            <h3 class="brief-head title">
                 Why this is
             </h3>
 
@@ -40,19 +46,19 @@
         </div>
 
         <div class="hyperlinks">
-            <h3 class="hyperlink-header">ZeusLearning.com</h3>
-            <a href="https://zeuslearning.com" target="_blank">This link will open zeuslearning.com on a new tab</a>
-            <h3 class="hyperlink-header">On click of the following image navigate to Google.com</h3>
-            <a href="https://google.com" target="_blank"><img width="180px" height="100px"
+            <h3 class="hyperlink-header title">ZeusLearning.com</h3>
+            <a id="zeus-link" href="https://zeuslearning.com" target="_blank">This link will open zeuslearning.com on a new tab</a>
+            <h3 class="hyperlink-header title">On click of the following image navigate to Google.com</h3>
+            <a href="https://google.com" target="_blank"><img  class="image-with-link" width="180px" height="100px"
                     src="https://logosmarcas.net/wp-content/uploads/2020/09/Google-Logo-2010-2013.png" /></a>
         </div>
 
         <div class="tables">
-            <h4 class="table-header">
+            <h4 class="table-header title2">
                 Some random table
             </h4>
 
-            <table border="2px">
+            <table class="dummy-table" border="2px">
                 <tr>
                     <td>Row 1, cell 1</td>
                     <td>Row 1, cell 2</td>
@@ -78,7 +84,7 @@
         </div>
 
         <div class="forms">
-            <h4 class="form-header">
+            <h4 class="form-header title2">
                 Some random form
             </h4>
 
@@ -106,7 +112,7 @@
                 <input type="radio" value="Female" /> Female
                 <br />
                 <br />
-                <button type="submit">Submit Query</button>
+                <button id="dummy-submit-btn" type="submit">Submit Query</button>
             </form>
         </div>
     </main>
