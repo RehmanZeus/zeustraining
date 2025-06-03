@@ -96,7 +96,7 @@
             </script>
         ```
     - External
-        ``bash
+        ```bash
             <script src="script.js"></script>
         ```
     
