@@ -90,32 +90,34 @@
 
             <p><b>Note: </b>It looks the part, but won't do anything</p>
 
-            <form>
+            <form id="dummy-form" >
                 <label for="forms-name-field">Name: </label>
                 <br />
                 <br />
-                <input type="text" name="name" id="forms-name-field" min="3" max="50" placeholder="Your name" />
+                <input type="text" name="name" id="forms-name-field" required min="3" max="50" placeholder="Your name" />
                 <br />
                 <br />
                 <label for="forms-comment-field">Comments: </label>
                 <br />
                 <br />
-                <textarea rows="10" cols="30" placeholder="Your Comments"></textarea>
+                <textarea name="comments" required rows="10" cols="30" placeholder="Your Comments"></textarea>
                 <br />
                 <br />
                 <label>Are you:</label>
                 <br />
                 <br />
-                <input type="radio"  value="Male" /> Male
+                <input type="radio"  name="gender" value="Male" /> Male
                 <br />
                 <br />
-                <input type="radio" value="Female" /> Female
+                <input type="radio" name="gender" value="Female" /> Female
                 <br />
                 <br />
                 <button id="dummy-submit-btn" type="submit">Submit Query</button>
             </form>
         </div>
     </main>
+
+    <script src="./index.js"></script>
 </body>
 
 </html>
