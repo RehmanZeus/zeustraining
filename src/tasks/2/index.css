@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Asta+Sans:wght@300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: rgb(163, 163, 163);
+}
+
+.container {
+    display: flex;
+    padding: 15px 10px 2px 5px;
+    background-color: white;
+    /* width: 22.7em;
+    max-width: 28em; */
+}
+
+.profile-pic {
+    margin-right: 1em;
+}
+
+.username {
+    font-weight: 1000;
+    font-size: 1.3em;
+    font-family: "Asta Sans", sans-serif;
+}
+
+.content {
+    font-size: 1.2em;
+    margin-top: -15px;
+    font-weight: 400;
+    font-family: "Roboto", sans-serif;
+}
+
+.post-actions {
+    margin-top: -5px;
+    justify-content: space-evenly;
+    /* border: 2px solid black; */
+}
+
+
+
+.actions {
+    color: gray;
+    font-weight: 600;
+    font-size: 14px;
+    padding-right: 5px;
+    font-family: "Asta Sans", sans-serif;
+
+}
