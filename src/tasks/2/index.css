@@ -1,4 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Asta+Sans:wght@300..800&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
 
 body {
     display: flex;
@@ -9,7 +8,7 @@ body {
 }
 
 @font-face {
-    font-family: "Roboto";
+    font-family: Roboto;
     src: url("./fonts/Roboto-VariableFont_wdth\,wght.ttf");
 }
 
@@ -31,7 +30,7 @@ body {
 .username {
     font-size: 20px;
     color: black;
-    font-family: "Roboto";
+    font-family: Roboto;
     font-weight: bold;
     margin-bottom: 14px;
 }
@@ -40,7 +39,7 @@ body {
     font-size: 20px;
     margin: 0 0 24px 0;
     font-weight: 400;
-    font-family: "Roboto", sans-serif;
+    font-family: Roboto;
 }
 
 

@@ -34,12 +34,16 @@ body{
     letter-spacing: 2px;
 }
 
+
+.textarea-field{
+    overflow-y: scroll;
+}
 .about-hero{
     text-transform: uppercase;
 }
 
 .brief-about{
-    color: rgb(129, 7, 7);
+    color: brown;
 }
 
 #zeus-link{
