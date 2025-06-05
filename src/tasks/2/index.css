@@ -8,44 +8,60 @@ body {
     background-color: rgb(163, 163, 163);
 }
 
+@font-face {
+    font-family: "Roboto";
+    src: url("./fonts/Roboto-VariableFont_wdth\,wght.ttf");
+}
+
 .container {
     display: flex;
-    padding: 15px 10px 2px 5px;
     background-color: white;
-    /* width: 22.7em;
-    max-width: 28em; */
+    width: 457px;
+    height: 138px;
 }
 
 .profile-pic {
-    margin-right: 1em;
+    margin: 4px 14px 4px 4px;
+}
+.profile-img{
+    width: 130px;
+    height: 130px;
 }
 
 .username {
-    font-weight: 1000;
-    font-size: 1.3em;
-    font-family: "Asta Sans", sans-serif;
+    font-size: 20px;
+    color: black;
+    font-family: "Roboto";
+    font-weight: bold;
+    margin-bottom: 14px;
 }
 
 .content {
-    font-size: 1.2em;
-    margin-top: -15px;
+    font-size: 20px;
+    margin: 0 0 24px 0;
     font-weight: 400;
     font-family: "Roboto", sans-serif;
 }
 
-.post-actions {
-    margin-top: -5px;
-    justify-content: space-evenly;
-    /* border: 2px solid black; */
+
+.aicon {
+    font-size: 20px;
+    margin: 0 14px 0 0;
 }
 
 
-
 .actions {
-    color: gray;
-    font-weight: 600;
-    font-size: 14px;
-    padding-right: 5px;
-    font-family: "Asta Sans", sans-serif;
+    color: #858991;
+    height: 18px;
+    display: flex;
+    
+
+}
+
+
+.icon-text{
+    font-size: 15px !important;
+    margin: 0 24px 0 0;
+    font-family: "Roboto", sans-serif;
 
 }

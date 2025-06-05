@@ -51,10 +51,11 @@ dummyForm.addEventListener("submit", (e) => {
     const nameValue = dummyForm.elements["name"].value
     const commentValue = dummyForm.elements["comments"].value;
     const genderButtons = document.querySelectorAll('input[name=gender]')
-    let selectedGender;
+    let selectedGender, g;
 
     for (const x of genderButtons) {
         if (x.checked) {
+            g  = x;
             selectedGender = x.value;
             break;
         }
@@ -62,7 +63,13 @@ dummyForm.addEventListener("submit", (e) => {
     const allGood = validateFormValues(nameValue, commentValue, selectedGender);
 
     if (allGood) {
-        alert(`Your submitted values ${nameValue} ${commentValue} ${selectedGender}`)
+        alert(`Your submitted values: \n
+            Name: ${nameValue} \n
+            Comment: ${commentValue} \n
+            Gender: ${selectedGender}`);
+        dummyForm.elements["name"].value = "";
+        dummyForm.elements["comments"].value = "";
+        g.checked = false;
     } else {
         alert("Please fix the errors")
     }
