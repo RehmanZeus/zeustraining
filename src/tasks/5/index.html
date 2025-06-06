@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quantum Login</title>
-    <link href="./index.css" rel="stylesheet"/>
+    <link href="./index.css" rel="stylesheet" />
 </head>
+
 <body>
     <header>
 
@@ -18,7 +20,7 @@
         <div class="container">
             <div class="form-heading">
                 <div class="back-button">
-                    <img class="back-button-img" src="./assets/images/back.svg"/>
+                    <img class="back-button-img" src="./assets/images/back.svg" />
                 </div>
                 <div class="form-heading-text">
                     Log in with Quantum
@@ -27,24 +29,69 @@
             <div class="form-body">
                 <form>
                     <div class="radio-options">
-                    <div class="radio-on">
-                        <img src="./assets/images/radio-button-on.svg" class="radio-img"/>
-                        <div class="radio-btn-text">District</div>
+                        <div class="radio-on">
+                            <img src="./assets/images/radio-button-on.svg" class="radio-img" />
+                            <div class="radio-btn-text">District</div>
+                        </div>
+                        <div class="radio-off">
+                            <img src="./assets/images/radio-button-off.svg" class="radio-img" />
+                            <div class="radio-btn-text">Independent school</div>
+                        </div>
                     </div>
-                    <div class="radio-off">
-                        <img src="./assets/images/radio-button-off.svg" class="radio-img"/>
-                        <div class="radio-btn-text">Independent school</div>
+                    <div class="form-fields">
+                        <div class="field-1">
+                            <label for="state" class="field-names">State*</label>
+                            <div class="faker">
+                                <select id="state" class="select-prop">
+                                <option selected="selected">Alabama</option>
+                                
+                            </select>
+                            <img src="./assets/images/arrow-down.svg" />
+                            </div>
+                        </div>
+                        <div class="field-2">
+                            <label for="district" class="field-names">District*</label>
+                            <div class="faker">
+                                <select id="state" class="select-prop">
+                                <option selected="selected">Alabama School District</option>
+                                
+                            </select>
+                            <img src="./assets/images/arrow-down.svg" />
+                            </div>
+                        </div>
+                        <div class="field-3">
+                            <div class="username-or-email-field">
+                                <input type="text" class="username-or-email-class" placeholder="Username/Email ID*" id="username-or-email"/>
+                            </div>
+                            <div class="help-user">
+                                FORGOT USERNAME?
+                            </div>
+                        </div>
+                        <div class="field-4">
+                            <div class="username-or-email-field">
+                                <input type="text" class="username-or-email-class" placeholder="PASSWORD*" id="password"/>
+                            </div>
+                            <div class="help-user">
+                                FORGOT PASSWORD?
+                            </div>
+                        </div>
+                        <div class="field-5">
+                            <div class="remember-me">
+                                <input type="checkbox" class="remember-me"/>
+                            </div>
+                            <div class="remember-me-text">Remember Me</div>
+                        </div>
+                        <div class="submit">
+                            <button class="submit-btn">LOG IN</button>
+                        </div>
                     </div>
-                </div>
-                <div class="form-fields">
-                    <lable for="state" class="field-names">State*</lable>
-                    <div class="select-prop">
-                        Alabama
-                        <img src="./assets/images/arrow-down.svg" />
-                    </div>
-                </div>
                 </form>
             </div>
+        </div>
+        <div class="credits">
+            <div class="hlink">About</div>
+            <div class="divi">|</div>
+            <div class="hlink">Contact Us</div>
         </div>
     </main>
     <footer>
@@ -59,4 +106,5 @@
         </div>
     </footer>
 </body>
+
 </html>
