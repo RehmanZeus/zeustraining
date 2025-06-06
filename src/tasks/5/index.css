@@ -1,0 +1,167 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+@font-face {
+    font-family: QuickSandMedium;
+    src: url("./assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
+}
+
+@font-face {
+    font-family: QuickSandBold;
+    src: url("./assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
+}
+
+@font-face {
+    font-family: QuickSandRegular;
+    src: url('./assets/fonts/Quicksand/static/Quicksand-Regular.ttf');
+}
+
+@font-face {
+    font-family: QuickSandLight;
+    src: url('./assets/fonts/Quicksand/static/Quicksand-Light.ttf');
+}
+
+@font-face {
+    font-family: QuickSandSemiBold;
+    src: url('./assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf');
+}
+
+html, body{
+    background-color: #EEEEEE;
+    height: 100%;
+}
+
+header {
+    background-image: url("./assets/images/headerPattern.png");
+    display: flex;
+    background-color: black;
+    width: 100%;
+    height: 55px;
+    border-bottom: 2px solid #3AC7EC;
+}
+
+.logo {
+    margin: 11px 24px;
+}
+
+/****************************************************************************************/
+
+footer{
+    background-color: #E0E1E1;
+    font-size: 12px;
+    bottom: 0;
+    position: absolute;
+    height: 40px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.footer-content{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.footer-logo-img{
+    width: 90px;
+    height: 24px;
+}
+.footer-text{
+    font-family: QuickSandMedium;
+}
+.bold-text{
+    font-family: QuickSandBold;
+    margin: 0 11px 0 11px;
+}
+.divider{
+    padding-right: 16px;
+    padding-left: 16px;
+}
+
+/**********************************************************************/
+
+main{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;
+}
+
+.container{
+    width: 488px;
+    height: 550px;
+    background-color: #FFFFFF;
+    border-top: 2px solid #3AC7EC;
+}
+
+.back-button-img{
+    width: 26px;
+    height: 26px;
+    margin-top: 5px;
+}
+
+.form-heading{
+    margin-top: 22px;
+    margin-left: 32px;
+    display: flex;
+}
+
+.form-heading-text{
+    font-family: QuickSandMedium;
+    font-size: 24px;
+    margin-left: 77px;
+}
+
+.form-body{
+    margin-left: 32px;
+    margin-top: 32px;
+}
+
+.radio-options{
+    display: flex;
+}
+
+.radio-img{
+    width: 20px;
+    height: 24px;
+}
+
+.radio-btn-text{
+    margin-left: 8px;
+    font-family: QuickSandMedium;
+    font-size: 16px;
+    margin-top: 2px;
+}
+
+.radio-off{
+    margin-left: 32px;
+    display: flex;
+}
+
+.radio-on{
+    display: flex;
+}
+
+.form-fields{
+    margin-top: 25px;
+    margin-right: 32px;
+}
+
+.field-names{
+    font-family: QuickSandMedium;
+    font-size: 12px;
+    color: #666666;
+}
+.select-prop{
+    display: flex;
+    margin-top: 8px;
+    font-family: QuickSandMedium;
+    font-size: 16px;
+    justify-content: space-between;
+    color: #222222;
+    border-bottom: 1px solid #213E543D;
+}
