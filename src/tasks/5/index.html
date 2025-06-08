@@ -30,12 +30,12 @@
                 <form>
                     <div class="radio-options">
                         <div class="radio-on">
-                            <img src="./assets/images/radio-button-on.svg" class="radio-img" />
-                            <div class="radio-btn-text">District</div>
+                            <input type="radio" id="district-school" name="school-type" class="radio-input" />
+                            <label for="district-school" class="radio-label1">District</label>
                         </div>
                         <div class="radio-off">
-                            <img src="./assets/images/radio-button-off.svg" class="radio-img" />
-                            <div class="radio-btn-text">Independent school</div>
+                            <input type="radio" id="independent-school" name="school-type" class="radio-input" />
+                            <label for="independent-school" class="radio-label">Independent School</label>
                         </div>
                     </div>
                     <div class="form-fields">
@@ -43,25 +43,26 @@
                             <label for="state" class="field-names">State*</label>
                             <div class="faker">
                                 <select id="state" class="select-prop">
-                                <option selected="selected">Alabama</option>
-                                
-                            </select>
-                            <img src="./assets/images/arrow-down.svg" />
+                                    <option selected="selected">Alabama</option>
+
+                                </select>
+                                <img src="./assets/images/arrow-down.svg" />
                             </div>
                         </div>
                         <div class="field-2">
                             <label for="district" class="field-names">District*</label>
                             <div class="faker">
-                                <select id="state" class="select-prop">
-                                <option selected="selected">Alabama School District</option>
-                                
-                            </select>
-                            <img src="./assets/images/arrow-down.svg" />
+                                <select id="district" class="select-prop">
+                                    <option selected="selected">Alabama School District</option>
+
+                                </select>
+                                <img src="./assets/images/arrow-down.svg" />
                             </div>
                         </div>
                         <div class="field-3">
                             <div class="username-or-email-field">
-                                <input type="text" class="username-or-email-class" placeholder="Username/Email ID*" id="username-or-email"/>
+                                <input type="text" class="username-or-email-class" placeholder="Username/Email ID*"
+                                    id="username-or-email" />
                             </div>
                             <div class="help-user">
                                 FORGOT USERNAME?
@@ -69,17 +70,20 @@
                         </div>
                         <div class="field-4">
                             <div class="username-or-email-field">
-                                <input type="text" class="username-or-email-class" placeholder="PASSWORD*" id="password"/>
+                                <input type="password" class="username-or-email-class" placeholder="PASSWORD*"
+                                    id="password" />
+                                <img class="eye-icon" src="./assets/images/preview.svg" width="22px" height="25px" id="togglePassword" />
                             </div>
                             <div class="help-user">
                                 FORGOT PASSWORD?
                             </div>
                         </div>
+
                         <div class="field-5">
                             <div class="remember-me">
-                                <input type="checkbox" class="remember-me"/>
+                                <input id="remember-me" type="checkbox" class="remember-me" />
                             </div>
-                            <div class="remember-me-text">Remember Me</div>
+                            <label for="remember-me" class="remember-me-text">Remember Me</label>
                         </div>
                         <div class="submit">
                             <button class="submit-btn">LOG IN</button>
