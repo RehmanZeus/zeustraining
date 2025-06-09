@@ -8,27 +8,27 @@
 
 @font-face {
     font-family: QuickSandMedium;
-    src: url("./assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
+    src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
 }
 
 @font-face {
     font-family: QuickSandBold;
-    src: url("./assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
+    src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
 }
 
 @font-face {
     font-family: QuickSandRegular;
-    src: url('./assets/fonts/Quicksand/static/Quicksand-Regular.ttf');
+    src: url('../assets/fonts/Quicksand/static/Quicksand-Regular.ttf');
 }
 
 @font-face {
     font-family: QuickSandLight;
-    src: url('./assets/fonts/Quicksand/static/Quicksand-Light.ttf');
+    src: url('../assets/fonts/Quicksand/static/Quicksand-Light.ttf');
 }
 
 @font-face {
     font-family: QuickSandSemiBold;
-    src: url('./assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf');
+    src: url('../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf');
 }
 
 html,
@@ -39,7 +39,7 @@ body {
 }
 
 header {
-    background-image: url("./assets/images/headerPattern.png");
+    background-image: url("../assets/images/headerPattern.png");
     display: flex;
     background-color: black;
     width: 100%;
@@ -69,7 +69,7 @@ main {
     align-items: flex-start;
     flex-direction: column;
     min-height: calc(100vh - 95px);
-    padding: 20px;
+    /* padding: 20px; */
     position: relative;
 }
 
@@ -80,7 +80,7 @@ main {
     display: flex;
     flex-direction: column;
     background-color: #FFFFFF;
-    border-top: 2px solid #3AC7EC;
+    border-top: 4px solid #3AC7EC;
     border-radius: 0 0 8px 8px;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     padding-bottom: 32px;
@@ -109,7 +109,9 @@ main {
 .form-heading-text {
     font-family: QuickSandMedium;
     font-size: clamp(20px, 4vw, 24px);
+    font-weight: lighter;
     flex: 1;
+    color: #222222;
     margin-right: 15px;
     text-align: center;
 }
@@ -137,7 +139,7 @@ main {
 
 .radio-options label {
     padding-left: 32px;
-    background: url('./assets/images/radio-button-off.svg') no-repeat left center;
+    background: url('../assets/images/radio-button-off.svg') no-repeat left center;
     background-size: 24px 24px;
     cursor: pointer;
     font-size: 16px;
@@ -149,7 +151,7 @@ main {
 }
 
 .radio-options input[type="radio"]:checked+label {
-    background-image: url('./assets/images/radio-button-on.svg');
+    background-image: url('../assets/images/radio-button-on.svg');
 }
 
 .radio-label {
@@ -189,6 +191,7 @@ main {
 .select-prop {
 
     margin-top: 8px;
+    outline: none;
     font-family: QuickSandMedium;
     font-size: 16px;
     color: #222222;
@@ -242,7 +245,7 @@ main {
 }
 
 .username-or-email-field {
-    position: relative;  
+    position: relative;
     display: flex;
     align-items: center;
 }
@@ -252,8 +255,8 @@ main {
     right: 10px;
     top: 50%;
     transform: translateY(-50%);
-    cursor: pointer;       
-    pointer-events: auto;  
+    cursor: pointer;
+    pointer-events: auto;
     width: 20px;
     height: 20px;
 }
@@ -279,17 +282,29 @@ input:focus {
 .field-5 {
     margin-top: 26px;
     display: flex;
+    width: 100%;
+    align-items: center;
 }
 
-input[type="checkbox"]:checked {
-    accent-color: #1F7A54;
+.remember-me input:checked {
+    background: url('../assets/images/checkbox-checked.svg');
     cursor: pointer;
+}
+
+.remember-me input {
+    --webkit-appearance: none;
+    appearance: none;
+    background: url('../assets/images/checkbox-unchecked.svg');
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+
 }
 
 .remember-me-text {
     margin-left: 5px;
-    margin-top: -2px;
     font-family: QuickSandMedium;
+    margin-top: -4px;
     font-size: 16px;
     cursor: pointer;
 }
@@ -382,4 +397,18 @@ footer {
 
 .divider {
     color: #666666;
+}
+
+@media (max-width: 530px) {
+    .container{
+        margin-left: 18px;
+        width: 90%;
+    }
+    .credits{
+        margin-bottom: 10px;
+    }
+
+    .radio-off{
+        margin-left: -8px;
+    }
 }

@@ -1,0 +1,289 @@
+* {
+    margin: 0;
+    padding: 0;
+}
+
+ body{
+    background-color: #EEEEEE;
+}
+
+@font-face {
+    font-family: QuickSandMedium;
+    src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
+}
+
+@font-face {
+    font-family: QuickSandBold;
+    src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
+}
+
+@font-face {
+    font-family: QuickSandRegular;
+    src: url('../assets/fonts/Quicksand/static/Quicksand-Regular.ttf');
+}
+
+@font-face {
+    font-family: QuickSandLight;
+    src: url('../assets/fonts/Quicksand/static/Quicksand-Light.ttf');
+}
+
+@font-face {
+    font-family: QuickSandSemiBold;
+    src: url('../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf');
+}
+
+header {
+    width: 100%;
+}
+
+.navbar {
+    background-image: url("../assets/images/headerPattern.png");
+    display: flex;
+    background-color: black;
+    width: 100%;
+    height: 55px;
+    justify-content: space-between;
+    position: relative;
+    z-index: 10;
+    font-family: QuickSandMedium;
+    font-size: 14px;
+}
+
+.nav-items {
+    display: flex;
+    list-style: none;
+}
+
+.selected {
+    border-bottom: 2px solid #FFFFFF;
+}
+
+.selected-link {
+    color: #FFFFFF;
+    text-decoration: none;
+}
+
+.nav-item {
+    padding: 19px 32px;
+}
+
+.nav-link {
+    text-decoration: none;
+    color: #3FD28B;
+}
+
+.logo {
+    margin: 11px 24px;
+}
+
+.logo-img {
+    height: 33px;
+    width: auto;
+}
+
+/******************* COURSE/CLASS TAB NAVIGATOR **************************/
+
+.content-tab {
+    display: flex;
+    background-color: #8DDC97;
+    height: 64px;
+    margin: 24px;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.course-tab,
+.class-tab {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+}
+
+.selected-tab {
+    border-bottom: 4px solid #222222;
+}
+
+.courses-text,
+.classes-text {
+    font-family: QuickSandMedium;
+    font-size: 16px;
+    color: #222222;
+}
+
+.no-of-courses,
+.no-of-classes {
+    font-family: QuickSandBold;
+    font-size: 24px;
+    margin: 0 8px;
+}
+
+/************************      SORT AND FILTER   *****************************************************/
+
+.filters {
+    margin: 24px;
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #c4c4c4;
+    align-items: center;
+    padding-bottom: 17px;
+}
+
+.sort-text{
+    display: flex;
+    align-items: end;
+    margin-right: 6px;
+}
+
+.items-showcase-no {
+    font-family: QuickSandMedium;
+    font-size: 12px;
+    color: #686868;
+}
+
+.sort-filter {
+    border-bottom: 1px solid #213E543D;
+    margin-right: 24px;
+
+}
+
+.sort-cont{
+    display: flex;
+}
+.course-list {
+    font-family: QuickSandMedium;
+    font-size: 16px;
+    color: #333333;
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 156px;
+    appearance: none;
+    border: none;
+    background: transparent;
+}
+
+.rotate-img{
+    transform: rotate(90deg);
+}
+
+/***********************************************************************/
+
+
+/*****************         CARDS      ********************/
+
+
+.cards{
+    margin: 24px;
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    justify-content: center;
+    align-items: center;
+  
+}
+
+.card{
+    background-color: white;
+    max-width: 426px;
+    display: flex;
+    flex-direction: column;
+    max-height: 246px;
+    justify-content: center;
+    align-items: center;
+    margin: 24px;
+    padding: 24px 24px 9px 24px;
+}
+
+.card-body{
+    display: flex;
+    gap: 16px;
+    
+}
+
+.topic{
+    font-family: QuickSandMedium;
+    font-size: 16px;
+    color: #222222;
+}
+.subject-grade{
+    font-family: QuickSandMedium;
+    font-size: 12px;
+    color: #666666;
+}
+
+.grade-plus{
+    color: #1F7A54
+}
+
+.chapter-contents{
+    display: flex;
+}
+
+.content-no{
+    font-family: QuickSandBold;
+    font-size: 12px;
+    color: #222222
+}
+
+.content-text{
+    font-family: QuickSandMedium;
+    font-size: 12px;
+    color: #666666;
+}
+
+.card-margin{
+    margin-bottom: 7px;
+}
+
+.misc-information{
+    display: flex;
+    font-family: QuickSandMedium;
+    font-size: 12px;
+    color: #666666;
+    margin-top: 8px;
+}
+.separator{
+    margin: 0 8.5px;
+}
+
+.class-filter{
+    border-bottom: 1px solid #213E543D;
+    display: flex;
+    justify-content: space-between;
+}
+
+.class-list{
+    font-family: QuickSandMedium;
+    font-size: 16px;
+    color: #333333;
+    outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    width: 100%;
+    width: 156px;
+    appearance: none;
+    border: none;
+    background: transparent;
+}
+
+.action-menu .action-list{
+    display: flex;
+    list-style: none;
+}
+
+.action-menu{
+    height: 40px;
+    margin: 16px 16px 9px 16px;
+    border-top: 1px solid #213E543D;
+    display: flex;
+    width: 80%;
+    align-items: end;
+}
+
+.action-list-item:nth-child(2){
+    margin: 0 100px;
+}
+.action-list-item:nth-child(3){
+    margin-right: 100px;
+}

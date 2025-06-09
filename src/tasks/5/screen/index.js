@@ -1,0 +1,140 @@
+
+const cardData = [
+    {
+        img: "../assets/images/cardImages/imageMask.png",
+        topic: "Acceleration",
+        subject: "Physics",
+        grade: "7",
+        grade_plus: "+2",
+        units: 4,
+        lessons: 18,
+        topics: 24,
+        teacher_class: "Mr. Frank's Class B",
+        no_of_students: 50,
+        date_of_class: "21-Jan-2020 - 21-Aug-2020",
+        is_favourite: true,
+        isExpired: false,
+        preview: true,
+        manage_course: true,
+        grade_submission: true,
+        reports: true
+    },
+    {
+        img: "../assets/images/cardImages/imageMask-1.png",
+        topic: "Displacement, Velocity and Speed",
+        subject: "Physics 2",
+        grade: "6",
+        grade_plus: "+3",
+        units: 2,
+        lessons: 15,
+        topics: 20,
+        teacher_class: "",
+        no_of_students: null,
+        date_of_class: null,
+        is_favourite: true,
+        isExpired: false,
+        preview: true,
+        manage_course: false,
+        grade_submission: false,
+        reports: true
+    },
+    {
+        img: "../assets/images/cardImages/imageMask-3.png",
+        topic: "Introduction to Biology: Micro organisms and how they affec...",
+        subject: "Biology",
+        grade: "4",
+        grade_plus: "+1",
+        units: 5,
+        lessons: 16,
+        topics: 22,
+        teacher_class: "All Classes",
+        no_of_students: 300,
+        date_of_class: null,
+        is_favourite: true,
+        isExpired: false,
+        preview: true,
+        manage_course: false,
+        grade_submission: false,
+        reports: true
+    },
+    {
+        img: "../assets/images/cardImages/imageMask-2.png",
+        topic: "Introduction to High School Mathematics",
+        subject: "Mathematics",
+        grade: "8",
+        grade_plus: "+3",
+        units: null,
+        lessons: null,
+        topics: null,
+        teacher_class: "Mr. Frank's Class A",
+        no_of_students: 44,
+        date_of_class: "14-Oct-2019 - 20-Oct-2020",
+        is_favourite: false,
+        isExpired: true,
+        preview: true,
+        manage_course: true,
+        grade_submission: true,
+        reports: true
+    }
+];
+
+const container = document.querySelector(".cards");
+
+cardData.forEach(card => {
+    const cardElement = document.createElement("div");
+    cardElement.className = "card";
+
+    const actionIcons = [
+        { key: "preview", icon: "preview.svg" },
+        { key: "manage_course", icon: "manage course.svg" },
+        { key: "grade_submission", icon: "grade submissions.svg" },
+        { key: "reports", icon: "reports.svg" }
+    ];
+
+    const actionsHTML = actionIcons.map(action => {
+        const isEnabled = card[action.key];
+        return `
+            <li class="action-list-item" style="opacity: ${isEnabled ? 1 : 0.4};">
+                <img src="../assets/images/${action.icon}" />
+            </li>
+        `;
+    }).join("");
+
+    const expiredTag = card.isExpired
+        ? `<div class="expired-tag" style="position: absolute; top: 10px; left: 10px; background: red; color: white; padding: 2px 6px; font-size: 12px; border-radius: 4px;">Expired</div>`
+        : "";
+
+    cardElement.innerHTML = `
+         ${expiredTag}
+        <div class="card-body" style="position: relative;">
+           
+            <img class="card-img" src="${card.img}" />
+            <div class="content">
+                <div class="topic card-margin">${card.topic}</div>
+                <div class="subject-grade card-margin">${card.subject} | Grade ${card.grade} <span class="grade-plus">${card.grade_plus}</span></div>
+                <div class="chapter-contents card-margin">
+                    <div class="content-text"><b class="content-no">${card.units ?? "-"}</b> Units</div>
+                    <div class="content-text" style="margin: 0 6px;"><b class="content-no">${card.lessons ?? "-"}</b> Lessons</div>
+                    <div class="content-text"><b class="content-no">${card.topics ?? "-"}</b> Topics</div>
+                </div>
+                <div class="class-filter" style="margin-top: 18px;">
+                    <select id="sort-courses" class="class-list">
+                        ${card.teacher_class ? `<option selected>${card.teacher_class}</option>` : "<option selected disabled>No Classes</option>"}
+                    </select>
+                    <img src="../assets/images/arrow-down.svg" />
+                </div>
+                <div class="misc-information">
+                    <div class="student-no">${card.no_of_students ? `${card.no_of_students} Students` : "-"}</div>
+                    <div class="separator">|</div>
+                    <div class="date">${card.date_of_class || "-"}</div>
+                </div>
+            </div>
+            ${card.is_favourite ? `<div class="favourite"><img src="../assets/images/favourite.svg"/></div>` : ""}
+        </div>
+        <div class="action-menu">
+            <ul class="action-list">${actionsHTML}</ul>
+        </div>
+    `;
+
+    container.appendChild(cardElement);
+});

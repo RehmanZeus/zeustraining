@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quantum Screen</title>
+    <link href="./index.css" rel="stylesheet" />
+</head>
+
+<body>
+
+    <header>
+        <nav class="navbar">
+            <div class="logo">
+                <img src="../assets/images/QuantumnLogo.svg" class="logo-img" />
+            </div>
+            <ul class="nav-items">
+                <li class="selected nav-item"><a class="selected-link" href="#">Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Content</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Users</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Reports</a></li>
+                <li class="nav-item"><a class="nav-link" href="#">Admin</a></li>
+                <li class="nav-item"><a class="nav-link" href="#"><img src="../assets/images/alerts.svg" /></a></li>
+                <li class="nav-item"><a class="nav-link" href="#"><img src="../assets/images/announcements.svg" /></a>
+                </li>
+                <li class="nav-item"><a class="nav-link" href="#"><img src="../assets/images/account_circle.svg" /></a>
+                </li>
+            </ul>
+
+        </nav>
+    </header>
+
+    <section class="content-tab">
+        <div class="course-tab selected-tab">
+            <img width="29x" height="32px" src="../assets/images/courses.svg">
+            <div class="no-of-courses">4</div>
+            <div class="courses-text">Courses</div>
+        </div>
+        <div class="class-tab">
+            <img width="29px" height="32px" src="../assets/images/classes.svg">
+            <div class="no-of-classes">4</div>
+            <div class="classes-text">Classes</div>
+        </div>
+    </section>
+
+    <section class="filters">
+        <div class="items-showcase-no">Showing 4 of 4 courses</div>
+        <div class="sort-cont">
+            <label for="sort-courses" class="items-showcase-no sort-text">Sort By:</label>
+            <div class="sort-filter">
+                <select id="sort-courses" class="course-list">
+                    <option selected>Course Name</option>
+                </select>
+                <img src="../assets/images/arrow-down.svg" />
+            </div>
+
+            <img src="../assets/images/back.svg" class="rotate-img" />
+        </div>
+    </section>
+
+    <section class="cards">
+
+
+
+
+    </section>
+
+
+</body>
+
+<script src="./index.js"></script>
+
+</html>
