@@ -3,8 +3,10 @@
     padding: 0;
 }
 
- body{
+body {
     background-color: #EEEEEE;
+    width: 100%;
+    height: 100vh;
 }
 
 @font-face {
@@ -63,7 +65,9 @@ header {
     text-decoration: none;
 }
 
-.nav-item {
+.nav-item,
+.nav-item-image,
+.nav-item-mob {
     padding: 19px 32px;
 }
 
@@ -79,6 +83,10 @@ header {
 .logo-img {
     height: 33px;
     width: auto;
+}
+
+.nav-item-mob {
+    display: none;
 }
 
 /******************* COURSE/CLASS TAB NAVIGATOR **************************/
@@ -130,7 +138,7 @@ header {
     padding-bottom: 17px;
 }
 
-.sort-text{
+.sort-text {
     display: flex;
     align-items: end;
     margin-right: 6px;
@@ -148,9 +156,10 @@ header {
 
 }
 
-.sort-cont{
+.sort-cont {
     display: flex;
 }
+
 .course-list {
     font-family: QuickSandMedium;
     font-size: 16px;
@@ -164,7 +173,7 @@ header {
     background: transparent;
 }
 
-.rotate-img{
+.rotate-img {
     transform: rotate(90deg);
 }
 
@@ -174,86 +183,102 @@ header {
 /*****************         CARDS      ********************/
 
 
-.cards{
+.cards {
     margin: 24px;
     display: grid;
-    grid-template-columns: repeat(2,1fr);
+    grid-template-columns: repeat(3, 1fr);
     justify-content: center;
     align-items: center;
-  
+    grid-auto-flow: dense;
+
 }
 
-.card{
+.card {
     background-color: white;
-    max-width: 426px;
+    min-width: 426px;
     display: flex;
     flex-direction: column;
     max-height: 246px;
-    justify-content: center;
-    align-items: center;
     margin: 24px;
     padding: 24px 24px 9px 24px;
 }
 
-.card-body{
+.card-body {
     display: flex;
     gap: 16px;
-    
+
 }
 
-.topic{
+.expired-tag {
+    display: flex;
+    padding: 0;
+    font-size: 10px;
+    text-transform: uppercase;
+    margin-top: -25px;
+    margin-bottom: 5px;
+    width: 42px;
+    font-family: QuickSandMedium;
+    padding: 3px;
+    color: #D80000;
+    background-color: pink;
+    margin-left: -25px;
+}
+
+.topic {
     font-family: QuickSandMedium;
     font-size: 16px;
     color: #222222;
 }
-.subject-grade{
+
+.subject-grade {
     font-family: QuickSandMedium;
     font-size: 12px;
     color: #666666;
 }
 
-.grade-plus{
+.grade-plus {
     color: #1F7A54
 }
 
-.chapter-contents{
+.chapter-contents {
     display: flex;
 }
 
-.content-no{
+.content-no {
     font-family: QuickSandBold;
     font-size: 12px;
     color: #222222
 }
 
-.content-text{
+.content-text {
     font-family: QuickSandMedium;
     font-size: 12px;
     color: #666666;
 }
 
-.card-margin{
+.card-margin {
     margin-bottom: 7px;
 }
 
-.misc-information{
+.misc-information {
     display: flex;
     font-family: QuickSandMedium;
     font-size: 12px;
     color: #666666;
     margin-top: 8px;
 }
-.separator{
+
+.separator {
     margin: 0 8.5px;
 }
 
-.class-filter{
+.class-filter {
     border-bottom: 1px solid #213E543D;
     display: flex;
     justify-content: space-between;
 }
 
-.class-list{
+.class-list {
     font-family: QuickSandMedium;
     font-size: 16px;
     color: #333333;
@@ -267,12 +292,12 @@ header {
     background: transparent;
 }
 
-.action-menu .action-list{
+.action-menu .action-list {
     display: flex;
     list-style: none;
 }
 
-.action-menu{
+.action-menu {
     height: 40px;
     margin: 16px 16px 9px 16px;
     border-top: 1px solid #213E543D;
@@ -281,9 +306,105 @@ header {
     align-items: end;
 }
 
-.action-list-item:nth-child(2){
+.action-list-item:nth-child(2) {
     margin: 0 100px;
 }
-.action-list-item:nth-child(3){
+
+.action-list-item:nth-child(3) {
     margin-right: 100px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+.credits {
+    margin-top: 32px;
+    margin-bottom: 32px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    gap: 18px;
+    flex-wrap: wrap;
+}
+
+.hlink {
+    font-family: QuickSandMedium;
+    font-size: 14px;
+    color: #1F7A54;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.hlink:hover {
+    opacity: 0.7;
+    text-decoration: underline;
+}
+
+.divi {
+    color: #666666;
+}
+
+
+
+
+footer {
+    background-color: #E0E1E1;
+    font-size: 12px;
+    padding: 16px 20px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-top: auto;
+}
+
+.footer-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    text-align: center;
+}
+
+.footer-logo-img {
+    width: 90px;
+    height: 24px;
+}
+
+.footer-text {
+    font-family: QuickSandMedium;
+    font-size: 12px;
+}
+
+.bold-text {
+    font-family: QuickSandBold;
+}
+
+@media (max-width: 1110px) {
+    .nav-item {
+        display: none;
+    }
+
+    .nav-item-mob {
+        display: block;
+    }
+
+
+}
+
+@media (max-width: 1000px) {
+    .cards {
+        grid-template-columns: repeat(1, 1fr);
+    }
 }

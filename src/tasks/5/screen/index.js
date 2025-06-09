@@ -101,7 +101,7 @@ cardData.forEach(card => {
     }).join("");
 
     const expiredTag = card.isExpired
-        ? `<div class="expired-tag" style="position: absolute; top: 10px; left: 10px; background: red; color: white; padding: 2px 6px; font-size: 12px; border-radius: 4px;">Expired</div>`
+        ? `<div class="expired-tag">Expired</div>`
         : "";
 
     cardElement.innerHTML = `
