@@ -113,20 +113,20 @@ cardData.forEach(card => {
                 <div class="topic card-margin">${card.topic}</div>
                 <div class="subject-grade card-margin">${card.subject} | Grade ${card.grade} <span class="grade-plus">${card.grade_plus}</span></div>
                 <div class="chapter-contents card-margin">
-                    <div class="content-text"><b class="content-no">${card.units ?? "-"}</b> Units</div>
-                    <div class="content-text" style="margin: 0 6px;"><b class="content-no">${card.lessons ?? "-"}</b> Lessons</div>
-                    <div class="content-text"><b class="content-no">${card.topics ?? "-"}</b> Topics</div>
+                    <div class="content-text"><b class="content-no">${card.units ?? ""}</b> Units</div>
+                    <div class="content-text" style="margin: 0 6px;"><b class="content-no">${card.lessons ?? ""}</b> Lessons</div>
+                    <div class="content-text"><b class="content-no">${card.topics ?? ""}</b> Topics</div>
                 </div>
                 <div class="class-filter" style="margin-top: 18px;">
                     <select id="sort-courses" class="class-list">
-                        ${card.teacher_class ? `<option selected>${card.teacher_class}</option>` : "<option selected disabled>No Classes</option>"}
+                        ${card.teacher_class ? `<option selected>${card.teacher_class}</option>` : "<option style='color:rgb(221, 214, 214)' selected disabled>No Classes</option>"}
                     </select>
                     <img src="../assets/images/arrow-down.svg" />
                 </div>
                 <div class="misc-information">
-                    <div class="student-no">${card.no_of_students ? `${card.no_of_students} Students` : "-"}</div>
-                    <div class="separator">|</div>
-                    <div class="date">${card.date_of_class || "-"}</div>
+                    <div class="student-no">${card.no_of_students ? `${card.no_of_students} Students` : ""}</div>
+                    ${card.date_of_class ? `<div class="separator">|</div>`: ""}
+                    <div class="date">${card.date_of_class || ""}</div>
                 </div>
             </div>
             ${card.is_favourite ? `<div class="favourite"><img src="../assets/images/favourite.svg"/></div>` : ""}
@@ -137,4 +137,27 @@ cardData.forEach(card => {
     `;
 
     container.appendChild(cardElement);
+});
+
+
+const navItems = document.querySelectorAll('.nav-item');
+
+navItems.forEach(item => {
+    item.addEventListener('click', () => {
+        navItems.forEach(nav => {
+            nav.classList.remove('selected');
+            const link = nav.querySelector('a');
+            if (link) {
+                link.classList.remove('selected-link');
+                link.classList.add('nav-link')
+            }
+        });
+        item.classList.add('selected');
+        const link = item.querySelector('a');
+        if (link) {
+            link.classList.add('selected-link');
+            link.classList.remove('nav-link');
+        }
+        
+    });
 });

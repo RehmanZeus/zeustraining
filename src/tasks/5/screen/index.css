@@ -9,6 +9,7 @@ body {
     height: 100vh;
 }
 
+
 @font-face {
     font-family: QuickSandMedium;
     src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
@@ -88,6 +89,36 @@ header {
 .nav-item-mob {
     display: none;
 }
+
+
+
+
+.badge {
+    position: absolute;
+    background-color: #2A7FF3;
+    color: white;
+    width: 17px;
+    font-size: 12px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-left: -4px;
+    margin-top: -2px;
+}
+
+.badge-profile {
+    position: absolute;
+    background-color: white;
+    color: black;
+    width: 17px;
+    font-size: 12px;
+    text-align: center;
+    border-radius: 50%;
+    font-weight: bold;
+    margin-left: -4px;
+    margin-top: -2px;
+}
+
 
 /******************* COURSE/CLASS TAB NAVIGATOR **************************/
 
@@ -204,8 +235,9 @@ header {
     margin: 0;
     padding: 24px 24px 9px 24px;
     box-sizing: border-box;
+    transform: scale(1);
     border-radius: 10px;
-    box-shadow: 0 2px 8px rgba(60,60,60,0.07);
+    box-shadow: 0 2px 8px rgba(60, 60, 60, 0.07);
 }
 
 
@@ -234,6 +266,7 @@ header {
     font-family: QuickSandMedium;
     font-size: 16px;
     color: #222222;
+    max-width: 90%;
 }
 
 .subject-grade {
@@ -260,6 +293,11 @@ header {
     font-family: QuickSandMedium;
     font-size: 12px;
     color: #666666;
+}
+
+.content {
+    width: 80%;
+    margin-right: 15px;
 }
 
 .card-margin {
@@ -300,7 +338,13 @@ header {
 
 .action-menu .action-list {
     display: flex;
+    width: 100%;
     list-style: none;
+    justify-content: space-between;
+}
+
+.action-list {
+    padding-top: 16px;
 }
 
 .action-menu {
@@ -308,21 +352,24 @@ header {
     margin: 16px 16px 9px 16px;
     border-top: 1px solid #213E543D;
     display: flex;
-    width: 80%;
     align-items: end;
 }
 
-.action-list-item:nth-child(2) {
+/* .action-list-item:nth-child(2) {
     margin: 0 100px;
 }
 
 .action-list-item:nth-child(3) {
     margin-right: 100px;
+} */
+
+
+
+.favourite {
+    justify-self: end;
+    right: 0;
+    position: absolute;
 }
-
-
-
-
 
 
 
@@ -332,7 +379,7 @@ header {
 
 
 .credits {
-    margin-top: 32px;
+    margin-top: auto;
     margin-bottom: 32px;
     display: flex;
     justify-content: center;
@@ -367,11 +414,11 @@ footer {
     background-color: #E0E1E1;
     font-size: 12px;
     padding: 16px 20px;
-    width: 100%;
     display: flex;
     justify-content: center;
     align-items: center;
     margin-top: auto;
+
 }
 
 .footer-content {
@@ -409,30 +456,40 @@ footer {
 
 }
 
-@media (max-width: 1000px) {
+@media (max-width: 970px) {
     .cards {
         grid-template-columns: repeat(1, 1fr);
     }
+
+
 }
 
 
 
-@media (max-width: 1200px) {
+@media (max-width: 1500px) {
     .cards {
         grid-template-columns: repeat(2, 1fr);
     }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 970px) {
     .cards {
-        grid-template-columns: 1fr;
-        margin: 12px;
+        grid-template-columns: auto;
+        margin: 12px 4px 12px 4px;
         gap: 16px;
+        width: 100%;
     }
-    .card {
-        padding: 16px 8px 8px 8px;
-        max-height: none;
-        
-    }
-}
 
+    .expired-tag {
+        margin-left: -8px;
+        margin-top: -16px;
+    }
+
+
+    .nav-item,
+    .nav-item-image,
+    .nav-item-mob {
+        padding: 19px 10px;
+    }
+
+}
