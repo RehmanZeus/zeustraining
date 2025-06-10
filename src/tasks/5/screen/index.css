@@ -187,21 +187,27 @@ header {
     margin: 24px;
     display: grid;
     grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
     justify-content: center;
     align-items: center;
     grid-auto-flow: dense;
-
 }
+
 
 .card {
     background-color: white;
-    min-width: 426px;
+    /* Remove min-width: 426px; */
+    width: 100%;
     display: flex;
     flex-direction: column;
     max-height: 246px;
-    margin: 24px;
+    margin: 0;
     padding: 24px 24px 9px 24px;
+    box-sizing: border-box;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(60,60,60,0.07);
 }
+
 
 .card-body {
     display: flex;
@@ -408,3 +414,25 @@ footer {
         grid-template-columns: repeat(1, 1fr);
     }
 }
+
+
+
+@media (max-width: 1200px) {
+    .cards {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 700px) {
+    .cards {
+        grid-template-columns: 1fr;
+        margin: 12px;
+        gap: 16px;
+    }
+    .card {
+        padding: 16px 8px 8px 8px;
+        max-height: none;
+        
+    }
+}
+
