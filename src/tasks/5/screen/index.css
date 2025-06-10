@@ -69,7 +69,7 @@ header {
 .nav-item,
 .nav-item-image,
 .nav-item-mob {
-    padding: 19px 32px;
+    padding: 19px 24px;
 }
 
 .nav-link {
@@ -325,7 +325,6 @@ header {
 .class-list {
     font-family: QuickSandMedium;
     font-size: 16px;
-    color: #333333;
     outline: none;
     -webkit-appearance: none;
     -moz-appearance: none;
@@ -335,7 +334,9 @@ header {
     border: none;
     background: transparent;
 }
-
+.class-list-x{
+    color: red;
+}
 .action-menu .action-list {
     display: flex;
     width: 100%;
@@ -349,7 +350,7 @@ header {
 
 .action-menu {
     height: 40px;
-    margin: 16px 16px 9px 16px;
+    margin: 16px 0 9px 0;
     border-top: 1px solid #213E543D;
     display: flex;
     align-items: end;

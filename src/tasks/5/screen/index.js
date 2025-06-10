@@ -118,8 +118,8 @@ cardData.forEach(card => {
                     <div class="content-text"><b class="content-no">${card.topics ?? ""}</b> Topics</div>
                 </div>
                 <div class="class-filter" style="margin-top: 18px;">
-                    <select id="sort-courses" class="class-list">
-                        ${card.teacher_class ? `<option selected>${card.teacher_class}</option>` : "<option style='color:rgb(221, 214, 214)' selected disabled>No Classes</option>"}
+                    <select id="sort-courses" class=${card.teacher_class ? 'class-list' : 'class-list class-list-x'}>
+                        ${card.teacher_class ? `<option disabled selected=selected>${card.teacher_class}</option>` : "<option disabled selected=selected style='color:rgb(221, 214, 214)' selected disabled>No Classes</option>"}
                     </select>
                     <img src="../assets/images/arrow-down.svg" />
                 </div>
@@ -129,7 +129,7 @@ cardData.forEach(card => {
                     <div class="date">${card.date_of_class || ""}</div>
                 </div>
             </div>
-            ${card.is_favourite ? `<div class="favourite"><img src="../assets/images/favourite.svg"/></div>` : ""}
+            ${card.is_favourite ? `<div class="favourite"><img src="../assets/images/favourite.svg"/></div>` : `<div class="favourite"><img src="../assets/images/notFavourite.svg"/></div>`}
         </div>
         <div class="action-menu">
             <ul class="action-list">${actionsHTML}</ul>
