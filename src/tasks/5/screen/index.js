@@ -161,3 +161,21 @@ navItems.forEach(item => {
         
     });
 });
+
+
+const mobileMenu = document.getElementById('mobile-menu-btn');
+const mobileNav = document.getElementById('mobile-nav');
+
+mobileMenu.addEventListener('click', () => {
+    if (mobileNav.classList.contains('show')) {
+        mobileNav.classList.remove('show');
+        setTimeout(() => {
+            mobileNav.style.display = 'none';
+        }, 500);
+    } else {
+        mobileNav.style.display = 'block';
+        setTimeout(() => {
+            mobileNav.classList.add('show');
+        }, 10); 
+    }
+});

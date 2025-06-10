@@ -1,0 +1,22 @@
+@import './global.scss';
+
+header {
+    background-image: url('../assets/images/headerPattern.png');
+    display: flex;
+    background-color: black;
+    width: 100%;
+    height: 55px;
+    border-bottom: 2px solid $topDownBorderColor;
+    position: relative;
+    z-index: 10;
+
+    .logo {
+        margin: 11px 24px;
+
+        .logo-img {
+            height: 33px;
+            width: auto;
+        }
+    }
+
+}

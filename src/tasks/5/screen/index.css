@@ -36,13 +36,14 @@ body {
 }
 
 header {
-    width: 100%;
+    background-image: url("../assets/images/headerPattern.png");
+    z-index: 999999999;
 }
 
+
 .navbar {
-    background-image: url("../assets/images/headerPattern.png");
     display: flex;
-    background-color: black;
+    background-color: rgba(27, 32, 37, 0.8);
     width: 100%;
     height: 55px;
     justify-content: space-between;
@@ -52,6 +53,11 @@ header {
     font-size: 14px;
 }
 
+.navbar::before{
+    position: absolute;
+    background-color: black;
+    z-index: 9999;
+}
 .nav-items {
     display: flex;
     list-style: none;
@@ -87,7 +93,8 @@ header {
 }
 
 .nav-item-mob {
-    display: none;
+    display: block;
+    cursor: pointer;
 }
 
 
@@ -236,7 +243,7 @@ header {
     padding: 24px 24px 9px 24px;
     box-sizing: border-box;
     transform: scale(1);
-    border-radius: 10px;
+    border-radius: 2px;
     box-shadow: 0 2px 8px rgba(60, 60, 60, 0.07);
 }
 
@@ -478,7 +485,8 @@ footer {
         grid-template-columns: auto;
         margin: 12px 4px 12px 4px;
         gap: 16px;
-        width: 100%;
+        padding: 0 98px;
+        width: auto;
     }
 
     .expired-tag {
@@ -493,4 +501,71 @@ footer {
         padding: 19px 10px;
     }
 
+}
+
+
+
+
+
+/*###########################################################################################*/
+
+.hidden-items{
+    display: flex;
+    justify-content: end;
+}
+
+.menu{
+    background-color: white;
+    position: absolute;
+    width: 280px;
+    height: 288px;
+    
+    display: none;
+    margin-right: 16px;
+    font-family: QuickSandMedium;
+    font-size: 14px;
+    z-index: 999999999999999;
+    text-transform: uppercase;
+}
+
+.menu-items{
+    display: flex;
+    flex-direction: column;
+   
+    
+}
+
+.menu-items, .sub-menu{
+    list-style: none;
+}
+
+.menu div a{
+    text-decoration: none;
+    color: #1F7A54;
+}
+
+.menu-item, .sub-menu{
+    height: 48px;
+    display: flex;
+    background-color: white;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.menu-down-ico{
+    margin-right: 24px;
+}
+
+.sub-menu-item-link{
+    margin-left: 32px;
+}
+
+.menu-item-link{
+    padding-left: 16px;
+}
+
+.active-hidden {
+    background-color: #F3F3F3;
+    width: 100%;
+    box-sizing: border-box; 
 }

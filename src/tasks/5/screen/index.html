@@ -10,7 +10,7 @@
 
 <body>
 
-    <header>
+    <header class="header">
         <nav class="navbar">
             <div class="logo">
                 <img src="../assets/images/QuantumnLogo.svg" class="logo-img" />
@@ -32,24 +32,56 @@
                 <li class="nav-item-image">
                     <a class="nav-link" href="#">
 
-                    <div class="image-container">
+                        <div class="image-container">
                             <img class="nav-image" src="../assets/images/announcements.svg" />
                             <span class="badge">1</span>
                         </div>
-                </a>
+                    </a>
                 </li>
-                <li class="nav-item-image"><a class="nav-link" href="#"><div class="image-container">
+                <li class="nav-item-image"><a class="nav-link" href="#">
+                        <div class="image-container">
                             <img class="nav-image" src="../assets/images/account_circle.svg" />
                             <span class="badge-profile">T</span>
-                        </div></a>
+                        </div>
+                    </a>
                 </li>
-                <li class="nav-item-mob">
+                <li class="nav-item-mob" id="mobile-menu-btn">
                     <img src="../assets/images/hamburger-menu.svg" />
                 </li>
             </ul>
 
         </nav>
+        
+
     </header>
+    <div class="hidden-items">
+            <div class="menu" id="mobile-nav">
+                <div class="menu-items">
+                    <div class="menu-item">
+                        <a class="menu-item-link" href="/">Dashboard</a>
+                    </div>
+                    <div class="menu-item active-hidden">
+                        <a class="menu-item-link" href="/">Content</a>
+                        <img class="menu-down-ico" id="bug-ico" src="../assets/images/arrow-down.svg" />
+                    </div>
+                    <div class="sub-menu active-hidden">
+                        <a class="sub-menu-item-link" href="/">Course Catalog</a>
+                    </div>
+                    <div class="menu-item">
+                        <a class="menu-item-link" href="/">Users</a>
+                        <img class="menu-down-ico" src="../assets/images/arrow-down.svg" />
+                    </div>
+                    <div class="menu-item">
+                        <a class="menu-item-link" href="/">Reports</a>
+                        <img class="menu-down-ico" src="../assets/images/arrow-down.svg" />
+                    </div>
+                    <div class="menu-item">
+                        <a class="menu-item-link" href="/">Admin</a>
+                        <img class="menu-down-ico" src="../assets/images/arrow-down.svg" />
+                    </div>
+                </div>
+            </div>
+        </div>
 
     <section class="content-tab">
         <div class="course-tab selected-tab">

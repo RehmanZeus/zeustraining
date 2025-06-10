@@ -1,0 +1,30 @@
+@import './global';
+@import './footer';
+@import './header';
+@import './formBody';
+@import './formField';
+@import './radio';
+
+
+html,
+body {
+    background-color: #EEEEEE;
+    min-height: 100vh;
+    font-family: QuickSandRegular, Arial, sans-serif;
+}
+
+
+
+@media (max-width: 530px) {
+    .container{
+        margin-left: 18px;
+        width: 90%;
+    }
+    .credits{
+        margin-bottom: 10px;
+    }
+
+    .radio-off{
+        margin-left: -8px;
+    }
+}

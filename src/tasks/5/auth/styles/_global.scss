@@ -1,0 +1,46 @@
+$topDownBorderColor: #3AC7EC;
+$parentBackgroundColor: #FFFFFF;
+$primaryTextColor: #222222;
+$secondaryTextColor: #333333;
+$formFieldColor: #666666;
+$primaryFontSize: 16px;
+
+
+@mixin flexCenter($flexDirection){
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: $flexDirection;
+}
+
+@font-face {
+    font-family: QuickSandMedium;
+    src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
+}
+
+@font-face {
+    font-family: QuickSandBold;
+    src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
+}
+
+@font-face {
+    font-family: QuickSandRegular;
+    src: url('../assets/fonts/Quicksand/static/Quicksand-Regular.ttf');
+}
+
+@font-face {
+    font-family: QuickSandLight;
+    src: url('../assets/fonts/Quicksand/static/Quicksand-Light.ttf');
+}
+
+@font-face {
+    font-family: QuickSandSemiBold;
+    src: url('../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf');
+}
+
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
