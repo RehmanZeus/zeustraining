@@ -1,4 +1,52 @@
 
+const announcementData = [
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Wilson Kumar",
+        msg: "No classes will be held on 21st Nov",
+        files: "2 files are attached",
+        course_name: "",
+        read: true,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Samson White",
+        msg: "Guest lecture on Geometry on 20th September",
+        files: "2 files are attached",
+        course_name: "",
+        read: false,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Wilson Kumar",
+        msg: "Additional course materials available on request",
+        files: "",
+        course_name: "Course: Mathematics 101",
+        read: true,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Wilson Kumar",
+        msg: "No classes will be held on 25th Dec",
+        files: "",
+        course_name: "",
+        read: false,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Wilson Kumar",
+        msg: "Additional course materials available on request",
+        files: "",
+        course_name: "Course: Mathematics 101",
+        read: false,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+]
+
 const cardData = [
     {
         img: "../assets/images/cardImages/imageMask.png",
@@ -78,6 +126,44 @@ const cardData = [
     }
 ];
 
+
+const announceMentContainer = document.querySelector('.noti-content-container');
+
+announcementData.forEach(announcement => {
+    const notiCont = document.createElement("div");
+    notiCont.className = announcement.read ? "noti-content" : "noti-content not-read";
+
+    notiCont.innerHTML = `
+    
+        <div class="n-ln">
+            <div class="ln-text">
+                <span class="ln-text-higl">${announcement.announcementBy_prefix}</span> 
+                ${announcement.announcementBy_Name}
+            </div>
+            <img width="15px" height="18px" src="../assets/images/checkbox-checked.svg" class="checkbox" />
+        </div>
+        <div class="n-ld">
+            ${announcement.msg}
+        </div>
+        <div class="n-sub-name">
+            ${announcement.course_name}
+        </div>
+        <div class="n-lf">
+            <div class="f-att" style"${announcement.files  ? "display: block" : "display: none"}>
+                ${announcement.files}
+            </div>
+            <div class="timestamp">
+                ${announcement.timestamp}
+            </div>
+        </div>
+    
+    `
+
+    announceMentContainer.appendChild(notiCont);
+
+});
+
+
 const container = document.querySelector(".cards");
 
 cardData.forEach(card => {
@@ -125,7 +211,7 @@ cardData.forEach(card => {
                 </div>
                 <div class="misc-information">
                     <div class="student-no">${card.no_of_students ? `${card.no_of_students} Students` : ""}</div>
-                    ${card.date_of_class ? `<div class="separator">|</div>`: ""}
+                    ${card.date_of_class ? `<div class="separator">|</div>` : ""}
                     <div class="date">${card.date_of_class || ""}</div>
                 </div>
             </div>
@@ -158,7 +244,7 @@ navItems.forEach(item => {
             link.classList.add('selected-link');
             link.classList.remove('nav-link');
         }
-        
+
     });
 });
 const mobileMenu = document.getElementById('mobile-menu-btn');
