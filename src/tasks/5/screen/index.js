@@ -161,11 +161,13 @@ navItems.forEach(item => {
         
     });
 });
-
-
 const mobileMenu = document.getElementById('mobile-menu-btn');
 const mobileNav = document.getElementById('mobile-nav');
+const contentMenuItem = document.querySelector('.menu-item.active-hidden');
+const subMenu = document.querySelector('.sub-menu');
+const bugIco = document.getElementById('bug-ico');
 
+// Toggle mobile menu show/hide
 mobileMenu.addEventListener('click', () => {
     if (mobileNav.classList.contains('show')) {
         mobileNav.classList.remove('show');
@@ -176,6 +178,27 @@ mobileMenu.addEventListener('click', () => {
         mobileNav.style.display = 'block';
         setTimeout(() => {
             mobileNav.classList.add('show');
-        }, 10); 
+        }, 10);
+    }
+});
+
+document.querySelectorAll('.menu-item, .sub-menu').forEach(item => {
+    item.addEventListener('mouseenter', function () {
+        this.classList.add('active-hidden');
+    });
+    item.addEventListener('mouseleave', function () {
+        this.classList.remove('active-hidden');
+    });
+});
+
+contentMenuItem.addEventListener('click', function (e) {
+    e.preventDefault();
+
+    subMenu.classList.toggle('ishidden');
+
+    if (subMenu.classList.contains('ishidden')) {
+        bugIco.style.transform = 'rotate(0deg)';
+    } else {
+        bugIco.style.transform = 'rotate(180deg)';
     }
 });

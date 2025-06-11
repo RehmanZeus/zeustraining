@@ -238,7 +238,6 @@ header {
     width: 100%;
     display: flex;
     flex-direction: column;
-    max-height: 246px;
     margin: 0;
     padding: 24px 24px 9px 24px;
     box-sizing: border-box;
@@ -483,8 +482,8 @@ footer {
 @media (max-width: 970px) {
     .cards {
         grid-template-columns: auto;
-        margin: 12px 4px 12px 4px;
         gap: 16px;
+        margin: 24px 0;
         padding: 0 98px;
         width: auto;
     }
@@ -519,7 +518,7 @@ footer {
     position: absolute;
     width: 280px;
     height: 288px;
-    
+    box-shadow: 0 13px 20px #0000003D;
     display: none;
     margin-right: 16px;
     font-family: QuickSandMedium;
@@ -568,4 +567,124 @@ footer {
     background-color: #F3F3F3;
     width: 100%;
     box-sizing: border-box; 
+}
+
+.ishidden{
+    display: none;
+}
+
+
+/* --- add at the end of your file --- */
+
+/* Responsive navbar badge positions & sizing */
+@media (max-width: 650px) {
+  .navbar {
+    height: 48px;
+    font-size: 12px;
+  }
+  .nav-items {
+    padding-right: 8px;
+  }
+  .nav-item,
+  .nav-item-image,
+  .nav-item-mob {
+    padding: 10px 6px;
+  }
+  .logo {
+    margin: 8px 10px;
+  }
+  .logo-img {
+    height: 28px;
+  }
+  .badge,
+  .badge-profile {
+    width: 14px;
+    font-size: 10px;
+    margin-left: -2px;
+    margin-top: -2px;
+  }
+  .image-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav-image {
+    width: 22px;
+    height: 22px;
+  }
+
+  .cards{
+    padding: 0 49px;
+  }
+}
+
+@media (max-width: 405px) {
+  .navbar {
+    height: 44px;
+    font-size: 11px;
+  }
+  .nav-items {
+    padding-right: 2px;
+  }
+  .logo {
+    margin: 6px 2px;
+  }
+  .logo-img {
+    height: 20px;
+  }
+  .badge,
+  .badge-profile {
+    width: 12px;
+    font-size: 9px;
+    margin-left: -1px;
+    margin-top: -1px;
+  }
+  .nav-item,
+  .nav-item-image,
+  .nav-item-mob {
+    padding: 9px 2px;
+  }
+  .image-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .nav-image {
+    width: 17px;
+    height: 17px;
+  }
+
+  /* Cards stick to screen sides, no margin */
+  .cards {
+    margin: 0;
+    padding: 0 2px;
+    gap: 10px;
+    grid-template-columns: 1fr;
+    width: 100vw;
+    padding: 0 8px;
+    justify-content: center;
+    align-items: center;
+  }
+  .card {
+    max-width: 100vw;
+    margin: 0 24px;
+  }
+}
+
+/* Ensure badges are always at top right of the icon */
+.image-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.badge,
+.badge-profile {
+  top: 0;
+  right: 0;
+  position: absolute;
+  transform: translate(40%, -40%);
 }
