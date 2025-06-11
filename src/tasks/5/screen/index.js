@@ -318,7 +318,6 @@ const contentMenuItem = document.querySelector('.menu-item.active-hidden');
 const subMenu = document.querySelector('.sub-menu');
 const bugIco = document.getElementById('bug-ico');
 
-// Toggle mobile menu show/hide
 mobileMenu.addEventListener('click', () => {
     if (mobileNav.classList.contains('show')) {
         mobileNav.classList.remove('show');
@@ -353,3 +352,32 @@ contentMenuItem.addEventListener('click', function (e) {
         bugIco.style.transform = 'rotate(180deg)';
     }
 });
+
+
+const bellIcon = document.getElementById("bell-icon");
+bellIcon.addEventListener('click', () => {
+    const bellMenu = document.querySelector('.bell-menu');
+    const bellImage = bellIcon.querySelector('.nav-image');
+    
+    if (bellMenu.style.display === "none" || bellMenu.style.display === "") {
+        bellMenu.style.display = "flex";
+        bellImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts-clicked.svg"; 
+    } else {
+        bellMenu.style.display = "none";
+        bellImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts.svg"; 
+    }
+});
+
+
+const announcementIcon = document.getElementById("announcement-icon");
+announcementIcon.addEventListener("click", () => {
+    const announeMenu = document.querySelector('.noti-menu');
+    const announcementImage = announcementIcon.querySelector('.nav-image');
+    if (announeMenu.style.display === "none" || announeMenu.style.display === "") {
+        announeMenu.style.display = "flex";
+        announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcement-clicked.svg";
+    } else {
+        announeMenu.style.display = "none";
+        announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcements.svg"
+    }
+})

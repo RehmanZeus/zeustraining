@@ -267,7 +267,7 @@ header .navbar::before {
   padding: 15px;
 }
 .hidden-items .bell-menu {
-  display: flex;
+  display: none;
   flex-direction: column;
   background-color: white;
   box-shadow: 0 13px 20px rgba(0, 0, 0, 0.2392156863);

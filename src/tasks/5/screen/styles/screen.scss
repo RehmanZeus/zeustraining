@@ -355,7 +355,7 @@ header {
     }
 
     .bell-menu {
-        display: flex;
+        display: none;
         flex-direction: column;
         background-color: $menu-bg-color;
         box-shadow: $menu-shadow;
