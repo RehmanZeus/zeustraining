@@ -1,4 +1,43 @@
 
+const bellData = [
+    {
+        msg: "License for Introduction to Algebra has been assigned to your school",
+        read: false,
+        timestamp: "15-Sep-2018 at 07:21 pm",
+        course: ""
+    },
+    {
+        msg: "Lesson 3 Practice Worksheet overdue for Amy Santiago",
+        read: true,
+        timestamp: "15-Sep-2018 at 05:21 pm",
+        course: "Course: Advanced Mathematics"
+    },
+    {
+        msg: "23 new students created",
+        read: true,
+        timestamp: "14-Sep-2018 at 01:21 pm",
+        course: ""
+    },
+    {
+        msg: "15 submissions ready for evaluation",
+        read: true,
+        timestamp: "13-Sep-2018 at 01:15 pm",
+        course: "Class: Basics of Algebra"
+    },
+    {
+        msg: "License for Basic Concepts in Geometry has been assigned to your... school",
+        read: true,
+        timestamp: "15-Sep-2018 at 07:21 pm",
+        course: ""
+    },
+    {
+        msg: "Lesson 3 Practice Worksheet overdue for Sam Diego",
+        read: false,
+        timestamp: "15-Sep-2018 at 05:21 pm",
+        course: "Course: Advanced Mathematics"
+    }
+]
+
 const announcementData = [
     {
         announcementBy_prefix: 'PA.',
@@ -127,6 +166,32 @@ const cardData = [
 ];
 
 
+const bellDataContainer = document.querySelector('.bell-content-container');
+
+bellData.forEach(bell => {
+    const bellCont = document.createElement("div");
+    bellCont.className = !bell.read ? "bell-content" : "bell-content not-read";
+
+    bellCont.innerHTML = `
+        <div class="b-ln">
+                        <div class="b-ln-text">
+                           ${bell.msg}
+                        </div>
+                          <img width="15px" height="18px" src=${!bell.read ? "../assets/images/checkbox-checked.svg" : "../assets/images/checkbox-unchecked.svg"} class="checkbox" />
+                    </div>
+                    <div class="bn-sub-name">
+                        ${bell.course}
+                    </div>
+                    <div class="bn-lf">
+                        <div class="timestamp">
+                            ${bell.timestamp}
+                        </div>
+                    </div>
+    `;
+
+    bellDataContainer.append(bellCont);
+});
+
 const announceMentContainer = document.querySelector('.noti-content-container');
 
 announcementData.forEach(announcement => {
@@ -140,7 +205,7 @@ announcementData.forEach(announcement => {
                 <span class="ln-text-higl">${announcement.announcementBy_prefix}</span> 
                 ${announcement.announcementBy_Name}
             </div>
-            <img width="15px" height="18px" src="../assets/images/checkbox-checked.svg" class="checkbox" />
+            <img width="15px" height="18px" src=${announcement.read ? "../assets/images/checkbox-checked.svg" : "../assets/images/checkbox-unchecked.svg"} class="checkbox" />
         </div>
         <div class="n-ld">
             ${announcement.msg}
@@ -149,7 +214,7 @@ announcementData.forEach(announcement => {
             ${announcement.course_name}
         </div>
         <div class="n-lf">
-            <div class="f-att" style"${announcement.files  ? "display: block" : "display: none"}>
+            <div class="f-att" style"${announcement.files ? "display: block" : "display: none"}>
                 ${announcement.files}
             </div>
             <div class="timestamp">

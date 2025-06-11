@@ -188,7 +188,7 @@ header .navbar::before {
   display: none;
 }
 .hidden-items .noti-menu {
-  display: flex;
+  display: none;
   flex-direction: column;
   background-color: white;
   box-shadow: 0 13px 20px rgba(0, 0, 0, 0.2392156863);
@@ -265,6 +265,68 @@ header .navbar::before {
 .hidden-items .noti-menu .noti-actions .show,
 .hidden-items .noti-menu .noti-actions .create {
   padding: 15px;
+}
+.hidden-items .bell-menu {
+  display: flex;
+  flex-direction: column;
+  background-color: white;
+  box-shadow: 0 13px 20px rgba(0, 0, 0, 0.2392156863);
+  position: absolute;
+  z-index: 9999999999999;
+  width: 315px;
+  max-height: 582px;
+  margin-right: 188px;
+}
+.hidden-items .bell-menu .bell-content-container {
+  display: flex;
+  flex-direction: column;
+  overflow-y: scroll;
+}
+.hidden-items .bell-menu .bell-content-container .not-read {
+  background: #FFFFEE 0% 0% no-repeat padding-box;
+}
+.hidden-items .bell-menu .bell-content-container .bell-content {
+  padding: 12px;
+  border: 1px solid rgba(34, 34, 34, 0.1215686275);
+}
+.hidden-items .bell-menu .bell-content-container .bell-content .b-ln,
+.hidden-items .bell-menu .bell-content-container .bell-content .bn-sub-name,
+.hidden-items .bell-menu .bell-content-container .bell-content .bn-lf {
+  padding: 4px;
+}
+.hidden-items .bell-menu .bell-content-container .bell-content .b-ln {
+  display: flex;
+  justify-content: space-between;
+  font-family: QuickSandMedium;
+  font-size: 14px;
+  color: #222222;
+}
+.hidden-items .bell-menu .bell-content-container .bell-content .bn-sub-name {
+  display: flex;
+  color: #6E6E6E;
+  font-family: QuickSandMedium;
+  font-size: 12px;
+}
+.hidden-items .bell-menu .bell-content-container .bell-content .bn-lf .timestamp {
+  display: flex;
+  justify-content: end;
+  font-family: QuickSandMedium;
+  font-size: 12px;
+}
+.hidden-items .bell-menu .bell-actions {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+  background: #FFFFFF 0% 0% no-repeat padding-box;
+  box-shadow: 0px 1px 6px rgba(0, 0, 0, 0.2392156863);
+  border-radius: 0px 0px 2px 2px;
+  color: #1F7A54;
+  font-family: QuickSandMedium;
+  font-size: 14px;
+  height: 48px;
+  text-transform: uppercase;
+  box-shadow: rgba(0, 0, 0, 0.2392156863) 0px 1px 6px;
 }
 
 /******************* COURSE/CLASS TAB NAVIGATOR **************************/
