@@ -1,23 +1,3 @@
-@font-face {
-  font-family: QuickSandMedium;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
-}
-@font-face {
-  font-family: QuickSandBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
-}
-@font-face {
-  font-family: QuickSandRegular;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Regular.ttf");
-}
-@font-face {
-  font-family: QuickSandLight;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Light.ttf");
-}
-@font-face {
-  font-family: QuickSandSemiBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf");
-}
 * {
   margin: 0;
   padding: 0;
@@ -26,38 +6,297 @@
 
 @font-face {
   font-family: QuickSandMedium;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
+  src: url("../../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
 }
 @font-face {
   font-family: QuickSandBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
+  src: url("../../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
 }
 @font-face {
   font-family: QuickSandRegular;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Regular.ttf");
+  src: url("../../assets/fonts/Quicksand/static/Quicksand-Regular.ttf");
 }
 @font-face {
   font-family: QuickSandLight;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Light.ttf");
+  src: url("../../assets/fonts/Quicksand/static/Quicksand-Light.ttf");
 }
 @font-face {
   font-family: QuickSandSemiBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf");
+  src: url("../../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf");
 }
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+html,
+body {
+  background-color: #EEEEEE;
+  min-height: 100vh;
+  font-family: QuickSandRegular, Arial, sans-serif;
 }
 
+header {
+  background-image: url("../../assets/images/headerPattern.png");
+  display: flex;
+  background-color: black;
+  width: 100%;
+  height: 55px;
+  border-bottom: 2px solid #3AC7EC;
+  position: relative;
+  z-index: 10;
+}
+header .logo {
+  margin: 11px 24px;
+}
+header .logo-img {
+  height: 33px;
+  width: auto;
+}
+
+/****************************************************************************************/
+/**********************************************************************/
+main {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  flex-direction: column;
+  min-height: calc(100vh - 95px);
+  /* padding: 20px; */
+  position: relative;
+}
+main .container {
+  width: 100%;
+  max-width: 488px;
+  margin: 50px auto 0 auto;
+  display: flex;
+  flex-direction: column;
+  background-color: #FFFFFF;
+  border-top: 4px solid #3AC7EC;
+  border-radius: 0 0 8px 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  padding-bottom: 32px;
+}
+main .container .back-button-img {
+  width: 26px;
+  height: 26px;
+  margin-top: 5px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+main .container .back-button-img:hover {
+  opacity: 0.7;
+}
+main .container .form-heading {
+  margin-top: 22px;
+  margin-left: 32px;
+  margin-right: 32px;
+  display: flex;
+  align-items: center;
+}
+main .container .form-heading-text {
+  font-family: QuickSandMedium;
+  font-size: clamp(20px, 4vw, 24px);
+  font-weight: lighter;
+  flex: 1;
+  color: #222222;
+  margin-right: 15px;
+  text-align: center;
+}
+main .form-body {
+  margin-left: 32px;
+  margin-top: 23px;
+  margin-right: 32px;
+}
+main .form-body .radio-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  font-family: QuickSandMedium;
+  font-size: 16px;
+  color: #333333;
+}
+main .form-body .radio-options input[type=radio] {
+  display: none;
+}
+main .form-body .radio-options label {
+  padding-left: 32px;
+  background: url("../../assets/images/radio-button-off.svg") no-repeat left center;
+  background-size: 24px 24px;
+  cursor: pointer;
+  font-size: 16px;
+  -webkit-user-select: none;
+     -moz-user-select: none;
+          user-select: none;
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+main .form-body .radio-options input[type=radio]:checked + label {
+  background-image: url("../../assets/images/radio-button-on.svg");
+}
+main .form-body .radio-label {
+  margin-left: 8px;
+}
+main .form-fields {
+  margin-top: 25px;
+}
+main .form-fields .field-names {
+  font-family: QuickSandMedium;
+  font-size: 12px;
+  color: #666666;
+}
+main .form-fields .faker {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+}
+main .form-fields .select-prop {
+  margin-top: 8px;
+  outline: none;
+  font-family: QuickSandMedium;
+  font-size: 16px;
+  color: #222222;
+  border: none;
+  padding-bottom: 5px;
+  width: 100%;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  border-bottom: 1px solid rgba(33, 62, 84, 0.2392156863);
+  background: transparent;
+  cursor: pointer;
+}
+main .form-fields .faker img {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+main .form-fields .field-2 {
+  margin-top: 36px;
+}
+main .form-fields .field-3 {
+  margin-top: 56px;
+}
+main .form-fields .help-user {
+  color: #1F7A54;
+  display: flex;
+  justify-content: end;
+  font-family: QuickSandMedium;
+  font-size: 14px;
+  margin-top: 5px;
+  font-weight: 400;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+main .form-fields .username-or-email-class {
+  border: none;
+  width: 100%;
+  border-bottom: 1px solid rgba(33, 62, 84, 0.2392156863);
+  font-family: QuickSandMedium;
+  font-size: 16px;
+  background: transparent;
+}
+main .form-fields .username-or-email-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+main .form-fields .eye-icon {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  cursor: pointer;
+  pointer-events: auto;
+  width: 20px;
+  height: 20px;
+}
+main .form-fields input::-moz-placeholder {
+  color: #666666;
+  font-family: QuickSandMedium;
+  font-size: 16px;
+}
+main .form-fields input::placeholder {
+  color: #666666;
+  font-family: QuickSandMedium;
+  font-size: 16px;
+}
+main .form-fields input:focus {
+  outline: none;
+  font-family: QuickSandMedium;
+  font-size: 16px;
+  transition: border-bottom-color 0.3s;
+}
+main .form-fields .field-4 {
+  margin-top: 33px;
+}
+main .form-fields .field-5 {
+  margin-top: 26px;
+  display: flex;
+  width: 100%;
+  align-items: center;
+}
+main .form-fields .remember-me input:checked {
+  background: url("../../assets/images/checkbox-checked.svg");
+  cursor: pointer;
+}
+main .form-fields .remember-me input {
+  --webkit-appearance: none;
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+  background: url("../../assets/images/checkbox-unchecked.svg");
+  cursor: pointer;
+  width: 24px;
+  height: 24px;
+}
+main .form-fields .remember-me-text {
+  margin-left: 5px;
+  font-family: QuickSandMedium;
+  margin-top: -4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+main .form-fields .submit {
+  margin-top: 34px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+main .form-fields .submit-btn {
+  background-color: #3FD28B;
+  width: 100%;
+  max-width: 216px;
+  border: none;
+  height: 40px;
+  font-family: QuickSandMedium;
+  font-size: 16px;
+  color: white;
+  cursor: pointer;
+  border-radius: 4px;
+  box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.24);
+  transition: all 0.2s;
+}
+
+/* 
+
+
+
+
+
+
+
+
+
+ */
+/***************************************************************/
 .credits {
   margin-top: 32px;
-  width: 100%;
-  gap: 18px;
   display: flex;
   justify-content: center;
   align-items: center;
   flex-direction: row;
+  width: 100%;
+  gap: 18px;
   flex-wrap: wrap;
 }
 
@@ -87,10 +326,10 @@ footer {
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: row;
   margin-top: auto;
 }
-
-.footer-content {
+footer .footer-content {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -98,413 +337,19 @@ footer {
   gap: 16px;
   text-align: center;
 }
-
-.footer-logo-img {
+footer .footer-logo-img {
   width: 90px;
   height: 24px;
 }
-
-.footer-text {
+footer .footer-text {
   font-family: QuickSandMedium;
   font-size: 12px;
 }
-
-.bold-text {
+footer .bold-text {
   font-family: QuickSandBold;
 }
-
-.divider {
+footer .divider {
   color: #666666;
-}
-
-@font-face {
-  font-family: QuickSandMedium;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
-}
-@font-face {
-  font-family: QuickSandBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
-}
-@font-face {
-  font-family: QuickSandRegular;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Regular.ttf");
-}
-@font-face {
-  font-family: QuickSandLight;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Light.ttf");
-}
-@font-face {
-  font-family: QuickSandSemiBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf");
-}
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-header {
-  background-image: url("../assets/images/headerPattern.png");
-  display: flex;
-  background-color: black;
-  width: 100%;
-  height: 55px;
-  border-bottom: 2px solid #3AC7EC;
-  position: relative;
-  z-index: 10;
-}
-header .logo {
-  margin: 11px 24px;
-}
-header .logo .logo-img {
-  height: 33px;
-  width: auto;
-}
-
-@font-face {
-  font-family: QuickSandMedium;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
-}
-@font-face {
-  font-family: QuickSandBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
-}
-@font-face {
-  font-family: QuickSandRegular;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Regular.ttf");
-}
-@font-face {
-  font-family: QuickSandLight;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Light.ttf");
-}
-@font-face {
-  font-family: QuickSandSemiBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf");
-}
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-main {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  min-height: calc(100vh - 95px);
-  position: relative;
-}
-
-.container {
-  width: 100%;
-  max-width: 488px;
-  margin: 50px auto 0 auto;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  background-color: #FFFFFF;
-  border-top: #3AC7EC;
-  border-radius: 0 0 8px 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding-bottom: 2em;
-}
-
-.form-heading {
-  margin-top: 22px;
-  margin-left: 32px;
-  margin-right: 32px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: row;
-}
-
-.form-heading-text {
-  font-family: QuickSandMedium;
-  font-size: clamp(20px, 4vw, 24px);
-  font-weight: lighter;
-  flex: 1;
-  color: #222222;
-  margin-right: 15px;
-  text-align: center;
-}
-
-.back-button-img {
-  width: 26px;
-  height: 26px;
-  margin-top: 5px;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.back-button-img:hover {
-  opacity: 0.7;
-}
-
-.form-body {
-  margin-left: 32px;
-  margin-top: 23px;
-  margin-right: 32px;
-}
-
-@font-face {
-  font-family: QuickSandMedium;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
-}
-@font-face {
-  font-family: QuickSandBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
-}
-@font-face {
-  font-family: QuickSandRegular;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Regular.ttf");
-}
-@font-face {
-  font-family: QuickSandLight;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Light.ttf");
-}
-@font-face {
-  font-family: QuickSandSemiBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf");
-}
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.form-fields {
-  margin-top: 25px;
-}
-
-.field-names {
-  font-family: QuickSandMedium;
-  font-size: 12px;
-  color: #666666;
-}
-
-.faker {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  position: relative;
-}
-
-.select-prop {
-  margin-top: 8px;
-  outline: none;
-  font-family: QuickSandMedium;
-  font-size: 16px;
-  color: #222222;
-  border: none;
-  padding-bottom: 5px;
-  width: 100%;
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-  border-bottom: 1px solid rgba(33, 62, 84, 0.2392156863);
-  background: transparent;
-  cursor: pointer;
-}
-
-.faker img {
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
-
-.field-2 {
-  margin-top: 36px;
-}
-
-.field-3 {
-  margin-top: 56px;
-}
-
-.help-user {
-  color: #1F7A54;
-  display: flex;
-  justify-content: end;
-  font-family: QuickSandMedium;
-  font-size: 14px;
-  margin-top: 5px;
-  font-weight: 400;
-  cursor: pointer;
-  transition: opacity 0.2s;
-}
-
-.username-or-email-class {
-  border: none;
-  width: 100%;
-  border-bottom: 1px solid rgba(33, 62, 84, 0.2392156863);
-  font-family: QuickSandMedium;
-  font-size: 16px;
-  background: transparent;
-}
-
-.username-or-email-field {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.eye-icon {
-  position: absolute;
-  right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
-  cursor: pointer;
-  pointer-events: auto;
-  width: 20px;
-  height: 20px;
-}
-
-input::-moz-placeholder {
-  color: #666666;
-  font-family: QuickSandMedium;
-  font-size: 16px;
-}
-
-input::placeholder {
-  color: #666666;
-  font-family: QuickSandMedium;
-  font-size: 16px;
-}
-
-input:focus {
-  outline: none;
-  font-family: QuickSandMedium;
-  font-size: 16px;
-  transition: border-bottom-color 0.3s;
-}
-
-.field-4 {
-  margin-top: 33px;
-}
-
-.field-5 {
-  margin-top: 26px;
-  display: flex;
-  width: 100%;
-  align-items: center;
-}
-
-.remember-me input:checked {
-  background: url("../assets/images/checkbox-checked.svg");
-  cursor: pointer;
-}
-
-.remember-me input {
-  --webkit-appearance: none;
-  -webkit-appearance: none;
-     -moz-appearance: none;
-          appearance: none;
-  background: url("../assets/images/checkbox-unchecked.svg");
-  cursor: pointer;
-  width: 24px;
-  height: 24px;
-}
-
-.remember-me-text {
-  margin-left: 5px;
-  font-family: QuickSandMedium;
-  margin-top: -4px;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-.submit {
-  margin-top: 34px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.submit-btn {
-  background-color: #3FD28B;
-  width: 100%;
-  max-width: 216px;
-  border: none;
-  height: 40px;
-  font-family: QuickSandMedium;
-  font-size: 16px;
-  color: white;
-  cursor: pointer;
-  border-radius: 4px;
-  box-shadow: 0px 3px 5px rgba(0, 0, 0, 0.24);
-  transition: all 0.2s;
-}
-
-@font-face {
-  font-family: QuickSandMedium;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Medium.ttf");
-}
-@font-face {
-  font-family: QuickSandBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Bold.ttf");
-}
-@font-face {
-  font-family: QuickSandRegular;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Regular.ttf");
-}
-@font-face {
-  font-family: QuickSandLight;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-Light.ttf");
-}
-@font-face {
-  font-family: QuickSandSemiBold;
-  src: url("../assets/fonts/Quicksand/static/Quicksand-SemiBold.ttf");
-}
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-.radio-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 20px;
-  font-family: QuickSandMedium;
-  font-size: 16px;
-  color: #333333;
-}
-
-.radio-options input[type=radio] {
-  display: none;
-}
-
-.radio-options label {
-  padding-left: 32px;
-  background: url("../assets/images/radio-button-off.svg") no-repeat left center;
-  background-size: 24px 24px;
-  cursor: pointer;
-  font-size: 16px;
-  -webkit-user-select: none;
-     -moz-user-select: none;
-          user-select: none;
-  display: flex;
-  align-items: center;
-  min-height: 32px;
-}
-
-.radio-options input[type=radio]:checked + label {
-  background-image: url("../assets/images/radio-button-on.svg");
-}
-
-.radio-label {
-  margin-left: 8px;
-}
-
-html,
-body {
-  background-color: #EEEEEE;
-  min-height: 100vh;
-  font-family: QuickSandRegular, Arial, sans-serif;
 }
 
 @media (max-width: 530px) {
