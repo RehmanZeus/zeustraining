@@ -365,12 +365,15 @@ const announcementIcon = document.getElementById("announcement-icon");
 const handleBellMenu = (event) => {
     const bellMenu = document.querySelector('.bell-menu');
     const bellImage = bellIcon.querySelector('.nav-image');
+    const bellbadge = document.getElementById('noti-badge-div');
     
     if (bellMenu.style.display === "none" || bellMenu.style.display === "") {
         bellMenu.style.display = "flex";
+        bellbadge.style.display = "none";
         bellImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts-clicked.svg"; 
     } else {
         bellMenu.style.display = "none";
+        bellbadge.style.display = "block";
         bellImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts.svg"; 
     }
 };
@@ -378,12 +381,14 @@ const handleBellMenu = (event) => {
 const handleAnnouncementMenu = (event) => {
     const announeMenu = document.querySelector('.noti-menu');
     const announcementImage = announcementIcon.querySelector('.nav-image');
-    
+    const annBdge = document.getElementById("ann-bdg-div");
     if (announeMenu.style.display === "none" || announeMenu.style.display === "") {
         announeMenu.style.display = "flex";
+        annBdge.style.display = "none";
         announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcement-clicked.svg";
     } else {
         announeMenu.style.display = "none";
+        annBdge.style.display = "block";
         announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcements.svg";
     }
 };
