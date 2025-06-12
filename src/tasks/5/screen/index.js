@@ -174,22 +174,26 @@ bellData.forEach(bell => {
 
     bellCont.innerHTML = `
         <div class="b-ln">
-                        <div class="b-ln-text">
-                           ${bell.msg}
-                        </div>
-                          <img width="15px" height="18px" src=${!bell.read ? "../assets/images/checkbox-checked.svg" : "../assets/images/checkbox-unchecked.svg"} class="checkbox" />
-                    </div>
-                    <div class="bn-sub-name">
-                        ${bell.course}
-                    </div>
-                    <div class="bn-lf">
-                        <div class="timestamp">
-                            ${bell.timestamp}
-                        </div>
-                    </div>
+            <div class="b-ln-text">
+                ${bell.msg}
+            </div>
+            <img width="15px" height="18px" src=${!bell.read ? "../assets/images/checkbox-checked.svg" : "../assets/images/checkbox-unchecked.svg"} class="checkbox" />
+        </div>
+        <div class="bn-sub-name">
+            ${bell.course}
+        </div>
+        <div class="bn-lf">
+            <div class="timestamp">
+                ${bell.timestamp}
+            </div>
+        </div>
     `;
 
     bellDataContainer.append(bellCont);
+
+    requestAnimationFrame(() => {
+        bellCont.classList.add('visible');
+    });
 });
 
 const announceMentContainer = document.querySelector('.noti-content-container');
@@ -199,13 +203,12 @@ announcementData.forEach(announcement => {
     notiCont.className = announcement.read ? "noti-content" : "noti-content not-read";
 
     notiCont.innerHTML = `
-    
         <div class="n-ln">
             <div class="ln-text">
                 <span class="ln-text-higl">${announcement.announcementBy_prefix}</span> 
                 ${announcement.announcementBy_Name}
             </div>
-            <img width="15px" height="18px" src=${announcement.read ? "../assets/images/checkbox-checked.svg" : "../assets/images/checkbox-unchecked.svg"} class="checkbox" />
+            <img width="15px" height="18px" src=${announcement.read ? "../assets/images/check_circle.svg" : "../assets/images/minus-in-circle.svg"} class="checkbox" />
         </div>
         <div class="n-ld">
             ${announcement.msg}
@@ -213,19 +216,22 @@ announcementData.forEach(announcement => {
         <div class="n-sub-name">
             ${announcement.course_name}
         </div>
-        <div class="n-lf">
-            <div class="f-att" style"${announcement.files ? "display: block" : "display: none"}>
-                ${announcement.files}
+        <div class="n-lf" style="${announcement.files ? 'display: flex; align-items: center' : 'display: flex; justify-content: end'}">
+            <div class="f-att" style="${announcement.files ? 'display: flex; align-items: center;' : 'display: none'}">
+               <img style="margin-left: -4px" src="../assets/images/paperclip.svg" /> ${announcement.files}
             </div>
             <div class="timestamp">
                 ${announcement.timestamp}
             </div>
         </div>
-    
-    `
+    `;
 
     announceMentContainer.appendChild(notiCont);
 
+    // Add the visible class to trigger the animation
+    requestAnimationFrame(() => {
+        notiCont.classList.add('visible');
+    });
 });
 
 
@@ -269,8 +275,8 @@ cardData.forEach(card => {
                     <div class="content-text"><b class="content-no">${card.topics ?? ""}</b> Topics</div>
                 </div>
                 <div class="class-filter" style="margin-top: 18px;">
-                    <select id="sort-courses" class=${card.teacher_class ? 'class-list' : 'class-list class-list-x'}>
-                        ${card.teacher_class ? `<option disabled selected=selected>${card.teacher_class}</option>` : "<option disabled selected=selected style='color:rgb(221, 214, 214)' selected disabled>No Classes</option>"}
+                    <select id="sort-courses" class=${card.teacher_class ? 'class-list' : 'class-list-x'}>
+                        ${card.teacher_class ? `<option disabled selected=selected>${card.teacher_class}</option>` : "<option disabled selected=selected style='color:rgb(221, 214, 214); opacity: 0.5;' selected disabled>No Classes</option>"}
                     </select>
                     <img src="../assets/images/arrow-down.svg" />
                 </div>
@@ -353,9 +359,10 @@ contentMenuItem.addEventListener('click', function (e) {
     }
 });
 
-
 const bellIcon = document.getElementById("bell-icon");
-bellIcon.addEventListener('click', () => {
+const announcementIcon = document.getElementById("announcement-icon");
+
+const handleBellMenu = (event) => {
     const bellMenu = document.querySelector('.bell-menu');
     const bellImage = bellIcon.querySelector('.nav-image');
     
@@ -366,18 +373,25 @@ bellIcon.addEventListener('click', () => {
         bellMenu.style.display = "none";
         bellImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts.svg"; 
     }
-});
+};
 
-
-const announcementIcon = document.getElementById("announcement-icon");
-announcementIcon.addEventListener("click", () => {
+const handleAnnouncementMenu = (event) => {
     const announeMenu = document.querySelector('.noti-menu');
     const announcementImage = announcementIcon.querySelector('.nav-image');
+    
     if (announeMenu.style.display === "none" || announeMenu.style.display === "") {
         announeMenu.style.display = "flex";
         announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcement-clicked.svg";
     } else {
         announeMenu.style.display = "none";
-        announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcements.svg"
+        announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcements.svg";
     }
-})
+};
+
+bellIcon.addEventListener('mouseenter', handleBellMenu);
+bellIcon.addEventListener('mouseleave', handleBellMenu);
+announcementIcon.addEventListener('mouseenter', handleAnnouncementMenu);
+announcementIcon.addEventListener('mouseleave', handleAnnouncementMenu);
+
+bellIcon.addEventListener('click', handleBellMenu);
+announcementIcon.addEventListener('click', handleAnnouncementMenu);
