@@ -177,7 +177,7 @@ bellData.forEach(bell => {
             <div class="b-ln-text">
                 ${bell.msg}
             </div>
-            <img width="15px" height="18px" src=${!bell.read ? "../assets/images/checkbox-checked.svg" : "../assets/images/checkbox-unchecked.svg"} class="checkbox" />
+            <img src=${!bell.read ? "../assets/images/check_circle.svg" : "../assets/images/minus-in-circle.svg"} class="checkbox" />
         </div>
         <div class="bn-sub-name">
             ${bell.course}
@@ -208,7 +208,7 @@ announcementData.forEach(announcement => {
                 <span class="ln-text-higl">${announcement.announcementBy_prefix}</span> 
                 ${announcement.announcementBy_Name}
             </div>
-            <img width="15px" height="18px" src=${announcement.read ? "../assets/images/check_circle.svg" : "../assets/images/minus-in-circle.svg"} class="checkbox" />
+            <img src=${announcement.read ? "../assets/images/check_circle.svg" : "../assets/images/minus-in-circle.svg"} class="checkbox" />
         </div>
         <div class="n-ld">
             ${announcement.msg}
