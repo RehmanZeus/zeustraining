@@ -1,0 +1,509 @@
+interface INotification {
+    msg: string,
+    read: boolean,
+    timestamp: string;
+    course: string | undefined;
+}
+
+interface IAnnouncement {
+    announcementBy_prefix: string,
+    announcementBy_Name: string,
+    msg: string,
+    files: string | undefined,
+    course_name: string | undefined,
+    read: boolean,
+    timestamp: string
+}
+
+interface ICard {
+    img: string,
+    topic: string,
+    subject: string,
+    grade: string,
+    grade_plus: string,
+    units: number | null,
+    lessons: number | null,
+    topics: number | null,
+    teacher_class: string,
+    no_of_students: number | null,
+    date_of_class: string | null,
+    is_favourite: boolean,
+    isExpired: boolean,
+    preview: boolean,
+    manage_course: boolean,
+    grade_submission: boolean,
+    reports: boolean
+}
+
+
+const notificationData: INotification[] = [
+
+    {
+        msg: "License for Introduction to Algebra has been assigned to your school",
+        read: false,
+        timestamp: "15-Sep-2018 at 07:21 pm",
+        course: ""
+    },
+    {
+        msg: "Lesson 3 Practice Worksheet overdue for Amy Santiago",
+        read: true,
+        timestamp: "15-Sep-2018 at 05:21 pm",
+        course: "Course: Advanced Mathematics"
+    },
+    {
+        msg: "23 new students created",
+        read: true,
+        timestamp: "14-Sep-2018 at 01:21 pm",
+        course: ""
+    },
+    {
+        msg: "15 submissions ready for evaluation",
+        read: true,
+        timestamp: "13-Sep-2018 at 01:15 pm",
+        course: "Class: Basics of Algebra"
+    },
+    {
+        msg: "License for Basic Concepts in Geometry has been assigned to your... school",
+        read: true,
+        timestamp: "15-Sep-2018 at 07:21 pm",
+        course: ""
+    },
+    {
+        msg: "Lesson 3 Practice Worksheet overdue for Sam Diego",
+        read: false,
+        timestamp: "15-Sep-2018 at 05:21 pm",
+        course: "Course: Advanced Mathematics"
+    }
+];
+
+const announcementData: IAnnouncement[] = [
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Wilson Kumar",
+        msg: "No classes will be held on 21st Nov",
+        files: "2 files are attached",
+        course_name: "",
+        read: true,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Samson White",
+        msg: "Guest lecture on Geometry on 20th September",
+        files: "2 files are attached",
+        course_name: "",
+        read: false,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Wilson Kumar",
+        msg: "Additional course materials available on request",
+        files: "",
+        course_name: "Course: Mathematics 101",
+        read: true,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Wilson Kumar",
+        msg: "No classes will be held on 25th Dec",
+        files: "",
+        course_name: "",
+        read: false,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    },
+    {
+        announcementBy_prefix: 'PA.',
+        announcementBy_Name: "Wilson Kumar",
+        msg: "Additional course materials available on request",
+        files: "",
+        course_name: "Course: Mathematics 101",
+        read: false,
+        timestamp: "15-Sep-2018 at 07:21 pm"
+    }
+];
+
+const cardData: ICard[] = [
+    {
+        img: "../assets/images/cardImages/imageMask.png",
+        topic: "Acceleration",
+        subject: "Physics",
+        grade: "7",
+        grade_plus: "+2",
+        units: 4,
+        lessons: 18,
+        topics: 24,
+        teacher_class: "Mr. Frank's Class B",
+        no_of_students: 50,
+        date_of_class: "21-Jan-2020 - 21-Aug-2020",
+        is_favourite: true,
+        isExpired: false,
+        preview: true,
+        manage_course: true,
+        grade_submission: true,
+        reports: true
+    },
+    {
+        img: "../assets/images/cardImages/imageMask-1.png",
+        topic: "Displacement, Velocity and Speed",
+        subject: "Physics 2",
+        grade: "6",
+        grade_plus: "+3",
+        units: 2,
+        lessons: 15,
+        topics: 20,
+        teacher_class: "",
+        no_of_students: null,
+        date_of_class: null,
+        is_favourite: true,
+        isExpired: false,
+        preview: true,
+        manage_course: false,
+        grade_submission: false,
+        reports: true
+    },
+    {
+        img: "../assets/images/cardImages/imageMask-3.png",
+        topic: "Introduction to Biology: Micro organisms and how they affec...",
+        subject: "Biology",
+        grade: "4",
+        grade_plus: "+1",
+        units: 5,
+        lessons: 16,
+        topics: 22,
+        teacher_class: "All Classes",
+        no_of_students: 300,
+        date_of_class: null,
+        is_favourite: true,
+        isExpired: false,
+        preview: true,
+        manage_course: false,
+        grade_submission: false,
+        reports: true
+    },
+    {
+        img: "../assets/images/cardImages/imageMask-2.png",
+        topic: "Introduction to High School Mathematics",
+        subject: "Mathematics",
+        grade: "8",
+        grade_plus: "+3",
+        units: null,
+        lessons: null,
+        topics: null,
+        teacher_class: "Mr. Frank's Class A",
+        no_of_students: 44,
+        date_of_class: "14-Oct-2019 - 20-Oct-2020",
+        is_favourite: false,
+        isExpired: true,
+        preview: true,
+        manage_course: true,
+        grade_submission: true,
+        reports: true
+    }
+]
+
+
+const showNotificationData = (bellData: INotification[]): string | void => {
+
+    const bellDataContainer: Element | null = document.querySelector('.bell-content-container');
+
+    if (!bellDataContainer) {
+        return `<h1>Nothing to show</h1>`;
+    }
+    bellData.forEach(bell => {
+        const bellCont = document.createElement("div");
+        bellCont.className = !bell.read ? "bell-content" : "bell-content not-read";
+
+        bellCont.innerHTML = `
+        <div class="b-ln">
+            <div class="b-ln-text">
+                ${bell.msg}
+            </div>
+            <img src=${!bell.read ? "../assets/images/check_circle.svg" : "../assets/images/minus-in-circle.svg"} class="checkbox" />
+        </div>
+        <div class="bn-sub-name">
+            ${bell.course}
+        </div>
+        <div class="bn-lf">
+            <div class="timestamp">
+                ${bell.timestamp}
+            </div>
+        </div>
+    `;
+
+        bellDataContainer.append(bellCont);
+
+        requestAnimationFrame(() => {
+            bellCont.classList.add('visible');
+        });
+
+    });
+}
+
+
+const showAnnounceMentData = (announcementData: IAnnouncement[]): string | void => {
+    const announceMentContainer: Element | null = document.querySelector('.noti-content-container');
+
+    if (!announceMentContainer) {
+        return `<h1>Nothing to show here</h1>`
+    }
+
+    announcementData.forEach(announcement => {
+        const notiCont = document.createElement("div");
+        notiCont.className = announcement.read ? "noti-content" : "noti-content not-read";
+
+        notiCont.innerHTML = `
+        <div class="n-ln">
+            <div class="ln-text">
+                <span class="ln-text-higl">${announcement.announcementBy_prefix}</span> 
+                ${announcement.announcementBy_Name}
+            </div>
+            <img src=${announcement.read ? "../assets/images/check_circle.svg" : "../assets/images/minus-in-circle.svg"} class="checkbox" />
+        </div>
+        <div class="n-ld">
+            ${announcement.msg}
+        </div>
+        <div class="n-sub-name">
+            ${announcement.course_name}
+        </div>
+        <div class="n-lf" style="${announcement.files ? 'display: flex; align-items: center' : 'display: flex; justify-content: end'}">
+            <div class="f-att" style="${announcement.files ? 'display: flex; align-items: center;' : 'display: none'}">
+               <img style="margin-left: -4px" src="../assets/images/paperclip.svg" /> ${announcement.files}
+            </div>
+            <div class="timestamp">
+                ${announcement.timestamp}
+            </div>
+        </div>
+    `;
+
+        announceMentContainer.appendChild(notiCont);
+
+        requestAnimationFrame(() => {
+            notiCont.classList.add('visible');
+        });
+    });
+
+}
+
+
+const showCardData = (cardData: ICard[]) => {
+    const container: Element | null = document.querySelector(".cards");
+
+    if (!container) {
+        return `<h1>Nothing to show here</h1>`
+    }
+
+    cardData.forEach(card => {
+        const cardElement = document.createElement("div");
+        cardElement.className = "card";
+
+
+        const expiredTag = card.isExpired
+            ? `<div class="expired-tag">Expired</div>`
+            : "";
+
+        cardElement.innerHTML = `
+         ${expiredTag}
+        <div class="card-body" style="position: relative;">
+           
+            <img class="card-img" src="${card.img}" />
+            <div class="content">
+                <div class="topic card-margin">${card.topic}</div>
+                <div class="subject-grade card-margin">${card.subject} | Grade ${card.grade} <span class="grade-plus">${card.grade_plus}</span></div>
+                <div class="chapter-contents card-margin">
+                    <div class="content-text"><b class="content-no">${card.units ?? ""}</b> Units</div>
+                    <div class="content-text" style="margin: 0 6px;"><b class="content-no">${card.lessons ?? ""}</b> Lessons</div>
+                    <div class="content-text"><b class="content-no">${card.topics ?? ""}</b> Topics</div>
+                </div>
+                <div class="class-filter" style="margin-top: 18px;">
+                    <select id="sort-courses" class=${card.teacher_class ? 'class-list' : 'class-list-x'}>
+                        ${card.teacher_class ? `<option disabled selected=selected>${card.teacher_class}</option>` : "<option disabled selected=selected style='color:rgb(221, 214, 214)' selected disabled>No Classes</option>"}
+                    </select>
+                    <img src="../assets/images/arrow-down.svg" />
+                </div>
+                <div class="misc-information">
+                    <div class="student-no">${card.no_of_students ? `${card.no_of_students} Students` : ""}</div>
+                    ${card.date_of_class ? `<div class="separator">|</div>` : ""}
+                    <div class="date">${card.date_of_class || ""}</div>
+                </div>
+            </div>
+            ${card.is_favourite ? `<div class="favourite"><img src="../assets/images/favourite.svg"/></div>` : `<div class="favourite"><img src="../assets/images/notFavourite.svg"/></div>`}
+        </div>
+        <div class="action-menu">
+            <ul class="action-list">
+            <li class="action-list-item" style="opacity: ${card.preview ? 1 : 0.4}; display: block;">
+                <img src="../assets/images/preview.svg" />
+            </li>
+            <li class="action-list-item" style="opacity: ${card.manage_course ? 1 : 0.4};">
+                <img src="../assets/images/manage course.svg" />
+            </li>
+            <li class="action-list-item" style="opacity: ${card.grade_submission ? 1 : 0.4};">
+                <img src="../assets/images/grade submissions.svg" />
+            </li>
+            <li class="action-list-item" style="opacity: ${card.reports ? 1 : 0.4};">
+                <img src="../assets/images/reports.svg" />
+            </li>
+            </ul>
+        </div>
+    `;
+
+        container.appendChild(cardElement);
+    });
+}
+
+
+const handleNavNavigation = () => {
+    const navItems: NodeListOf<Element> = document.querySelectorAll('.nav-item');
+
+    navItems.forEach((item: Element) => {
+        item.addEventListener('click', () => {
+            navItems.forEach(nav => {
+                nav.classList.remove('selected');
+                const link = nav.querySelector('a');
+                if (link) {
+                    link.classList.remove('selected-link');
+                    link.classList.add('nav-link')
+                }
+            });
+            item.classList.add('selected');
+            const link = item.querySelector('a');
+            if (link) {
+                link.classList.add('selected-link');
+                link.classList.remove('nav-link');
+            }
+
+        });
+    });
+};
+
+const handleMobileMenuDisplay = () => {
+    const mobileMenu: HTMLElement | null = document.getElementById('mobile-menu-btn');
+    const mobileNav = document.getElementById('mobile-nav');
+    const contentMenuItem = document.querySelector('.menu-item.active-hidden');
+    const subMenu = document.querySelector('.sub-menu');
+    const bugIco = document.getElementById('bug-ico');
+
+
+    if (!mobileNav || !contentMenuItem || !subMenu || !bugIco || !mobileMenu) {
+        return `Nothing To show here`
+    }
+
+    mobileMenu.addEventListener('click', () => {
+        if (mobileNav?.classList.contains('show')) {
+            mobileNav.classList.remove('show');
+            setTimeout(() => {
+                mobileNav.style.display = 'none';
+            }, 500);
+        } else {
+            mobileNav.style.display = 'block';
+            setTimeout(() => {
+                mobileNav.classList.add('show');
+            }, 10);
+        }
+    });
+
+    document.querySelectorAll('.menu-item, .sub-menu').forEach(item => {
+        item.addEventListener('mouseenter', function () {
+            item.classList.add('active-hidden');
+        });
+        item.addEventListener('mouseleave', function () {
+            item.classList.remove('active-hidden');
+        });
+    });
+
+    contentMenuItem.addEventListener('click', function (e) {
+        e.preventDefault();
+
+        subMenu.classList.toggle('ishidden');
+
+        if (subMenu.classList.contains('ishidden')) {
+            bugIco.style.transform = 'rotate(0deg)';
+        } else {
+            bugIco.style.transform = 'rotate(180deg)';
+        }
+    });
+};
+
+
+
+
+const handleBellMenu = () => {
+    const bellMenu = document.querySelector<HTMLElement>('.bell-menu');
+    const bellIcon = document.getElementById("bell-icon");
+
+    if (!bellMenu || !bellIcon) {
+        return `<h1>No bellmenu or bellicon</h1>`;
+    }
+
+    const bellImage = bellIcon.querySelector<HTMLImageElement>('.nav-image');
+    const bellBadge = document.getElementById('noti-badge-div');
+
+    if (!bellImage || !bellBadge) {
+        return `<h1>No bellImage or bellbadge</h1>`;
+    }
+
+    const isBellMenuHidden = bellMenu.style.display === "none" || bellMenu.style.display === "";
+    bellMenu.style.display = isBellMenuHidden ? "flex" : "none";
+    bellBadge.style.display = isBellMenuHidden ? "none" : "block";
+    bellImage.src = isBellMenuHidden 
+        ? "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts-clicked.svg" 
+        : "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts.svg";
+};
+
+
+const handleAnnouncementMenu = () => {
+    const announeMenu = document.querySelector<HTMLElement>('.noti-menu');
+    const announcementIcon = document.getElementById("announcement-icon");
+
+    if (!announeMenu || !announcementIcon) {
+        return `<h1>No announceMenu or announcementIcon found</h1>`
+    }
+    const announcementImage = announcementIcon.querySelector<HTMLImageElement>('.nav-image');
+    const annBdge = document.getElementById("ann-bdg-div");
+    if (!annBdge || !announcementImage) {
+        return `<h1>No annBadge or announcementImage found</h1>`
+
+    }
+    if (announeMenu.style.display === "none" || announeMenu.style.display === "") {
+        announeMenu.style.display = "flex";
+        annBdge.style.display = "none";
+        announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcement-clicked.svg";
+    } else {
+        announeMenu.style.display = "none";
+        annBdge.style.display = "block";
+        announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcements.svg";
+    }
+};
+
+const attachEventListeners = () => {
+
+    const bellIcon = document.getElementById("bell-icon");
+    const announcementIcon = document.getElementById("announcement-icon");
+
+    if(!bellIcon || !announcementIcon){
+        return `<h1>No bellIcon or AnnounceMentIcon found</h1>`
+    }
+
+    bellIcon.addEventListener('mouseenter', handleBellMenu);
+    bellIcon.addEventListener('mouseleave', handleBellMenu);
+
+    announcementIcon.addEventListener('mouseenter', handleAnnouncementMenu);
+    announcementIcon.addEventListener('mouseleave', handleAnnouncementMenu);
+
+ 
+}
+
+const handleNavbar = () => {
+    handleNavNavigation();
+    handleMobileMenuDisplay();
+    attachEventListeners();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    showNotificationData(notificationData);
+    showAnnounceMentData(announcementData);
+    showCardData(cardData);
+    handleNavbar();
+})
+

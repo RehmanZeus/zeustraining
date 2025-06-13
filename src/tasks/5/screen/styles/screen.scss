@@ -133,7 +133,7 @@ header {
                             top: 0;
                             right: 0;
                             position: absolute;
-                            transform: translate(40%, -40%);
+                            transform: translate(50%, -10%)
                         }
 
                     }
@@ -268,7 +268,7 @@ header {
 
         .noti-content-container {
             display: flex;
-            flex-direction: column;
+             flex-direction: column;
             overflow-y: scroll;
 
 
@@ -850,45 +850,11 @@ footer {
 }
 
 
-@media (max-width: 1110px) {
-
-    // .header {
-    //     .navbar {
-    //         .nav-items {
-    //             .nav-item {
-    //                 display: none;
-    //             }
-
-    //             .nav-item-mob {
-    //                 display: block;
-    //             }
-    //         }
-    //     }
-    // }
-
-
-}
 
 @media (max-width: 970px) {
     .cards {
         grid-template-columns: repeat(1, 1fr);
     }
-
-    //  .header {
-    //     .navbar {
-    //         .nav-items {
-    //             .nav-item {
-    //                 display: none;
-    //             }
-
-    //             .nav-item-mob {
-    //                 display: block;
-    //             }
-    //         }
-    //     }
-    // }
-
-
 }
 
 
@@ -898,19 +864,7 @@ footer {
         grid-template-columns: repeat(2, 1fr);
     }
 
-    //  .header {
-    //     .navbar {
-    //         .nav-items {
-    //             .nav-item {
-    //                 display: none;
-    //             }
-
-    //             .nav-item-mob {
-    //                 display: block;
-    //             }
-    //         }
-    //     }
-    // }
+ 
 }
 
 @media (max-width: 970px) {
@@ -937,7 +891,7 @@ footer {
                 .nav-item,
                 .nav-item-image,
                 .nav-item-mob {
-                    padding: 19px 15px;
+                    padding: 12px 15px;
                 }
             }
         }
@@ -996,7 +950,10 @@ footer {
                 .nav-item,
                 .nav-item-image,
                 .nav-item-mob {
-                    padding: 10px 12px;
+                    padding: 12px 15px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
 
                 }
 
@@ -1094,6 +1051,9 @@ footer {
                 .nav-item-image,
                 .nav-item-mob {
                     padding: 9px 12px;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
 
                 }
 
@@ -1139,7 +1099,6 @@ footer {
         padding: 0 2px;
         gap: 10px;
         grid-template-columns: 1fr;
-        width: 100vw;
         padding: 0 8px;
         justify-content: center;
         align-items: center;
@@ -1164,12 +1123,5 @@ footer {
         .bell-menu {
             margin: 0 18px 0 0;
         }
-    }
-}
-
-/* Add this to your CSS file */
-@media (hover: none) {
-    .bell-menu, .noti-menu {
-        display: none;
     }
 }
