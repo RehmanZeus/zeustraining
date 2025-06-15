@@ -427,83 +427,142 @@ const handleMobileMenuDisplay = () => {
 
 
 
-
-const handleBellMenu = () => {
-    const bellMenu = document.querySelector<HTMLElement>('.bell-menu');
-    const bellIcon = document.getElementById("bell-icon");
-
-    if (!bellMenu || !bellIcon) {
-        return `<h1>No bellmenu or bellicon</h1>`;
-    }
-
-    const bellImage = bellIcon.querySelector<HTMLImageElement>('.nav-image');
-    const bellBadge = document.getElementById('noti-badge-div');
-
-    if (!bellImage || !bellBadge) {
-        return `<h1>No bellImage or bellbadge</h1>`;
-    }
-
-    const isBellMenuHidden = bellMenu.style.display === "none" || bellMenu.style.display === "";
-    bellMenu.style.display = isBellMenuHidden ? "flex" : "none";
-    bellBadge.style.display = isBellMenuHidden ? "none" : "block";
-    bellImage.src = isBellMenuHidden 
-        ? "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts-clicked.svg" 
-        : "http://127.0.0.1:5500/src/tasks/5/assets/images/alerts.svg";
-};
-
-
-const handleAnnouncementMenu = () => {
-    const announeMenu = document.querySelector<HTMLElement>('.noti-menu');
-    const announcementIcon = document.getElementById("announcement-icon");
-
-    if (!announeMenu || !announcementIcon) {
-        return `<h1>No announceMenu or announcementIcon found</h1>`
-    }
-    const announcementImage = announcementIcon.querySelector<HTMLImageElement>('.nav-image');
-    const annBdge = document.getElementById("ann-bdg-div");
-    if (!annBdge || !announcementImage) {
-        return `<h1>No annBadge or announcementImage found</h1>`
-
-    }
-    if (announeMenu.style.display === "none" || announeMenu.style.display === "") {
-        announeMenu.style.display = "flex";
-        annBdge.style.display = "none";
-        announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcement-clicked.svg";
-    } else {
-        announeMenu.style.display = "none";
-        annBdge.style.display = "block";
-        announcementImage.src = "http://127.0.0.1:5500/src/tasks/5/assets/images/announcements.svg";
-    }
-};
-
-const attachEventListeners = () => {
-
-    const bellIcon = document.getElementById("bell-icon");
-    const announcementIcon = document.getElementById("announcement-icon");
-
-    if(!bellIcon || !announcementIcon){
-        return `<h1>No bellIcon or AnnounceMentIcon found</h1>`
-    }
-
-    bellIcon.addEventListener('mouseenter', handleBellMenu);
-    bellIcon.addEventListener('mouseleave', handleBellMenu);
-
-    announcementIcon.addEventListener('mouseenter', handleAnnouncementMenu);
-    announcementIcon.addEventListener('mouseleave', handleAnnouncementMenu);
-
- 
+function showMenu(menuEl: HTMLElement, imageEl: HTMLImageElement, activeSrc: string) {
+    menuEl.style.display = 'flex';
+    setTimeout(() => menuEl.classList.add('animated-show'), 10);
+    imageEl.src = activeSrc;
 }
 
-const handleNavbar = () => {
-    handleNavNavigation();
-    handleMobileMenuDisplay();
-    attachEventListeners();
+function hideMenu(menuEl: HTMLElement, imageEl: HTMLImageElement, defaultSrc: string) {
+    menuEl.classList.remove('animated-show');
+    setTimeout(() => {
+        menuEl.style.display = 'none';
+        imageEl.src = defaultSrc;
+    }, 300);
 }
+
+function setupHoverAndClickMenu(
+    iconId: string,
+    menuSelector: string,
+    activeImg: string,
+    defaultImg: string,
+    badgeId: string
+) {
+    const icon = document.getElementById(iconId)!;
+    const menu = document.querySelector<HTMLElement>(menuSelector)!;
+    const badge = document.getElementById(badgeId)!;
+    const image = icon.querySelector<HTMLImageElement>('.nav-image')!;
+
+    menu.classList.add('animated-fade');
+
+    let hoverTimeout: number;
+
+    const show = () => {
+        clearTimeout(hoverTimeout);
+        showMenu(menu, image, activeImg);
+        badge.style.display = 'none';
+    };
+
+    const hide = () => {
+        hoverTimeout = window.setTimeout(() => {
+            hideMenu(menu, image, defaultImg);
+            badge.style.display = 'block';
+        }, 300);
+    };
+
+    icon.addEventListener('mouseenter', () => {
+        if (window.innerWidth >= 768) show();
+    });
+    icon.addEventListener('mouseleave', () => {
+        if (window.innerWidth >= 768) hide();
+    });
+    menu.addEventListener('mouseenter', () => {
+        if (window.innerWidth >= 768) show();
+    });
+    menu.addEventListener('mouseleave', () => {
+        if (window.innerWidth >= 768) hide();
+    });
+
+    icon.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        const isOpen = menu.style.display === 'flex';
+
+        document.querySelectorAll('.bell-menu, .noti-menu').forEach((el) => {
+            if (el !== menu) {
+                (el as HTMLElement).style.display = 'none';
+                el.classList.remove('animated-show');
+            }
+        });
+
+        document.querySelectorAll('.nav-image').forEach((img) => {
+            const src = (img as HTMLImageElement).src;
+            if (src.includes('clicked')) {
+                (img as HTMLImageElement).src = src.replace('-clicked', '');
+            }
+        });
+
+        document.querySelectorAll('#noti-badge-div, #ann-bdg-div').forEach((b) => {
+            (b as HTMLElement).style.display = 'block';
+        });
+
+        if (isOpen) {
+            hideMenu(menu, image, defaultImg);
+            badge.style.display = 'block';
+        } else {
+            showMenu(menu, image, activeImg);
+            badge.style.display = 'none';
+        }
+    });
+}
+
+document.addEventListener('click', (event) => {
+    const target = event.target as Node;
+
+    ['.bell-menu', '.noti-menu'].forEach((menuSelector) => {
+        const menu = document.querySelector<HTMLElement>(menuSelector);
+        if (menu && menu.style.display === 'flex') {
+            const icon = document.getElementById(
+                menuSelector.includes('bell') ? 'bell-icon' : 'announcement-icon'
+            );
+            if (icon && !icon.contains(target) && !menu.contains(target)) {
+                const img = icon.querySelector<HTMLImageElement>('.nav-image');
+                const badgeId = menuSelector.includes('bell') ? 'noti-badge-div' : 'ann-bdg-div';
+                const badge = document.getElementById(badgeId);
+
+                hideMenu(menu, img!, img!.src.replace('-clicked', ''));
+                if (badge) badge.style.display = 'block';
+            }
+        }
+    });
+});
+
+function setupNotificationMenus() {
+    setupHoverAndClickMenu(
+        'bell-icon',
+        '.bell-menu',
+        'http://127.0.0.1:5500/src/tasks/5/assets/images/alerts-clicked.svg',
+        'http://127.0.0.1:5500/src/tasks/5/assets/images/alerts.svg',
+        'noti-badge-div'
+    );
+
+    setupHoverAndClickMenu(
+        'announcement-icon',
+        '.noti-menu',
+        'http://127.0.0.1:5500/src/tasks/5/assets/images/announcement-clicked.svg',
+        'http://127.0.0.1:5500/src/tasks/5/assets/images/announcements.svg',
+        'ann-bdg-div'
+    );
+}
+
+
 
 document.addEventListener('DOMContentLoaded', () => {
     showNotificationData(notificationData);
     showAnnounceMentData(announcementData);
     showCardData(cardData);
-    handleNavbar();
+    setupNotificationMenus();
+    handleMobileMenuDisplay();
+    handleNavNavigation();
 })
 
