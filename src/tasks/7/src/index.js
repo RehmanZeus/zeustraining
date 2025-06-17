@@ -1,75 +1,114 @@
-// let windowDiv = document.createElement('div');
-// let draggableDiv = document.createElement('div');
-// document.body.append(windowDiv);
-// windowDiv.append(draggableDiv);
-// windowDiv.classList.add('window-div');
-// draggableDiv.classList.add('draggable-div');
-// const logger = (name: string, e: PointerEvent, elem: HTMLElement) => {
-//     console.log(`Event Name : ${name}\n PageX:${e.pageX} PageY:${e.pageY}\n Left: ${elem.style.left} Top : ${elem.style.top}\n${windowDiv}`)
-// }
-// const downHandler = (e: PointerEvent) => {
-//     logger("DownHandler", e, draggableDiv);
-//     draggableDiv.onpointermove = moveHandler;
-// }
-// const moveHandler = (e: PointerEvent) => {
-//     logger("MoveHandler", e, draggableDiv);
-//     draggableDiv.style.left = `${e.pageX}px`;
-//     draggableDiv.style.top = `${e.pageY}px`;
-// }
-// const upHandler = (e: PointerEvent) => {
-//     logger("upHandler", e, draggableDiv);
-//     draggableDiv.releasePointerCapture(e.pointerId);
-// }
-// const init = () => {
-//     draggableDiv.onpointerdown = downHandler;
-//     draggableDiv.onpointerup = upHandler;
-// }
-// document.addEventListener('DOMContentLoaded', () => {
-//     init();
-// });
-var windowDiv = document.createElement('div');
-var draggableDiv = document.createElement('div');
-document.body.append(windowDiv);
-windowDiv.append(draggableDiv);
-windowDiv.classList.add('window-div');
-draggableDiv.classList.add('draggable-div');
-var offsetX, offsetY;
+var __extends = (this && this.__extends) || (function () {
+    var extendStatics = function (d, b) {
+        extendStatics = Object.setPrototypeOf ||
+            ({ __proto__: [] } instanceof Array && function (d, b) { d.__proto__ = b; }) ||
+            function (d, b) { for (var p in b) if (Object.prototype.hasOwnProperty.call(b, p)) d[p] = b[p]; };
+        return extendStatics(d, b);
+    };
+    return function (d, b) {
+        if (typeof b !== "function" && b !== null)
+            throw new TypeError("Class extends value " + String(b) + " is not a constructor or null");
+        extendStatics(d, b);
+        function __() { this.constructor = d; }
+        d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
+    };
+})();
+var DivHandler = /** @class */ (function () {
+    function DivHandler(width, height) {
+        this.elem = document.createElement("div");
+        this.elem.style.width = width;
+        this.elem.style.height = height;
+    }
+    DivHandler.prototype.addClass = function (name) {
+        this.elem.classList.add(name);
+    };
+    DivHandler.prototype.getPosAndSize = function () {
+        return this.elem.getBoundingClientRect();
+    };
+    DivHandler.prototype.appendChild = function (elem) {
+        this.elem.appendChild(elem);
+    };
+    return DivHandler;
+}());
+var WindowDiv = /** @class */ (function (_super) {
+    __extends(WindowDiv, _super);
+    function WindowDiv(width, height) {
+        return _super.call(this, width, height) || this;
+    }
+    return WindowDiv;
+}(DivHandler));
+var DraggableDiv = /** @class */ (function (_super) {
+    __extends(DraggableDiv, _super);
+    function DraggableDiv(width, height) {
+        var _this = _super.call(this, width, height) || this;
+        _this.offsetX = 0;
+        _this.offsetY = 0;
+        _this.handleDown = function (e) {
+            _this.offsetX = e.clientX - _this.elem.offsetLeft;
+            _this.offsetY = e.clientY - _this.elem.offsetTop;
+            logger("DownHandler", e, _this.elem);
+            _this.elem.setPointerCapture(e.pointerId);
+            _this.elem.onpointermove = _this.handleMove;
+        };
+        _this.handleMove = function (e) {
+            var newLeft = e.pageX - _this.offsetX;
+            var newTop = e.pageY - _this.offsetY;
+            var rect = windowDivC.getPosAndSize();
+            var draggableRect = _this.getPosAndSize();
+            if (newLeft < rect.left)
+                newLeft = rect.left;
+            if (newTop < rect.top)
+                newTop = rect.top;
+            if (newLeft + draggableRect.width > rect.right)
+                newLeft = rect.right - draggableRect.width;
+            if (newTop + draggableRect.height > rect.bottom)
+                newTop = rect.bottom - draggableRect.height;
+            _this.elem.style.left = "".concat(newLeft, "px");
+            _this.elem.style.top = "".concat(newTop, "px");
+        };
+        _this.handleUp = function (e) {
+            _this.elem.releasePointerCapture(e.pointerId);
+            _this.elem.onpointermove = null;
+        };
+        return _this;
+    }
+    DraggableDiv.prototype.init = function () {
+        this.elem.onpointerdown = this.handleDown;
+        this.elem.onpointerup = this.handleUp;
+    };
+    DraggableDiv.prototype.adjustPosition = function () {
+        var rect = windowDivC.getPosAndSize();
+        var draggableRect = this.getPosAndSize();
+        var newLeft = this.elem.offsetLeft;
+        var newTop = this.elem.offsetTop;
+        if (newLeft < rect.left)
+            newLeft = rect.left;
+        if (newTop < rect.top)
+            newTop = rect.top;
+        if (newLeft + draggableRect.width > rect.right)
+            newLeft = rect.right - draggableRect.width;
+        if (newTop + draggableRect.height > rect.bottom)
+            newTop = rect.bottom - draggableRect.height;
+        this.elem.style.left = "".concat(newLeft, "px");
+        this.elem.style.top = "".concat(newTop, "px");
+    };
+    return DraggableDiv;
+}(DivHandler));
 var logger = function (name, e, elem) {
-    console.log("Event Name : ".concat(name, "\n PageX:").concat(e.pageX, " PageY:").concat(e.pageY, "\n Left: ").concat(elem.style.left, " Top : ").concat(elem.style.top, "\n").concat(windowDiv));
+    console.log("Event Name: ".concat(name, "\n PageX: ").concat(e.pageX, " PageY: ").concat(e.pageY, "\n Left: ").concat(elem.style.left, " Top: ").concat(elem.style.top));
 };
-var downHandler = function (e) {
-    offsetX = e.clientX - draggableDiv.offsetLeft;
-    offsetY = e.clientY - draggableDiv.offsetTop;
-    logger("DownHandler", e, draggableDiv);
-    draggableDiv.setPointerCapture(e.pointerId);
-    draggableDiv.onpointermove = moveHandler;
+var windowDivC = new WindowDiv("100%", "100vh");
+windowDivC.addClass("window-div");
+var draggableDivC = new DraggableDiv("50px", "50px");
+draggableDivC.addClass("draggable-div");
+draggableDivC.init();
+var draggableDivCD = new DraggableDiv("100px", "50px");
+draggableDivCD.addClass("draggable-div");
+draggableDivCD.init();
+windowDivC.appendChild(draggableDivC.elem);
+windowDivC.appendChild(draggableDivCD.elem);
+document.body.appendChild(windowDivC.elem);
+window.onresize = function () {
+    draggableDivC.adjustPosition();
+    draggableDivCD.adjustPosition();
 };
-var moveHandler = function (e) {
-    logger("MoveHandler", e, draggableDiv);
-    var newLeft = e.pageX - offsetX;
-    var newTop = e.pageY - offsetY;
-    var rect = windowDiv.getBoundingClientRect();
-    var draggableRect = draggableDiv.getBoundingClientRect();
-    if (newLeft < rect.left)
-        newLeft = rect.left;
-    if (newTop < rect.top)
-        newTop = rect.top;
-    if (newLeft + draggableRect.width > rect.right)
-        newLeft = rect.right - draggableRect.width;
-    if (newTop + draggableRect.height > rect.bottom)
-        newTop = rect.bottom - draggableRect.height;
-    draggableDiv.style.left = "".concat(newLeft, "px");
-    draggableDiv.style.top = "".concat(newTop, "px");
-};
-var upHandler = function (e) {
-    logger("upHandler", e, draggableDiv);
-    draggableDiv.releasePointerCapture(e.pointerId);
-    draggableDiv.onpointermove = null;
-};
-var init = function () {
-    draggableDiv.onpointerdown = downHandler;
-    draggableDiv.onpointerup = upHandler;
-};
-document.addEventListener('DOMContentLoaded', function () {
-    init();
-});

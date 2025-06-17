@@ -1,103 +1,111 @@
 
-// let windowDiv = document.createElement('div');
-// let draggableDiv = document.createElement('div');
+class DivHandler {
+    elem: HTMLElement;
 
-// document.body.append(windowDiv);
-// windowDiv.append(draggableDiv);
+    constructor(width: string, height: string) {
+        this.elem = document.createElement("div");
+        this.elem.style.width = width;
+        this.elem.style.height = height;
+    }
 
-// windowDiv.classList.add('window-div');
-// draggableDiv.classList.add('draggable-div');
+    addClass(name: string) {
+        this.elem.classList.add(name);
+    }
 
+    getPosAndSize() {
+        return this.elem.getBoundingClientRect();
+    }
 
-// const logger = (name: string, e: PointerEvent, elem: HTMLElement) => {
-//     console.log(`Event Name : ${name}\n PageX:${e.pageX} PageY:${e.pageY}\n Left: ${elem.style.left} Top : ${elem.style.top}\n${windowDiv}`)
-// }
+    appendChild(elem: HTMLElement) {
+        this.elem.appendChild(elem);
+    }
+}
 
-// const downHandler = (e: PointerEvent) => {
+class WindowDiv extends DivHandler {
+    constructor(width: string, height: string) {
+        super(width, height);
+    }
+}
 
-//     logger("DownHandler", e, draggableDiv);
-//     draggableDiv.onpointermove = moveHandler;
-// }
+class DraggableDiv extends DivHandler {
+    offsetX: number = 0;
+    offsetY: number = 0;
 
-// const moveHandler = (e: PointerEvent) => {
+    constructor(width: string, height: string) {
+        super(width, height);
+    }
 
-//     logger("MoveHandler", e, draggableDiv);
-    
-//     draggableDiv.style.left = `${e.pageX}px`;
-//     draggableDiv.style.top = `${e.pageY}px`;
+    handleDown = (e: PointerEvent) => {
+        this.offsetX = e.clientX - this.elem.offsetLeft;
+        this.offsetY = e.clientY - this.elem.offsetTop;
+        logger("DownHandler", e, this.elem);
+        this.elem.setPointerCapture(e.pointerId);
+        this.elem.onpointermove = this.handleMove;
+    }
 
-// }
+    handleMove = (e: PointerEvent) => {
+        let newLeft = e.pageX - this.offsetX;
+        let newTop = e.pageY - this.offsetY;
 
-// const upHandler = (e: PointerEvent) => {
-//     logger("upHandler", e, draggableDiv);
+        const rect = windowDivC.getPosAndSize();
+        const draggableRect = this.getPosAndSize();
 
-//     draggableDiv.releasePointerCapture(e.pointerId);
-// }
+        if (newLeft < rect.left) newLeft = rect.left;
+        if (newTop < rect.top) newTop = rect.top;
+        if (newLeft + draggableRect.width > rect.right) newLeft = rect.right - draggableRect.width;
+        if (newTop + draggableRect.height > rect.bottom) newTop = rect.bottom - draggableRect.height;
 
+        this.elem.style.left = `${newLeft}px`;
+        this.elem.style.top = `${newTop}px`;
+    }
 
+    handleUp = (e: PointerEvent) => {
+        this.elem.releasePointerCapture(e.pointerId);
+        this.elem.onpointermove = null;
+    }
 
-// const init = () => {
-//     draggableDiv.onpointerdown = downHandler;
-//     draggableDiv.onpointerup = upHandler;
-// }
+    init() {
+        this.elem.onpointerdown = this.handleDown;
+        this.elem.onpointerup = this.handleUp;
+    }
 
-// document.addEventListener('DOMContentLoaded', () => {
-//     init();
-// });
+    adjustPosition() {
+        const rect = windowDivC.getPosAndSize();
+        const draggableRect = this.getPosAndSize();
 
+        let newLeft = this.elem.offsetLeft;
+        let newTop = this.elem.offsetTop;
 
-let windowDiv = document.createElement('div');
-let draggableDiv = document.createElement('div');
+        if (newLeft < rect.left) newLeft = rect.left;
+        if (newTop < rect.top) newTop = rect.top;
+        if (newLeft + draggableRect.width > rect.right) newLeft = rect.right - draggableRect.width;
+        if (newTop + draggableRect.height > rect.bottom) newTop = rect.bottom - draggableRect.height;
 
-document.body.append(windowDiv);
-windowDiv.append(draggableDiv);
-
-windowDiv.classList.add('window-div');
-draggableDiv.classList.add('draggable-div');
-
-let offsetX: number, offsetY: number;
+        this.elem.style.left = `${newLeft}px`;
+        this.elem.style.top = `${newTop}px`;
+    }
+}
 
 const logger = (name: string, e: PointerEvent, elem: HTMLElement) => {
-    console.log(`Event Name : ${name}\n PageX:${e.pageX} PageY:${e.pageY}\n Left: ${elem.style.left} Top : ${elem.style.top}\n${windowDiv}`);
+    console.log(`Event Name: ${name}\n PageX: ${e.pageX} PageY: ${e.pageY}\n Left: ${elem.style.left} Top: ${elem.style.top}`);
 }
 
-const downHandler = (e: PointerEvent) => {
-    offsetX = e.clientX - draggableDiv.offsetLeft;
-    offsetY = e.clientY - draggableDiv.offsetTop;
-    logger("DownHandler", e, draggableDiv);
-    draggableDiv.setPointerCapture(e.pointerId);
-    draggableDiv.onpointermove = moveHandler;
-}
+const windowDivC = new WindowDiv("100%", "100vh");
+windowDivC.addClass("window-div");
 
-const moveHandler = (e: PointerEvent) => {
-    logger("MoveHandler", e, draggableDiv);
+const draggableDivC = new DraggableDiv("50px", "50px");
+draggableDivC.addClass("draggable-div");
+draggableDivC.init();
 
-    let newLeft = e.pageX - offsetX;
-    let newTop = e.pageY - offsetY;
+const draggableDivCD = new DraggableDiv("100px", "50px");
+draggableDivCD.addClass("draggable-div");
+draggableDivCD.init();
 
-    const rect = windowDiv.getBoundingClientRect();
-    const draggableRect = draggableDiv.getBoundingClientRect();
+windowDivC.appendChild(draggableDivC.elem);
+windowDivC.appendChild(draggableDivCD.elem);
+document.body.appendChild(windowDivC.elem);
 
-    if (newLeft < rect.left) newLeft = rect.left;
-    if (newTop < rect.top) newTop = rect.top;
-    if (newLeft + draggableRect.width > rect.right) newLeft = rect.right - draggableRect.width;
-    if (newTop + draggableRect.height > rect.bottom) newTop = rect.bottom - draggableRect.height;
-
-    draggableDiv.style.left = `${newLeft}px`;
-    draggableDiv.style.top = `${newTop}px`;
-}
-
-const upHandler = (e: PointerEvent) => {
-    logger("upHandler", e, draggableDiv);
-    draggableDiv.releasePointerCapture(e.pointerId);
-    draggableDiv.onpointermove = null;
-}
-
-const init = () => {
-    draggableDiv.onpointerdown = downHandler;
-    draggableDiv.onpointerup = upHandler;
-}
-
-document.addEventListener('DOMContentLoaded', () => {
-    init();
-});
+window.onresize = () => {
+    draggableDivC.adjustPosition();
+    draggableDivCD.adjustPosition();
+};
