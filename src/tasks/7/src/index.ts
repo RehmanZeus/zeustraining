@@ -19,6 +19,13 @@ class DivHandler {
     appendChild(elem: HTMLElement) {
         this.elem.appendChild(elem);
     }
+
+    setStyle(color: string, text: "", display: "block", bgColor: string){
+        this.elem.style.color = color;
+        this.elem.innerText = text;
+        this.elem.style.display = display;
+        this.elem.style.backgroundColor = bgColor;
+    }
 }
 
 class WindowDiv extends DivHandler {
@@ -30,9 +37,13 @@ class WindowDiv extends DivHandler {
 class DraggableDiv extends DivHandler {
     offsetX: number = 0;
     offsetY: number = 0;
+    parent: WindowDiv;
 
-    constructor(width: string, height: string) {
+    constructor(width: string, height: string, parent: WindowDiv) {
         super(width, height);
+        this.parent = parent;
+        this.elem.style.borderRadius = "50px"
+        this.elem.style.backgroundColor = "cyan"
     }
 
     handleDown = (e: PointerEvent) => {
@@ -47,7 +58,7 @@ class DraggableDiv extends DivHandler {
         let newLeft = e.pageX - this.offsetX;
         let newTop = e.pageY - this.offsetY;
 
-        const rect = windowDivC.getPosAndSize();
+        const rect = this.parent.getPosAndSize();
         const draggableRect = this.getPosAndSize();
 
         if (newLeft < rect.left) newLeft = rect.left;
@@ -61,7 +72,7 @@ class DraggableDiv extends DivHandler {
 
     handleUp = (e: PointerEvent) => {
         this.elem.releasePointerCapture(e.pointerId);
-        this.elem.onpointermove = null;
+        this.elem.onpointermove =null;
     }
 
     init() {
@@ -70,7 +81,7 @@ class DraggableDiv extends DivHandler {
     }
 
     adjustPosition() {
-        const rect = windowDivC.getPosAndSize();
+        const rect = this.parent.getPosAndSize();
         const draggableRect = this.getPosAndSize();
 
         let newLeft = this.elem.offsetLeft;
@@ -90,22 +101,45 @@ const logger = (name: string, e: PointerEvent, elem: HTMLElement) => {
     console.log(`Event Name: ${name}\n PageX: ${e.pageX} PageY: ${e.pageY}\n Left: ${elem.style.left} Top: ${elem.style.top}`);
 }
 
-const windowDivC = new WindowDiv("100%", "100vh");
+
+
+
+
+const windowDivC = new WindowDiv("50vw", "50vh");
 windowDivC.addClass("window-div");
 
-const draggableDivC = new DraggableDiv("50px", "50px");
+const newWindow = new WindowDiv("50vw", "50vh");
+newWindow.addClass("window-div");
+
+
+
+const draggableDivC = new DraggableDiv("50px", "50px", windowDivC);
 draggableDivC.addClass("draggable-div");
 draggableDivC.init();
 
-const draggableDivCD = new DraggableDiv("100px", "50px");
+const draggableDivCD = new DraggableDiv("100px", "50px", windowDivC);
 draggableDivCD.addClass("draggable-div");
 draggableDivCD.init();
+const draggableDivCDD = new DraggableDiv("130px", "50px", newWindow);
+draggableDivCDD.addClass("draggable-div");
+draggableDivCDD.init();
+const draggableDivCCD = new DraggableDiv("150px", "50px", newWindow);
+draggableDivCCD.addClass("draggable-div");
+draggableDivCCD.init();
+
 
 windowDivC.appendChild(draggableDivC.elem);
 windowDivC.appendChild(draggableDivCD.elem);
+
+newWindow.appendChild(draggableDivCCD.elem);
+newWindow.appendChild(draggableDivCDD.elem);
+
 document.body.appendChild(windowDivC.elem);
+document.body.appendChild(newWindow.elem)
 
 window.onresize = () => {
     draggableDivC.adjustPosition();
     draggableDivCD.adjustPosition();
+    draggableDivCCD.adjustPosition();
+    draggableDivCDD.adjustPosition();
 };

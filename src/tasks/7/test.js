@@ -28,12 +28,6 @@ var DivHandler = /** @class */ (function () {
     DivHandler.prototype.appendChild = function (elem) {
         this.elem.appendChild(elem);
     };
-    DivHandler.prototype.setStyle = function (color, text, display, bgColor) {
-        this.elem.style.color = color;
-        this.elem.innerText = text;
-        this.elem.style.display = display;
-        this.elem.style.backgroundColor = bgColor;
-    };
     return DivHandler;
 }());
 var WindowDiv = /** @class */ (function (_super) {
@@ -45,21 +39,20 @@ var WindowDiv = /** @class */ (function (_super) {
 }(DivHandler));
 var DraggableDiv = /** @class */ (function (_super) {
     __extends(DraggableDiv, _super);
-    function DraggableDiv(width, height, parent) {
+    function DraggableDiv(width, height, parentDiv) {
         var _this = _super.call(this, width, height) || this;
         _this.offsetX = 0;
         _this.offsetY = 0;
         _this.handleDown = function (e) {
             _this.offsetX = e.clientX - _this.elem.offsetLeft;
             _this.offsetY = e.clientY - _this.elem.offsetTop;
-            logger("DownHandler", e, _this.elem);
             _this.elem.setPointerCapture(e.pointerId);
             _this.elem.onpointermove = _this.handleMove;
         };
         _this.handleMove = function (e) {
             var newLeft = e.pageX - _this.offsetX;
             var newTop = e.pageY - _this.offsetY;
-            var rect = _this.parent.getPosAndSize();
+            var rect = _this.parentDiv.getPosAndSize();
             var draggableRect = _this.getPosAndSize();
             if (newLeft < rect.left)
                 newLeft = rect.left;
@@ -76,9 +69,7 @@ var DraggableDiv = /** @class */ (function (_super) {
             _this.elem.releasePointerCapture(e.pointerId);
             _this.elem.onpointermove = null;
         };
-        _this.parent = parent;
-        _this.elem.style.borderRadius = "50px";
-        _this.elem.style.backgroundColor = "cyan";
+        _this.parentDiv = parentDiv;
         return _this;
     }
     DraggableDiv.prototype.init = function () {
@@ -86,7 +77,7 @@ var DraggableDiv = /** @class */ (function (_super) {
         this.elem.onpointerup = this.handleUp;
     };
     DraggableDiv.prototype.adjustPosition = function () {
-        var rect = this.parent.getPosAndSize();
+        var rect = this.parentDiv.getPosAndSize();
         var draggableRect = this.getPosAndSize();
         var newLeft = this.elem.offsetLeft;
         var newTop = this.elem.offsetTop;
@@ -103,34 +94,32 @@ var DraggableDiv = /** @class */ (function (_super) {
     };
     return DraggableDiv;
 }(DivHandler));
-var logger = function (name, e, elem) {
-    console.log("Event Name: ".concat(name, "\n PageX: ").concat(e.pageX, " PageY: ").concat(e.pageY, "\n Left: ").concat(elem.style.left, " Top: ").concat(elem.style.top));
+var createParentChildDivs = function (numParents, numChildren) {
+    var parentDivs = [];
+    var childDivs = [];
+    for (var i = 0; i < numParents; i++) {
+        var parentDivC = new WindowDiv("50%", "50vh");
+        parentDivC.addClass("window-div");
+        for (var j = 0; j < numChildren; j++) {
+            var width = "".concat(Math.random() * 100 + 50, "px");
+            var height = "".concat(Math.random() * 100 + 50, "px");
+            var childDivC = new DraggableDiv(width, height, parentDivC);
+            childDivC.addClass("draggable-div");
+            childDivC.init();
+            parentDivC.appendChild(childDivC.elem);
+            childDivs.push(childDivC);
+        }
+        document.body.appendChild(parentDivC.elem);
+        parentDivs.push(parentDivC);
+    }
+    window.onresize = function () {
+        for (var _i = 0, childDivs_1 = childDivs; _i < childDivs_1.length; _i++) {
+            var child = childDivs_1[_i];
+            child.adjustPosition();
+        }
+    };
 };
-var windowDivC = new WindowDiv("50vw", "50vh");
-windowDivC.addClass("window-div");
-var newWindow = new WindowDiv("50vw", "50vh");
-newWindow.addClass("window-div");
-var draggableDivC = new DraggableDiv("50px", "50px", windowDivC);
-draggableDivC.addClass("draggable-div");
-draggableDivC.init();
-var draggableDivCD = new DraggableDiv("100px", "50px", windowDivC);
-draggableDivCD.addClass("draggable-div");
-draggableDivCD.init();
-var draggableDivCDD = new DraggableDiv("130px", "50px", newWindow);
-draggableDivCDD.addClass("draggable-div");
-draggableDivCDD.init();
-var draggableDivCCD = new DraggableDiv("150px", "50px", newWindow);
-draggableDivCCD.addClass("draggable-div");
-draggableDivCCD.init();
-windowDivC.appendChild(draggableDivC.elem);
-windowDivC.appendChild(draggableDivCD.elem);
-newWindow.appendChild(draggableDivCCD.elem);
-newWindow.appendChild(draggableDivCDD.elem);
-document.body.appendChild(windowDivC.elem);
-document.body.appendChild(newWindow.elem);
-window.onresize = function () {
-    draggableDivC.adjustPosition();
-    draggableDivCD.adjustPosition();
-    draggableDivCCD.adjustPosition();
-    draggableDivCDD.adjustPosition();
-};
+var style = document.createElement('style');
+style.innerHTML = "\n    .window-div {\n        display: grid;\n        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));\n        gap: 10px;\n        border: 1px solid #000;\n        position: relative;\n    }\n    .draggable-div {\n        position: absolute;\n        background-color: lightblue;\n        border: 1px solid #000;\n        cursor: pointer;\n    }\n";
+document.head.appendChild(style);
+createParentChildDivs(3, 4);

@@ -6,7 +6,9 @@
 
 html, body{
     height: 100vh;
-
+    display: grid;
+    grid-template-columns: repeat(2,1fr);
+    
 }
 
 
@@ -15,6 +17,7 @@ html, body{
     height: 100vh;
     width: 100%;
     border: 2px solid black;
+
 }
 
 .draggable-div{
