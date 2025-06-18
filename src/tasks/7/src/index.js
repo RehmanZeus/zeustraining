@@ -106,31 +106,30 @@ var DraggableDiv = /** @class */ (function (_super) {
 var logger = function (name, e, elem) {
     console.log("Event Name: ".concat(name, "\n PageX: ").concat(e.pageX, " PageY: ").concat(e.pageY, "\n Left: ").concat(elem.style.left, " Top: ").concat(elem.style.top));
 };
-var windowDivC = new WindowDiv("50vw", "50vh");
-windowDivC.addClass("window-div");
-var newWindow = new WindowDiv("50vw", "50vh");
-newWindow.addClass("window-div");
-var draggableDivC = new DraggableDiv("50px", "50px", windowDivC);
-draggableDivC.addClass("draggable-div");
-draggableDivC.init();
-var draggableDivCD = new DraggableDiv("100px", "50px", windowDivC);
-draggableDivCD.addClass("draggable-div");
-draggableDivCD.init();
-var draggableDivCDD = new DraggableDiv("130px", "50px", newWindow);
-draggableDivCDD.addClass("draggable-div");
-draggableDivCDD.init();
-var draggableDivCCD = new DraggableDiv("150px", "50px", newWindow);
-draggableDivCCD.addClass("draggable-div");
-draggableDivCCD.init();
-windowDivC.appendChild(draggableDivC.elem);
-windowDivC.appendChild(draggableDivCD.elem);
-newWindow.appendChild(draggableDivCCD.elem);
-newWindow.appendChild(draggableDivCDD.elem);
-document.body.appendChild(windowDivC.elem);
-document.body.appendChild(newWindow.elem);
-window.onresize = function () {
-    draggableDivC.adjustPosition();
-    draggableDivCD.adjustPosition();
-    draggableDivCCD.adjustPosition();
-    draggableDivCDD.adjustPosition();
+var doDemo = function (draggable, parent) {
+    var draggableElems = [];
+    var parentElems = [];
+    for (var i = 0; i < parent; ++i) {
+        var newParent = new WindowDiv("auto", "auto");
+        newParent.addClass("window-div");
+        parentElems.push(newParent);
+    }
+    parentElems.map(function (p, idx) {
+        for (var i = 0; i < draggable; ++i) {
+            var newChild = new DraggableDiv("50px", "50px", p);
+            newChild.addClass("draggable-div");
+            p.appendChild(newChild.elem);
+            draggableElems.push(newChild);
+        }
+        document.body.appendChild(p.elem);
+    });
+    draggableElems.map(function (d, idx) {
+        d.init();
+    });
+    window.onresize = function () {
+        draggableElems.map(function (d, idx) {
+            d.adjustPosition();
+        });
+    };
 };
+doDemo(4, 5);

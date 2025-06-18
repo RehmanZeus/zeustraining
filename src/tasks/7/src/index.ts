@@ -103,43 +103,44 @@ const logger = (name: string, e: PointerEvent, elem: HTMLElement) => {
 
 
 
+const doDemo = (draggable: number, parent: number) => {
+
+    const draggableElems : DraggableDiv[] = [];
+    const parentElems: WindowDiv[] = [];
+
+    for(let i = 0; i < parent; ++i){
+        const newParent = new WindowDiv("auto", "auto");
+        newParent.addClass("window-div");
+        parentElems.push(newParent);
+    }
+
+    parentElems.map((p: WindowDiv, idx: number) => {
+        for(let i = 0; i < draggable; ++i){
+            const newChild = new DraggableDiv("50px", "50px", p);
+            newChild.addClass("draggable-div");
+            p.appendChild(newChild.elem);
+
+            
+
+            draggableElems.push(newChild);
+        }
+        document.body.appendChild(p.elem);
+    });
+
+    draggableElems.map((d: DraggableDiv, idx: number) => {
+        d.init();
+        
+    })
+
+    window.onresize = () => {
+        draggableElems.map((d: DraggableDiv, idx: number) => {
+            d.adjustPosition();
+        })
+    }
+}
 
 
-const windowDivC = new WindowDiv("50vw", "50vh");
-windowDivC.addClass("window-div");
-
-const newWindow = new WindowDiv("50vw", "50vh");
-newWindow.addClass("window-div");
 
 
 
-const draggableDivC = new DraggableDiv("50px", "50px", windowDivC);
-draggableDivC.addClass("draggable-div");
-draggableDivC.init();
-
-const draggableDivCD = new DraggableDiv("100px", "50px", windowDivC);
-draggableDivCD.addClass("draggable-div");
-draggableDivCD.init();
-const draggableDivCDD = new DraggableDiv("130px", "50px", newWindow);
-draggableDivCDD.addClass("draggable-div");
-draggableDivCDD.init();
-const draggableDivCCD = new DraggableDiv("150px", "50px", newWindow);
-draggableDivCCD.addClass("draggable-div");
-draggableDivCCD.init();
-
-
-windowDivC.appendChild(draggableDivC.elem);
-windowDivC.appendChild(draggableDivCD.elem);
-
-newWindow.appendChild(draggableDivCCD.elem);
-newWindow.appendChild(draggableDivCDD.elem);
-
-document.body.appendChild(windowDivC.elem);
-document.body.appendChild(newWindow.elem)
-
-window.onresize = () => {
-    draggableDivC.adjustPosition();
-    draggableDivCD.adjustPosition();
-    draggableDivCCD.adjustPosition();
-    draggableDivCDD.adjustPosition();
-};
+doDemo(4, 5);
