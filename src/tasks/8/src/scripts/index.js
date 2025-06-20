@@ -1,7 +1,8 @@
 var MAX_GRID_ROWS = 100000;
-var MAX_GRID_COLS = 500;
+var MAX_GRID_COLS = 500 + 1;
 var MIN_GRIDCELL_WIDTH = 60;
 var MIN_GRIDCELL_HEIGHT = 20;
+var DPR = window.devicePixelRatio || 1;
 var SetupExcelSheet = /** @class */ (function () {
     function SetupExcelSheet() {
         this.canvasWidth = window.innerWidth;
@@ -12,6 +13,8 @@ var SetupExcelSheet = /** @class */ (function () {
         this.canvas.width = this.canvasWidth;
         this.canvas.height = this.canvasHeight;
         this.ctx = this.canvas.getContext("2d");
+        this.ctx.scale(DPR, DPR);
+        return this.canvas;
     };
     SetupExcelSheet.prototype.getContext = function () {
         return this.ctx;
@@ -32,6 +35,14 @@ var GridCell = /** @class */ (function () {
         this.height = height ? height : this.width;
         this.data = data;
     }
+    GridCell.generateHeader = function (index) {
+        var header = "";
+        while (index >= 0) {
+            header = String.fromCharCode((index % 26) + 65) + header;
+            index = Math.floor(index / 26) - 1;
+        }
+        return header;
+    };
     return GridCell;
 }());
 var GridMatrix = /** @class */ (function () {
@@ -51,7 +62,20 @@ var GridMatrix = /** @class */ (function () {
                 var id = "cell-".concat(row, "-").concat(col);
                 var x = col * MIN_GRIDCELL_WIDTH;
                 var y = row * MIN_GRIDCELL_HEIGHT;
-                var cell = new GridCell(id, x, y, this.c);
+                var cell = void 0;
+                if (row === 0 && col === 0) {
+                    cell = new GridCell(id, x, y, this.c, MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, "");
+                }
+                else if (row === 0) {
+                    var header = GridCell.generateHeader(col - 1);
+                    cell = new GridCell(id, x, y, this.c, MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, header);
+                }
+                else if (col === 0) {
+                    cell = new GridCell(id, x, y, this.c, MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, "".concat(row));
+                }
+                else {
+                    cell = new GridCell(id, x, y, this.c, MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT);
+                }
                 rowCells.push(cell);
             }
             this.grid.push(rowCells);
@@ -75,9 +99,12 @@ var GridMatrix = /** @class */ (function () {
     };
     return GridMatrix;
 }());
+var handleGridCell = function () { };
 window.onload = function () {
     var setup = new SetupExcelSheet();
-    setup.init();
-    var gridMatrix = new GridMatrix(setup.getContext(), 500, 100);
-    gridMatrix.drawGrid(setup.getContext());
+    var canvas = setup.init();
+    var ctx = setup.getContext();
+    var gridMatrix = new GridMatrix(ctx, 500, 100);
+    gridMatrix.drawGrid(ctx);
+    canvas.addEventListener("click", handleGridCell);
 };

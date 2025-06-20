@@ -1,7 +1,8 @@
 const MAX_GRID_ROWS = 100000;
-const MAX_GRID_COLS = 500;
+const MAX_GRID_COLS = 500 + 1;
 const MIN_GRIDCELL_WIDTH = 60;
 const MIN_GRIDCELL_HEIGHT = 20;
+const DPR = window.devicePixelRatio || 1;
 
 class SetupExcelSheet {
     canvasWidth = window.innerWidth;
@@ -14,6 +15,7 @@ class SetupExcelSheet {
         this.canvas.width = this.canvasWidth;
         this.canvas.height = this.canvasHeight;
         this.ctx = this.canvas.getContext("2d")!;
+        this.ctx.scale(DPR, DPR);
         return this.canvas;
     }
 
@@ -31,9 +33,9 @@ class GridCell {
     x: number = 0;
     y: number = 0;
     data: string | undefined;
-    c: CanvasRenderingContext2D; 
+    c: CanvasRenderingContext2D;
 
-    constructor(id: string, x: number, y: number,  c: CanvasRenderingContext2D , width?: number, height?: number, data?: string) {
+    constructor(id: string, x: number, y: number, c: CanvasRenderingContext2D, width?: number, height?: number, data?: string) {
 
         this.id = id;
         this.x = x;
@@ -44,14 +46,24 @@ class GridCell {
         this.data = data;
 
     }
+
+    static generateHeader(index: number): string {
+        let header = "";
+        while (index >= 0) {
+            header = String.fromCharCode((index % 26) + 65) + header;
+            index = Math.floor(index / 26) - 1;
+        }
+        return header;
+    }
+
 }
 
 class GridMatrix {
     noOfRows: number = MAX_GRID_ROWS;
     noOfCols: number = MAX_GRID_COLS;
     grid: GridCell[][] = [];
-    c : CanvasRenderingContext2D;
-    constructor( c: CanvasRenderingContext2D , rows?: number, cols?: number) {
+    c: CanvasRenderingContext2D;
+    constructor(c: CanvasRenderingContext2D, rows?: number, cols?: number) {
         this.noOfRows = rows ?? this.noOfRows;
         this.noOfCols = cols ?? this.noOfCols;
         this.initializeGrid();
@@ -65,7 +77,19 @@ class GridMatrix {
                 const id = `cell-${row}-${col}`;
                 const x = col * MIN_GRIDCELL_WIDTH;
                 const y = row * MIN_GRIDCELL_HEIGHT;
-                const cell = new GridCell(id, x, y, this.c);
+                let cell: GridCell;
+
+                if (row === 0 && col === 0) {
+                    cell = new GridCell(id, x, y, this.c, MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, "");
+                } else if (row === 0) {
+                    const header = GridCell.generateHeader(col - 1);
+                    cell = new GridCell(id, x, y, this.c, MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, header);
+                } else if (col === 0) {
+                    cell = new GridCell(id, x, y, this.c, MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, `${row}`);
+                } else {
+                    cell = new GridCell(id, x, y, this.c, MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT);
+                }
+
                 rowCells.push(cell);
             }
             this.grid.push(rowCells);
@@ -91,17 +115,17 @@ class GridMatrix {
 
 
 
-const handleGridCell =
+const handleGridCell = () => { }
 
 window.onload = () => {
     const setup = new SetupExcelSheet();
     const canvas = setup.init();
     const ctx = setup.getContext();
 
-    const gridMatrix = new GridMatrix(ctx, 500,100);
+    const gridMatrix = new GridMatrix(ctx, 500, 100);
 
     gridMatrix.drawGrid(ctx);
 
     canvas.addEventListener("click", handleGridCell);
-    
+
 };
