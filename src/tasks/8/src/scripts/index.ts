@@ -915,6 +915,45 @@ class GridMatrix {
     }
 }
 
+class GridDataLoader {
+    gridMatrix: GridMatrix;
+
+    constructor(gridMatrix: GridMatrix) {
+        this.gridMatrix = gridMatrix;
+    }
+
+    loadJSONData<T>(dataArray: T[]): void {
+        if (!Array.isArray(dataArray) || dataArray.length === 0) {
+            console.warn("No data to load.");
+            return;
+        }
+
+        // 1. Get column names from the first object
+        const columnNames = Object.keys(dataArray[0] as object);
+
+        // 2. Write custom headers to row 1 (leave [0][*] as Excel style)
+        for (let col = 0; col < columnNames.length; col++) {
+            this.gridMatrix.grid[1][col + 1].data = columnNames[col];
+        }
+
+        // 3. Write data, starting from row 2
+        for (let row = 0; row < dataArray.length; row++) {
+            const dataObj = dataArray[row] as Record<string, any>;
+            for (let col = 0; col < columnNames.length; col++) {
+                let cellValue = dataObj[columnNames[col]];
+                if (typeof cellValue === "object") {
+                    let isArray = Array.isArray(cellValue);
+                    if (isArray) {
+                        cellValue = cellValue.join(", ");
+                    } else {
+                        cellValue = JSON.stringify(cellValue);
+                    }
+                }
+                this.gridMatrix.grid[row + 2][col + 1].data = cellValue; // <-- row+2
+            }
+        }
+    }
+}
 
 const handleGridCell = () => { }
 
@@ -928,13 +967,21 @@ window.onload = () => {
 
     const resizer = new GridResizer(canvas, ctx, gridMatrix);
     const cellSelector = new CellSelector(canvas, ctx, gridMatrix);
-    
-    // Link resiz2er and cell selector for proper redrawing
     resizer.setCellSelector(cellSelector);
-    
+
     // Make canvas focusable for keyboard events
     canvas.tabIndex = 0;
     canvas.focus();
 
-    console.log(gridMatrix.columnWidths.length)
+    // 1. Create loader
+    const gridDataLoader = new GridDataLoader(gridMatrix);
+
+    // 2. Load sample data
+    const sampleData = [
+        { name: "Yolo", age: 34, hobbies: ["driving", "learning"] }
+    ];
+    gridDataLoader.loadJSONData(sampleData);
+
+    // 3. Redraw grid to show new data
+    cellSelector.redrawGrid();
 };
