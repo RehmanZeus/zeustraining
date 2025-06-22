@@ -4,6 +4,7 @@ const MIN_GRIDCELL_WIDTH = 60;
 const MIN_GRIDCELL_HEIGHT = 20;
 const DPR = window.devicePixelRatio || 1;
 
+
 /**
  * SetupExcelSheet is responsible for initializing and configuring the canvas
  * used to render the Excel-like grid interface. It calculates canvas dimensions
@@ -12,10 +13,10 @@ const DPR = window.devicePixelRatio || 1;
 class SetupExcelSheet {
 
     /** Width of the canvas in pixels, derived from number of columns and cell width */
-    canvasWidth: number = window.innerWidth;
+    canvasWidth: number; // Remove the default assignment
 
     /** Height of the canvas in pixels, derived from number of rows and cell height */
-    canvasHeight: number = window.innerHeight;
+    canvasHeight: number; // Remove the default assignment
 
     /** Reference to the HTML canvas element used for rendering */
     canvas!: HTMLCanvasElement;
@@ -32,8 +33,13 @@ class SetupExcelSheet {
      * @param ncols - Total number of columns in the grid
      */
     constructor(gridWidth: number, gridHeight: number, nrows: number, ncols: number) {
-        this.canvasWidth = ncols * gridWidth;
-        this.canvasHeight = nrows * gridHeight;
+        // Calculate canvas dimensions based on total grid size
+        this.canvasWidth = gridWidth * ncols;
+        this.canvasHeight = gridHeight * nrows;
+        
+        // Debug: Log the calculated dimensions
+        console.log(`Calculated canvas dimensions: ${this.canvasWidth}x${this.canvasHeight}`);
+        console.log(`Grid: ${ncols} cols x ${nrows} rows, Cell: ${gridWidth}x${gridHeight}`);
     }
 
     /**
@@ -43,13 +49,72 @@ class SetupExcelSheet {
      * @returns The initialized HTMLCanvasElement
      */
     init(): HTMLCanvasElement {
-        this.canvas = document.getElementById("canvas") as HTMLCanvasElement;
-        this.canvas.width = this.canvasWidth;
-        this.canvas.height = this.canvasHeight;
+        // Create canvas element
+        this.canvas = document.createElement('canvas');
+        
+        // Set canvas dimensions in CSS pixels
+        this.canvas.style.width = this.canvasWidth + 'px';
+        this.canvas.style.height = this.canvasHeight + 'px';
+        this.canvas.style.display = 'block';
+        this.canvas.style.margin = '0';
+        this.canvas.style.padding = '0';
+        
+        // Set actual canvas dimensions accounting for device pixel ratio
+        this.canvas.width = this.canvasWidth * DPR;
+        this.canvas.height = this.canvasHeight * DPR;
+        
+        // Scale context to match DPR
+        this.ctx = this.canvas.getContext('2d')!;
+        this.ctx.scale(DPR, DPR);
+        
+        // Create a container with scrolling capability
+        const container = document.createElement('div');
+        container.id = 'excel-container';
+        
+        // Set container to viewport size
+        container.style.width = '100vw';
+        container.style.height = '100vh';
+        container.style.overflow = 'auto';
+        container.style.position = 'fixed';
+        container.style.top = '0';
+        container.style.left = '0';
+        container.style.margin = '0';
+        container.style.padding = '0';
+        container.style.boxSizing = 'border-box';
 
-        this.ctx = this.canvas.getContext("2d")!;
-        this.ctx.scale(DPR, DPR); // Adjust for device pixel ratio
-
+        // Ensure body doesn't interfere with scrolling
+        document.body.style.overflow = 'hidden';
+        document.body.style.margin = '0';
+        document.body.style.padding = '0';
+        
+        // Clear any existing content and add container
+        document.body.innerHTML = '';
+        
+        // Add the canvas to the container
+        container.appendChild(this.canvas);
+        document.body.appendChild(container);
+        
+        // Force reflow
+        container.offsetHeight;
+        
+        // Debug logging
+        console.log(`Canvas CSS dimensions: ${this.canvasWidth}x${this.canvasHeight}`);
+        console.log(`Canvas actual dimensions: ${this.canvas.width}x${this.canvas.height}`);
+        console.log(`Container client size: ${container.clientWidth}x${container.clientHeight}`);
+        console.log(`Container scroll size: ${container.scrollWidth}x${container.scrollHeight}`);
+        
+        // Verify scrolling capability
+        const canScrollH = container.scrollWidth > container.clientWidth;
+        const canScrollV = container.scrollHeight > container.clientHeight;
+        console.log(`Can scroll horizontally: ${canScrollH}`);
+        console.log(`Can scroll vertically: ${canScrollV}`);
+        
+        if (!canScrollH && !canScrollV) {
+            console.warn('⚠️ Canvas is not larger than viewport - no scrolling needed');
+        } else {
+            console.log('✅ Canvas should be scrollable');
+        }
+        
         return this.canvas;
     }
 
@@ -63,6 +128,369 @@ class SetupExcelSheet {
     }
 }
 
+/**
+ * CellSelector handles cell selection, highlighting, and input functionality
+ * for the Excel-like grid interface. It manages the active cell state and
+ * provides input capabilities similar to Excel.
+ */
+class CellSelector {
+    /** Canvas element where the grid is rendered */
+    canvas: HTMLCanvasElement;
+
+    /** Canvas 2D rendering context */
+    ctx: CanvasRenderingContext2D;
+
+    /** Reference to the GridMatrix instance */
+    gridMatrix: GridMatrix;
+
+    /** Currently selected cell coordinates */
+    selectedRow = -1;
+    selectedCol = -1;
+
+    /** Input element for cell editing */
+    inputElement!: HTMLInputElement;
+
+    /** Flag to track if currently editing */
+    isEditing = false;
+
+    /** Selection highlight color */
+    selectionColor = '#4285f4';
+    selectionBorderColor = '#1a73e8';
+
+    /**
+     * Constructs a CellSelector instance and sets up input handling.
+     * 
+     * @param canvas - HTML canvas element
+     * @param ctx - Canvas 2D rendering context
+     * @param gridMatrix - GridMatrix instance
+     */
+    constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix) {
+        this.canvas = canvas;
+        this.ctx = ctx;
+        this.gridMatrix = gridMatrix;
+
+        this.createInputElement();
+        this.attachEvents();
+    }
+
+    /**
+     * Creates an invisible input element for cell editing
+     */
+    createInputElement() {
+        this.inputElement = document.createElement('input');
+        this.inputElement.type = 'text';
+        this.inputElement.style.position = 'absolute';
+        this.inputElement.style.border = '2px solid #1a73e8';
+        this.inputElement.style.outline = 'none';
+        this.inputElement.style.font = '12px Arial';
+        this.inputElement.style.padding = '2px';
+        this.inputElement.style.margin = '0';
+        this.inputElement.style.boxSizing = 'border-box';
+        this.inputElement.style.backgroundColor = 'white';
+        this.inputElement.style.zIndex = '1000';
+        this.inputElement.style.display = 'none';
+        
+        document.body.appendChild(this.inputElement);
+
+        // Input element event listeners
+        this.inputElement.addEventListener('blur', this.finishEditing.bind(this));
+        this.inputElement.addEventListener('keydown', this.handleInputKeydown.bind(this));
+    }
+
+    /**
+     * Attaches event listeners for cell selection
+     */
+    attachEvents() {
+        this.canvas.addEventListener('click', this.handleCellClick.bind(this));
+        this.canvas.addEventListener('dblclick', this.handleCellDoubleClick.bind(this));
+        document.addEventListener('keydown', this.handleKeydown.bind(this));
+    }
+
+    /**
+     * Handles single click on canvas to select cells
+     */
+    handleCellClick(e: MouseEvent) {
+        // Don't interfere with resizing operations
+        if (this.canvas.style.cursor === 'col-resize' || this.canvas.style.cursor === 'row-resize') {
+            return;
+        }
+
+        const { x, y } = this.getMousePosition(e);
+        const { row, col } = this.getCellFromPosition(x, y);
+
+        // Don't select header cells
+        if (row > 0 && col > 0 && row < this.gridMatrix.noOfRows && col < this.gridMatrix.noOfCols) {
+            this.selectCell(row, col);
+        }
+    }
+
+    /**
+     * Handles double click to start editing
+     */
+    handleCellDoubleClick(e: MouseEvent) {
+        if (this.selectedRow > 0 && this.selectedCol > 0) {
+            this.startEditing();
+        }
+    }
+
+    /**
+     * Handles keyboard navigation and editing
+     */
+    handleKeydown(e: KeyboardEvent) {
+        if (this.isEditing) return;
+
+        if (this.selectedRow === -1 || this.selectedCol === -1) return;
+
+        switch (e.key) {
+            case 'ArrowUp':
+                e.preventDefault();
+                this.moveSelection(-1, 0);
+                break;
+            case 'ArrowDown':
+            case 'Enter':
+                e.preventDefault();
+                this.moveSelection(1, 0);
+                break;
+            case 'ArrowLeft':
+                e.preventDefault();
+                this.moveSelection(0, -1);
+                break;
+            case 'ArrowRight':
+            case 'Tab':
+                e.preventDefault();
+                this.moveSelection(0, 1);
+                break;
+            case 'F2':
+                e.preventDefault();
+                this.startEditing();
+                break;
+            case 'Delete':
+            case 'Backspace':
+                e.preventDefault();
+                this.clearSelectedCell();
+                break;
+            default:
+                // Start editing if a printable character is pressed
+                if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                    this.startEditing(e.key);
+                }
+                break;
+        }
+    }
+
+    /**
+     * Handles input element keydown events
+     */
+    handleInputKeydown(e: KeyboardEvent) {
+        switch (e.key) {
+            case 'Enter':
+                e.preventDefault();
+                this.finishEditing();
+                this.moveSelection(1, 0);
+                break;
+            case 'Tab':
+                e.preventDefault();
+                this.finishEditing();
+                this.moveSelection(0, e.shiftKey ? -1 : 1);
+                break;
+            case 'Escape':
+                e.preventDefault();
+                this.cancelEditing();
+                break;
+        }
+    }
+
+    /**
+     * Selects a specific cell and highlights it
+     */
+    selectCell(row: number, col: number) {
+        if (this.isEditing) {
+            this.finishEditing();
+        }
+
+        this.selectedRow = row;
+        this.selectedCol = col;
+        this.redrawGrid();
+    }
+
+    /**
+     * Moves selection by the specified offset
+     */
+    moveSelection(rowOffset: number, colOffset: number) {
+        const newRow = Math.max(1, Math.min(this.gridMatrix.noOfRows - 1, this.selectedRow + rowOffset));
+        const newCol = Math.max(1, Math.min(this.gridMatrix.noOfCols - 1, this.selectedCol + colOffset));
+        
+        this.selectCell(newRow, newCol);
+    }
+
+    /**
+     * Starts editing the selected cell
+     */
+    startEditing(initialValue?: string) {
+        if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
+
+        const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
+        const canvasRect = this.canvas.getBoundingClientRect();
+        const container = this.canvas.parentElement!;
+        
+        // Calculate exact pixel position with scroll offsets
+        const exactLeft = canvasRect.left + cell.x - container.scrollLeft;
+        const exactTop = canvasRect.top + cell.y - container.scrollTop;
+        
+        // Position input element
+        this.inputElement.style.position = 'absolute';
+        this.inputElement.style.left = exactLeft + 'px';
+        this.inputElement.style.top = exactTop + 'px';
+        this.inputElement.style.width = cell.width + 'px';
+        this.inputElement.style.height = cell.height + 'px';
+        
+        // Reset any potential problematic styles
+        this.inputElement.style.transform = 'none';
+        this.inputElement.style.margin = '0';
+        this.inputElement.style.padding = '0 4px';
+        this.inputElement.style.display = 'block';
+        this.inputElement.style.fontSize = '12px';
+        this.inputElement.style.fontFamily = 'Arial';
+        this.inputElement.style.lineHeight = cell.height + 'px';
+        this.inputElement.style.boxSizing = 'border-box';
+        
+        // Set initial value
+        if (initialValue !== undefined) {
+            this.inputElement.value = initialValue;
+        } else {
+            this.inputElement.value = cell.data || '';
+        }
+
+        this.inputElement.focus();
+        this.inputElement.select();
+        this.isEditing = true;
+    }
+
+    /**
+     * Finishes editing and saves the value
+     */
+    finishEditing() {
+        if (!this.isEditing) return;
+
+        const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
+        cell.data = this.inputElement.value;
+
+        this.inputElement.style.display = 'none';
+        this.isEditing = false;
+        this.redrawGrid();
+        this.canvas.focus();
+    }
+
+    /**
+     * Cancels editing without saving
+     */
+    cancelEditing() {
+        if (!this.isEditing) return;
+
+        this.inputElement.style.display = 'none';
+        this.isEditing = false;
+        this.canvas.focus();
+    }
+
+    /**
+     * Clears the content of the selected cell
+     */
+    clearSelectedCell() {
+        if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
+
+        const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
+        cell.data = '';
+        this.redrawGrid();
+    }
+
+    /**
+     * Gets cell coordinates from mouse position
+     */
+    getCellFromPosition(x: number, y: number): { row: number, col: number } {
+        let totalX = 0;
+        let totalY = 0;
+        let row = -1;
+        let col = -1;
+
+        // Find column
+        for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
+            totalX += this.gridMatrix.columnWidths[i];
+            if (x < totalX) {
+                col = i;
+                break;
+            }
+        }
+
+        // Find row
+        for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
+            totalY += this.gridMatrix.rowHeights[i];
+            if (y < totalY) {
+                row = i;
+                break;
+            }
+        }
+
+        return { row, col };
+    }
+
+    /**
+     * Draws the selection highlight
+     */
+    drawSelection(ctx: CanvasRenderingContext2D) {
+        if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
+
+        const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
+
+        // Draw selection background
+        ctx.fillStyle = this.selectionColor + '20'; // 20 for transparency
+        ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+
+        // Draw selection border
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
+        ctx.lineWidth = 1; // Reset line width
+    }
+
+    /**
+     * Redraws the entire grid with selection highlight
+     */
+    redrawGrid() {
+        this.ctx.clearRect(0, 0, this.canvas.width / DPR, this.canvas.height / DPR);
+        this.gridMatrix.drawGrid(this.ctx);
+        this.drawSelection(this.ctx);
+    }
+
+    /**
+     * Converts mouse event coordinates to canvas-relative coordinates
+     */
+    getMousePosition(e: MouseEvent) {
+        const rect = this.canvas.getBoundingClientRect();
+        const container = this.canvas.parentElement!;
+        
+        return {
+            x: e.clientX - rect.left + container.scrollLeft,
+            y: e.clientY - rect.top + container.scrollTop
+        };
+    }
+
+    /**
+     * Gets the currently selected cell data
+     */
+    getSelectedCellData(): string | undefined {
+        if (this.selectedRow <= 0 || this.selectedCol <= 0) return undefined;
+        return this.gridMatrix.grid[this.selectedRow][this.selectedCol].data;
+    }
+
+    /**
+     * Gets the currently selected cell reference (e.g., "A1")
+     */
+    getSelectedCellReference(): string {
+        if (this.selectedRow <= 0 || this.selectedCol <= 0) return '';
+        const colHeader = GridCell.generateHeader(this.selectedCol - 1);
+        return `${colHeader}${this.selectedRow}`;
+    }
+}
 
 /**
  * GridResizer handles interactive resizing of grid columns and rows
@@ -79,6 +507,9 @@ class GridResizer {
     /** Reference to the GridMatrix instance being manipulated */
     gridMatrix: GridMatrix;
 
+    /** Reference to CellSelector for proper redrawing */
+    cellSelector?: CellSelector;
+
     /** Flags and indices for tracking active resize operations */
     isResizingCol = false;
     isResizingRow = false;
@@ -88,6 +519,10 @@ class GridResizer {
     /** Starting pointer coordinates for resize calculations */
     startX = 0;
     startY = 0;
+
+    /** Initial width/height when starting resize */
+    initialWidth = 0;
+    initialHeight = 0;
 
     /** Pixel threshold to detect proximity to column/row edges */
     resizeThreshold = 5;
@@ -108,30 +543,38 @@ class GridResizer {
     }
 
     /**
+     * Sets the CellSelector reference for proper redrawing
+     */
+    setCellSelector(cellSelector: CellSelector) {
+        this.cellSelector = cellSelector;
+    }
+
+    /**
      * Attaches pointer event listeners for resizing interactions.
      */
     attachEvents() {
         this.canvas.addEventListener("pointermove", this.handleMouseMove.bind(this));
         this.canvas.addEventListener("pointerdown", this.handleMouseDown.bind(this));
         this.canvas.addEventListener("pointerup", this.handleMouseUp.bind(this));
-        this.canvas.addEventListener("pointermove", this.handleResize.bind(this));
     }
 
     /**
      * Handles pointer movement to detect proximity to column or row edges
      * and updates the cursor style accordingly.
      */
-    handleMouseMove(e: MouseEvent) {
+    handleMouseMove(e: PointerEvent) {
+        if (this.isResizingCol || this.isResizingRow) {
+            this.handleResize(e);
+            return;
+        }
+
         const { x, y } = this.getMousePosition(e);
-        const colIndex = this.getColumnIndex(x);
-        const rowIndex = this.getRowIndex(y);
+        const { nearColEdge, colIndex } = this.isNearColumnEdge(x);
+        const { nearRowEdge, rowIndex } = this.isNearRowEdge(y);
 
-        const colEdge = this.gridMatrix.columnWidths.slice(0, colIndex + 1).reduce((a, b) => a + b, 0);
-        const rowEdge = this.gridMatrix.rowHeights.slice(0, rowIndex + 1).reduce((a, b) => a + b, 0);
-
-        if (Math.abs(x - colEdge) < this.resizeThreshold) {
+        if (nearColEdge && colIndex > 0) {
             this.canvas.style.cursor = "col-resize";
-        } else if (Math.abs(y - rowEdge) < this.resizeThreshold) {
+        } else if (nearRowEdge && rowIndex > 0) {
             this.canvas.style.cursor = "row-resize";
         } else {
             this.canvas.style.cursor = "default";
@@ -141,65 +584,69 @@ class GridResizer {
     /**
      * Handles pointer down event to initiate column or row resizing.
      */
-    handleMouseDown(e: MouseEvent) {
+    handleMouseDown(e: PointerEvent) {
         const { x, y } = this.getMousePosition(e);
-        const colIndex = this.getColumnIndex(x);
-        const rowIndex = this.getRowIndex(y);
+        const { nearColEdge, colIndex } = this.isNearColumnEdge(x);
+        const { nearRowEdge, rowIndex } = this.isNearRowEdge(y);
 
-        const colEdge = this.gridMatrix.columnWidths.slice(0, colIndex + 1).reduce((a, b) => a + b, 0);
-        const rowEdge = this.gridMatrix.rowHeights.slice(0, rowIndex + 1).reduce((a, b) => a + b, 0);
-
-        if (Math.abs(x - colEdge) < this.resizeThreshold) {
+        if (nearColEdge && colIndex > 0) {
             this.isResizingCol = true;
             this.resizingColIndex = colIndex;
             this.startX = x;
-        } else if (Math.abs(y - rowEdge) < this.resizeThreshold) {
+            this.initialWidth = this.gridMatrix.columnWidths[colIndex];
+            this.canvas.style.cursor = "col-resize";
+            e.preventDefault();
+        } else if (nearRowEdge && rowIndex > 0) {
             this.isResizingRow = true;
             this.resizingRowIndex = rowIndex;
             this.startY = y;
+            this.initialHeight = this.gridMatrix.rowHeights[rowIndex];
+            this.canvas.style.cursor = "row-resize";
+            e.preventDefault();
         }
     }
 
     /**
      * Handles pointer up event to finalize resizing.
      */
-    handleMouseUp() {
+    handleMouseUp(e: PointerEvent) {
         this.isResizingCol = false;
         this.isResizingRow = false;
         this.resizingColIndex = -1;
         this.resizingRowIndex = -1;
+        this.canvas.style.cursor = "default";
     }
 
     /**
      * Dynamically updates column widths or row heights based on pointer movement
      * and recalculates cell positions and dimensions.
      */
-    handleResize(e: MouseEvent) {
-        if (!this.isResizingCol && !this.isResizingRow) return;
-
+    handleResize(e: PointerEvent) {
         const { x, y } = this.getMousePosition(e);
 
-        if (this.isResizingCol && this.resizingColIndex > 0) {
+        if (this.isResizingCol && this.resizingColIndex >= 0) {
             const delta = x - this.startX;
-            const newWidth = this.gridMatrix.columnWidths[this.resizingColIndex] + delta;
-
-            if (newWidth >= MIN_GRIDCELL_WIDTH) {
-                this.gridMatrix.columnWidths[this.resizingColIndex] = newWidth;
-                this.startX = x;
-            }
+            const newWidth = Math.max(MIN_GRIDCELL_WIDTH, this.initialWidth + delta);
+            
+            this.gridMatrix.columnWidths[this.resizingColIndex] = newWidth;
+            this.updateGridLayout();
+            this.redrawGrid();
         }
 
-        if (this.isResizingRow && this.resizingRowIndex > 0) {
+        if (this.isResizingRow && this.resizingRowIndex >= 0) {
             const delta = y - this.startY;
-            const newHeight = this.gridMatrix.rowHeights[this.resizingRowIndex] + delta;
-
-            if (newHeight >= MIN_GRIDCELL_HEIGHT) {
-                this.gridMatrix.rowHeights[this.resizingRowIndex] = newHeight;
-                this.startY = y;
-            }
+            const newHeight = Math.max(MIN_GRIDCELL_HEIGHT, this.initialHeight + delta);
+            
+            this.gridMatrix.rowHeights[this.resizingRowIndex] = newHeight;
+            this.updateGridLayout();
+            this.redrawGrid();
         }
+    }
 
-        // Recalculate positions and dimensions of all cells
+    /**
+     * Updates the grid layout after resizing by recalculating all cell positions and dimensions
+     */
+    updateGridLayout() {
         for (let row = 0; row < this.gridMatrix.noOfRows; row++) {
             let y = this.gridMatrix.rowHeights.slice(0, row).reduce((a, b) => a + b, 0);
             const rowCells = this.gridMatrix.grid[row];
@@ -214,43 +661,59 @@ class GridResizer {
                 cell.height = this.gridMatrix.rowHeights[row];
             }
         }
-
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-        this.gridMatrix.drawGrid(this.ctx);
     }
 
     /**
-     * Calculates the column index based on pointer X position and dynamic column widths.
+     * Redraws the entire grid
      */
-    getColumnIndex(x: number): number {
+    redrawGrid() {
+        this.ctx.clearRect(0, 0, this.canvas.width / DPR, this.canvas.height / DPR);
+        this.gridMatrix.drawGrid(this.ctx);
+        
+        // Redraw selection if CellSelector is available
+        if (this.cellSelector) {
+            this.cellSelector.drawSelection(this.ctx);
+        }
+    }
+
+    /**
+     * Checks if the mouse is near a column edge and returns the edge information
+     */
+    isNearColumnEdge(x: number): { nearColEdge: boolean, colIndex: number } {
         let total = 0;
         for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
             total += this.gridMatrix.columnWidths[i];
-            if (x < total) return i;
+            if (Math.abs(x - total) < this.resizeThreshold) {
+                return { nearColEdge: true, colIndex: i };
+            }
         }
-        return -1;
+        return { nearColEdge: false, colIndex: -1 };
     }
 
     /**
-     * Calculates the row index based on pointer Y position and dynamic row heights.
+     * Checks if the mouse is near a row edge and returns the edge information
      */
-    getRowIndex(y: number): number {
+    isNearRowEdge(y: number): { nearRowEdge: boolean, rowIndex: number } {
         let total = 0;
         for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
             total += this.gridMatrix.rowHeights[i];
-            if (y < total) return i;
+            if (Math.abs(y - total) < this.resizeThreshold) {
+                return { nearRowEdge: true, rowIndex: i };
+            }
         }
-        return -1;
+        return { nearRowEdge: false, rowIndex: -1 };
     }
 
     /**
      * Converts pointer event coordinates to canvas-relative coordinates.
      */
-    getMousePosition(e: MouseEvent) {
+    getMousePosition(e: PointerEvent) {
         const rect = this.canvas.getBoundingClientRect();
+        const container = this.canvas.parentElement!;
+        
         return {
-            x: e.clientX - rect.left,
-            y: e.clientY - rect.top
+            x: e.clientX - rect.left + container.scrollLeft,
+            y: e.clientY - rect.top + container.scrollTop
         };
     }
 }
@@ -417,10 +880,30 @@ class GridMatrix {
      */
     drawGrid(ctx: CanvasRenderingContext2D) {
         ctx.strokeStyle = "#ccc";
+        ctx.lineWidth = 1;
         ctx.font = "12px Arial";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
+        ctx.fillStyle = "#000";
 
+        // Draw header background
+        ctx.fillStyle = "#f0f0f0";
+        
+        // Draw column headers background
+        for (let col = 0; col < this.noOfCols; col++) {
+            const cell = this.grid[0][col];
+            ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+        }
+        
+        // Draw row headers background
+        for (let row = 0; row < this.noOfRows; row++) {
+            const cell = this.grid[row][0];
+            ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+        }
+
+        ctx.fillStyle = "#000";
+
+        // Draw all cells
         for (let row of this.grid) {
             for (let cell of row) {
                 ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
@@ -433,8 +916,6 @@ class GridMatrix {
 }
 
 
-
-
 const handleGridCell = () => { }
 
 window.onload = () => {
@@ -445,5 +926,15 @@ window.onload = () => {
     const gridMatrix = new GridMatrix(ctx, 500, 100);
     gridMatrix.drawGrid(ctx);
 
-    new GridResizer(canvas, ctx, gridMatrix);
+    const resizer = new GridResizer(canvas, ctx, gridMatrix);
+    const cellSelector = new CellSelector(canvas, ctx, gridMatrix);
+    
+    // Link resiz2er and cell selector for proper redrawing
+    resizer.setCellSelector(cellSelector);
+    
+    // Make canvas focusable for keyboard events
+    canvas.tabIndex = 0;
+    canvas.focus();
+
+    console.log(gridMatrix.columnWidths.length)
 };

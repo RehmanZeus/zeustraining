@@ -1,10 +1,49 @@
-*{
+* {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
 }
 
-html,body{
-    touch-action: none;
+html, body {
+    height: 100% !important;
+    width: 100% !important;
+    margin: 0;
+    padding: 0;
+    overflow: hidden; /* Prevent double scrollbars */
 }
 
+/* Style the container for better scrolling experience */
+#excel-container {
+    /* Smooth scrolling */
+    scroll-behavior: smooth;
+    
+    /* Custom scrollbar styling (optional) */
+    scrollbar-width: thin;
+    scrollbar-color: #888 #f1f1f1;
+}
+
+/* Webkit scrollbar styling (optional) */
+#excel-container::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+#excel-container::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+#excel-container::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 6px;
+}
+
+#excel-container::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Ensure canvas doesn't have any unwanted margins */
+canvas {
+    display: block;
+    margin: 0;
+    padding: 0;
+}
