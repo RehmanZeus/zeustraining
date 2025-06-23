@@ -1,5 +1,4 @@
 import { MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "./constants.js";
-import { CellMultiSelector } from "./core/CellMultiSelector.js";
 import { CellSelector } from "./core/CellSelector.js";
 import { ColumnSelector } from "./core/ColumnSelector.js";
 import { GridDataGen } from "./core/GridDataGen.js";
@@ -9,6 +8,7 @@ import { GridResizer } from "./core/GridResizer.js";
 import { Operations } from "./core/Operations.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
+import {SparseGridMatrix} from "./core/SparseGridMatrix.js"
 
 
 

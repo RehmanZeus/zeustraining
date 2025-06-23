@@ -10,6 +10,7 @@ html, body {
     margin: 0;
     padding: 0;
     overflow: hidden; /* Prevent double scrollbars */
+    touch-action: none;
 }
 
 /* Style the container for better scrolling experience */
@@ -46,4 +47,7 @@ canvas {
     display: block;
     margin: 0;
     padding: 0;
+    position: relative;
 }
+
+
