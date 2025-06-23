@@ -13,8 +13,20 @@ export class GridDataLoader {
             return;
         }
 
+        console.log(`Data Array Length: ${dataArray.length}\n
+            Data Columns: ${Object.keys(dataArray[0] as object).length}\n
+            Data Rows: ${Object.values(dataArray).length}\n
+            No. of Cols: ${this.gridMatrix.noOfCols}\n
+            No.of Rows: ${this.gridMatrix.noOfRows}`)
         // 1. Get column names from the first object
         const columnNames = Object.keys(dataArray[0] as object);
+
+
+        const requiredRows = dataArray.length + 2; 
+        const requiredCols = columnNames.length + 1; 
+        
+        this.gridMatrix.addMoreGrids(requiredRows, requiredCols);
+
 
         // 2. Write custom headers to row 1 (leave [0][*] as Excel style)
         for (let col = 0; col < columnNames.length; col++) {

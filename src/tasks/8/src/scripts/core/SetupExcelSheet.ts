@@ -72,7 +72,7 @@ export class SetupExcelSheet {
         container.style.width = '100vw';
         container.style.height = '100vh';
         container.style.overflow = 'auto';
-        container.style.position = 'fixed';
+        // container.style.position = 'fixed';
         container.style.top = '0';
         container.style.left = '0';
         container.style.margin = '0';
@@ -84,8 +84,7 @@ export class SetupExcelSheet {
         document.body.style.margin = '0';
         document.body.style.padding = '0';
         
-        // Clear any existing content and add container
-        document.body.innerHTML = '';
+        
         
         // Add the canvas to the container
         container.appendChild(this.canvas);

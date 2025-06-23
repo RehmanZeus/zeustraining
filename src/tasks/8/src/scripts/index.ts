@@ -1,8 +1,13 @@
 import { MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "./constants.js";
+import { CellMultiSelector } from "./core/CellMultiSelector.js";
 import { CellSelector } from "./core/CellSelector.js";
+import { ColumnSelector } from "./core/ColumnSelector.js";
+import { GridDataGen } from "./core/GridDataGen.js";
 import { GridDataLoader } from "./core/GridDataLoader.js";
 import { GridMatrix } from "./core/GridMatrix.js";
 import { GridResizer } from "./core/GridResizer.js";
+import { Operations } from "./core/Operations.js";
+import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 
 
@@ -10,17 +15,19 @@ import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 
 
 window.onload = () => {
-    const setup = new SetupExcelSheet(MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, 50, 50);
+    const setup = new SetupExcelSheet(MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, 200, 50);
     const canvas = setup.init();
     const ctx = setup.getContext();
 
-    const gridMatrix = new GridMatrix(ctx, 50, 50);
+    const gridMatrix = new GridMatrix(ctx, 200, 50);
     gridMatrix.drawGrid(ctx);
 
     const resizer = new GridResizer(canvas, ctx, gridMatrix);
     const cellSelector = new CellSelector(canvas, ctx, gridMatrix);
     resizer.setCellSelector(cellSelector);
 
+    // const cellMullti = new CellMultiSelector(ctx, gridMatrix);
+    // cellMullti.attachEvents(canvas)
     // Make canvas focusable for keyboard events
     canvas.tabIndex = 0;
     canvas.focus();
@@ -29,16 +36,19 @@ window.onload = () => {
     const gridDataLoader = new GridDataLoader(gridMatrix);
 
     // 2. Load sample data
-    const sampleData = [
-        {
-            "id": 1,
-            "firstName": "Raj",
-            "lastName": "Solanki",
-            "Age": 30,
-            "Salary": 1000000
-        }
-    ];
+    const dataGen = new GridDataGen(200);
+    const sampleData = dataGen.generateData();
+    console.log(sampleData)
     gridDataLoader.loadJSONData(sampleData);
+
+    const rowSelector = new RowSelector(ctx, gridMatrix);
+    rowSelector.attachEvents(canvas);
+
+    const colSelector = new ColumnSelector(ctx, gridMatrix);
+    colSelector.attachEvents(canvas);
+    const sumBtn = document.getElementById("calc-sum");
+    const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx);
+    sumBtn?.addEventListener("click", operations.sumRows.bind(operations));
 
     // 3. Redraw grid to show new data
     cellSelector.redrawGrid();

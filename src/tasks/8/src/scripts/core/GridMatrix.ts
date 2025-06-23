@@ -82,59 +82,143 @@ export class GridMatrix {
         }
     }
 
+    addMoreGrids(requiredRows: number, requiredCols: number) {
+        // Add more rows if needed
+        while (this.grid.length < requiredRows) {
+            const newRowIndex = this.grid.length;
+            const y = this.rowHeights.slice(0, newRowIndex).reduce((a, b) => a + b, 0);
+            const newRow: GridCell[] = [];
+
+            for (let col = 0; col < this.noOfCols; col++) {
+                const x = this.columnWidths.slice(0, col).reduce((a, b) => a + b, 0);
+                const width = this.columnWidths[col];
+                const height = MIN_GRIDCELL_HEIGHT;
+                const header = GridCell.generateHeader(col - 1);
+                const id = `${newRowIndex}${header}`;
+                const data = col === 0 ? `${newRowIndex}` : "";
+                newRow.push(new GridCell(id, x, y, this.c, width, height, data));
+            }
+
+            this.grid.push(newRow);
+            this.rowHeights.push(MIN_GRIDCELL_HEIGHT);
+            this.noOfRows++;
+        }
+
+        // Add more columns if needed
+        if (this.grid[0].length < requiredCols) {
+            for (let row = 0; row < this.grid.length; row++) {
+                const y = this.rowHeights.slice(0, row).reduce((a, b) => a + b, 0);
+                for (let col = this.grid[row].length; col < requiredCols; col++) {
+                    const x = this.columnWidths.slice(0, col).reduce((a, b) => a + b, 0);
+                    const width = MIN_GRIDCELL_WIDTH;
+                    const height = this.rowHeights[row];
+                    const header = GridCell.generateHeader(col - 1);
+                    const id = `${row}${header}`;
+                    const data = row === 0 ? header : (col === 0 ? `${row}` : "");
+                    this.grid[row].push(new GridCell(id, x, y, this.c, width, height, data));
+                }
+            }
+
+            while (this.columnWidths.length < requiredCols) {
+                this.columnWidths.push(MIN_GRIDCELL_WIDTH);
+            }
+
+            this.noOfCols = requiredCols;
+        }
+    }
+
     /**
      * Renders the entire grid onto the canvas, including cell borders and labels.
      * 
      * @param ctx - Canvas 2D rendering context
      */
     drawGrid(ctx: CanvasRenderingContext2D) {
-        ctx.strokeStyle = "#ccc";
-        ctx.lineWidth = 1;
-        ctx.font = "12px Arial";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillStyle = "#000";
+    ctx.save();
 
-        // Draw header background
-        ctx.fillStyle = "#f0f0f0";
+    // Draw column headers background & centered text
+    for (let col = 0; col < this.noOfCols; col++) {
+        const cell = this.grid[0][col];
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
 
-        // Draw column headers background
-        for (let col = 0; col < this.noOfCols; col++) {
-            const cell = this.grid[0][col];
-            ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+        if (cell.data) {
+            ctx.font = "14px Arial";
+            ctx.fillStyle = "#616161";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(
+                cell.data,
+                cell.x + cell.width / 2,
+                cell.y + cell.height / 2
+            );
         }
+    }
 
-        // Draw row headers background
-        for (let row = 0; row < this.noOfRows; row++) {
-            const cell = this.grid[row][0];
-            ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+    // Draw row headers background & text (right bottom aligned)
+    for (let row = 0; row < this.noOfRows; row++) {
+        const cell = this.grid[row][0];
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+
+        if (cell.data) {
+            ctx.font = "14px Arial";
+            ctx.fillStyle = "#616161";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "bottom";
+            ctx.fillText(
+                cell.data,
+                cell.x + cell.width - 8,
+                cell.y + cell.height - 4
+            );
         }
+    }
 
-        ctx.fillStyle = "#000";
+    // Draw all cells (including headers, but skip header text already drawn)
+    for (let rowIndex = 0; rowIndex < this.noOfRows; rowIndex++) {
+        for (let colIndex = 0; colIndex < this.noOfCols; colIndex++) {
+            const cell = this.grid[rowIndex][colIndex];
 
-        // Draw all cells
-        for (let row of this.grid) {
-            for (let cell of row) {
-                ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
+            // Border for all cells
+            ctx.strokeStyle = "#e0e0e0";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(
+                Math.floor(cell.x) + 0.5,
+                Math.floor(cell.y) + 0.5,
+                cell.width,
+                cell.height
+            );
 
-                if (cell.data) {
-                    let text = cell.data;
-                    const ellipsis = "...";
-                    const maxWidth = cell.width - 10; // padding
+            // Skip already drawn header text
+            if (rowIndex === 0 || colIndex === 0) continue;
 
-                    // Check if text needs truncation
-                    if (ctx.measureText(text).width > maxWidth) {
-                        let truncatedText = text;
-                        while (ctx.measureText(truncatedText + ellipsis).width > maxWidth && truncatedText.length > 0) {
-                            truncatedText = truncatedText.slice(0, -1);
-                        }
-                        text = truncatedText + ellipsis;
+            // Draw regular cell text, center aligned
+            if (cell.data) {
+                let text = cell.data;
+                const ellipsis = "...";
+                const maxWidth = cell.width - 10;
+
+                if (ctx.measureText(text).width > maxWidth) {
+                    let truncatedText = text;
+                    while (ctx.measureText(truncatedText + ellipsis).width > maxWidth && truncatedText.length > 0) {
+                        truncatedText = truncatedText.slice(0, -1);
                     }
-
-                    ctx.fillText(text, cell.x + cell.width / 2, cell.y + cell.height / 2);
+                    text = truncatedText + ellipsis;
                 }
+
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#000";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(
+                    text,
+                    cell.x + cell.width / 2,
+                    cell.y + cell.height / 2
+                );
             }
         }
     }
+    ctx.restore();
+}
+
 
 }

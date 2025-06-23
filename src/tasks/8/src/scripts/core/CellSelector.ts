@@ -28,8 +28,7 @@ export class CellSelector {
     isEditing = false;
 
     /** Selection highlight color */
-    selectionColor = '#4285f4';
-    selectionBorderColor = '#1a73e8';
+    selectionBorderColor = '#137e43';
 
     /**
      * Constructs a CellSelector instance and sets up input handling.
@@ -54,9 +53,10 @@ export class CellSelector {
         this.inputElement = document.createElement('input');
         this.inputElement.type = 'text';
         this.inputElement.style.position = 'absolute';
-        this.inputElement.style.border = '2px solid #1a73e8';
+        this.inputElement.style.border = '2px solid #137e43';
         this.inputElement.style.outline = 'none';
-        this.inputElement.style.font = '12px Arial';
+        this.inputElement.style.fontFamily = 'Arial';
+        this.inputElement.style.fontSize = '14px'
         this.inputElement.style.padding = '2px';
         this.inputElement.style.margin = '0';
         this.inputElement.style.boxSizing = 'border-box';
@@ -85,6 +85,7 @@ export class CellSelector {
      */
     handleCellClick(e: MouseEvent) {
         // Don't interfere with resizing operations
+
         if (this.canvas.style.cursor === 'col-resize' || this.canvas.style.cursor === 'row-resize') {
             return;
         }
@@ -143,7 +144,7 @@ export class CellSelector {
                 e.preventDefault();
                 this.clearSelectedCell();
                 break;
-            
+
             default:
                 // Start editing if a printable character is pressed
                 if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
@@ -206,13 +207,11 @@ export class CellSelector {
 
         const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
         const canvasRect = this.canvas.getBoundingClientRect();
-        const container = this.canvas.parentElement!;
 
-        // Calculate exact pixel position with scroll offsets
-        const exactLeft = canvasRect.left + cell.x - container.scrollLeft;
-        const exactTop = canvasRect.top + cell.y - container.scrollTop;
+        // Correct: No scroll offsets if canvas is fixed
+        const exactLeft = canvasRect.left + cell.x;
+        const exactTop = canvasRect.top + cell.y;
 
-        // Position input element
         this.inputElement.style.position = 'absolute';
         this.inputElement.style.left = exactLeft + 'px';
         this.inputElement.style.top = exactTop + 'px';
@@ -229,16 +228,14 @@ export class CellSelector {
         this.inputElement.style.lineHeight = cell.height + 'px';
         this.inputElement.style.boxSizing = 'border-box';
 
-        // Set initial value
-        if (initialValue !== undefined) {
-            this.inputElement.value = initialValue;
-        } else {
-            this.inputElement.value = cell.data || '';
-        }
+        this.inputElement.value = initialValue !== undefined ? initialValue : (cell.data || '');
 
+        this.inputElement.style.display = 'block';
         this.inputElement.focus();
         this.inputElement.select();
         this.isEditing = true;
+
+
     }
 
     /**
@@ -319,7 +316,7 @@ export class CellSelector {
         const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
 
         // Draw selection background
-        ctx.fillStyle = this.selectionColor + '20'; // 20 for transparency
+        ctx.fillStyle = 'rgba(255,255,255,0.125)'; // 12.5% opacity
         ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
 
         // Draw selection border
@@ -329,7 +326,7 @@ export class CellSelector {
         ctx.lineWidth = 1; // Reset line width
     }
 
-   
+
 
     /**
      * Redraws the entire grid with selection highlight
@@ -345,13 +342,9 @@ export class CellSelector {
      */
     getMousePosition(e: MouseEvent) {
         const rect = this.canvas.getBoundingClientRect();
-        const container = this.canvas.parentElement!;
-
-        console.log(`Mouse X: ${e.clientX}\n Mouse Y: ${e.clientY}\n Rect Left: ${rect.left}\n Rect Right: ${rect.right}\n Cont L ${container.scrollLeft}\n Cont R: ${container.scrollTop}`)
-        console.log(`x: ${e.clientX - rect.left + container.scrollLeft}\n y: ${e.clientY - rect.top + container.scrollTop}`)
         return {
-            x: e.clientX,
-            y: e.clientY
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
         };
     }
 
