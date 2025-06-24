@@ -14,14 +14,14 @@ import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 
 
 window.onload = () => {
-    const setup = new SetupExcelSheet(MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, 100, 100);
+    const setup = new SetupExcelSheet(MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, 100000, 500);
     const canvas = setup.init();
     const ctx = setup.getContext();
 
     // Get the container after it's been created in init()
     const container = document.getElementById('excel-container') as HTMLDivElement;
 
-    const gridMatrix = new GridMatrix(ctx, 100, 100);
+    const gridMatrix = new GridMatrix(ctx, 100000, 500);
     gridMatrix.drawGrid(ctx);
 
     const resizer = new GridResizer(canvas, ctx, gridMatrix);

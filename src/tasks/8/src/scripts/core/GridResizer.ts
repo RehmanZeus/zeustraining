@@ -48,6 +48,7 @@ export class GridResizer {
         for (let row = 0; row < this.gridMatrix.noOfRows; row++) {
             let y = this.gridMatrix.rowHeights.slice(0, row).reduce((a, b) => a + b, 0);
             const cell = this.gridMatrix.getCell(row, colIndex);
+            if(!cell) continue;
             cell.x = x;
             cell.y = y;
             cell.width = width;
@@ -61,6 +62,7 @@ export class GridResizer {
         for (let col = 0; col < this.gridMatrix.noOfCols; col++) {
             let x = this.gridMatrix.columnWidths.slice(0, col).reduce((a, b) => a + b, 0);
             const cell = this.gridMatrix.getCell(rowIndex, col);
+            if(!cell) continue;
             cell.x = x;
             cell.y = y;
             cell.width = this.gridMatrix.columnWidths[col];
@@ -123,6 +125,7 @@ export class GridResizer {
             let x = 0;
             for (let col = 0; col < this.gridMatrix.noOfCols; col++) {
                 const cell = this.gridMatrix.getCell(row, col);
+                if(!cell) continue;
                 cell.x = x;
                 cell.y = y;
                 cell.width = this.gridMatrix.columnWidths[col];

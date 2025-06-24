@@ -30,7 +30,9 @@ export class GridDataLoader {
 
         // 2. Write custom headers to row 1 (leave [0][*] as Excel style)
         for (let col = 0; col < columnNames.length; col++) {
-            this.gridMatrix.getCell(1, col + 1).data = columnNames[col].toUpperCase();
+            const cell = this.gridMatrix.getCell(1, col + 1)
+            if(!cell) continue;
+            cell.data = columnNames[col].toUpperCase();
         }
 
         // 3. Write data, starting from row 2
@@ -46,7 +48,9 @@ export class GridDataLoader {
                         cellValue = JSON.stringify(cellValue);
                     }
                 }
-                this.gridMatrix.getCell(row+2, col + 1).data = cellValue; // <-- row+2
+                const cell = this.gridMatrix.getCell(row+2, col + 1)
+                if(!cell) continue;
+                cell.data = cellValue; // <-- row+2
             }
         }
     }

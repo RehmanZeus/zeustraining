@@ -49,7 +49,9 @@ export class ColumnSelector {
     setSelectedColData(data: string[]) {
         if (this.selectedCol < 1) return;
         for (let row = 1; row < this.gridMatrix.noOfRows && row - 1 < data.length; row++) {
-            this.gridMatrix.getCell(row, this.selectedCol).data = data[row - 1];
+            const cell = this.gridMatrix.getCell(row, this.selectedCol);
+            if(!cell) continue;
+            cell.data = data[row - 1];
         }
         this.redrawGrid();
     }
@@ -58,7 +60,8 @@ export class ColumnSelector {
     clearSelectedCol() {
         if (this.selectedCol < 1) return;
         for (let row = 1; row < this.gridMatrix.noOfRows; row++) {
-            this.gridMatrix.getCell(row, this.selectedCol).data = "";
+            const cell = this.gridMatrix.getCell(row, this.selectedCol);
+            if (cell) cell.data = "";
         }
         this.redrawGrid();
     }
@@ -68,6 +71,7 @@ export class ColumnSelector {
         if (this.selectedCol < 1) return;
         for (let row = 1; row < this.gridMatrix.noOfRows; row++) {
             const cell = this.gridMatrix.getCell(row, this.selectedCol);
+            if (!cell) continue;
             ctx.fillStyle = this.selectionColor + "20";
             ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
             ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);

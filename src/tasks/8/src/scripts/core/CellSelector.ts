@@ -205,7 +205,8 @@ export class CellSelector {
     startEditing(initialValue?: string) {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
 
-        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);;
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        if(!cell) return;
         const canvasRect = this.canvas.getBoundingClientRect();
 
         // Correct: No scroll offsets if canvas is fixed
@@ -245,6 +246,7 @@ export class CellSelector {
         if (!this.isEditing) return;
 
         const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        if(!cell) return;
         cell.data = this.inputElement.value;
 
         this.inputElement.style.display = 'none';
@@ -270,7 +272,8 @@ export class CellSelector {
     clearSelectedCell() {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
 
-        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);;
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        if(!cell) return;
         cell.data = '';
         this.redrawGrid();
     }
@@ -314,6 +317,7 @@ export class CellSelector {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
 
         const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        if(!cell) return;
 
         // Draw selection background
         ctx.fillStyle = 'rgba(255,255,255,0.125)'; // 12.5% opacity
@@ -351,7 +355,9 @@ export class CellSelector {
      */
     getSelectedCellData(): string | undefined {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return undefined;
-        return this.gridMatrix.getCell(this.selectedRow, this.selectedCol).data;
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol)
+        if(!cell) return;
+        return cell.data;
     }
 
     /**

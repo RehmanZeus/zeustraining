@@ -33,7 +33,7 @@ export class RowSelector {
         const data: string[] = [];
         for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
             const cell = this.gridMatrix.getCell(this.selectedRow, col);
-            data.push(cell.data || "");
+            data.push(cell?.data || "");
         }
         return data;
     }
@@ -42,7 +42,8 @@ export class RowSelector {
     setSelectedRowData(data: string[]) {
         if (this.selectedRow < 1) return;
         for (let col = 1; col < this.gridMatrix.noOfCols && col - 1 < data.length; col++) {
-            this.gridMatrix.getCell(this.selectedRow, col).data = data[col - 1];
+            // Use setCellData to ensure the cell exists
+            this.gridMatrix.setCellData(this.selectedRow, col, data[col - 1]);
         }
         this.redrawGrid();
     }
@@ -51,16 +52,21 @@ export class RowSelector {
     clearSelectedRow() {
         if (this.selectedRow < 1) return;
         for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
-            this.gridMatrix.getCell(this.selectedRow, col).data = "";
+            // Safely clear if cell exists, or use setCellData to clear forcibly
+            // Option 1: Only clear if cell exists
+            const cell = this.gridMatrix.getCell(this.selectedRow, col);
+            if (cell) cell.data = "";
+            // Option 2: Always clear (creates cell if needed)
+            // this.gridMatrix.setCellData(this.selectedRow, col, "");
         }
         this.redrawGrid();
     }
-
     /** Draw the row selection highlight (call after drawing grid) */
     drawSelection(ctx: CanvasRenderingContext2D) {
         if (this.selectedRow < 1) return;
         for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
             const cell = this.gridMatrix.getCell(this.selectedRow, col);
+            if(!cell) continue;
             ctx.fillStyle = this.selectionColor + "20";
             ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
             ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
