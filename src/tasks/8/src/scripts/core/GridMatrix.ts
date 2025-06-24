@@ -88,6 +88,32 @@ export class GridMatrix {
         }
     }
 
+    logStats() {
+        let headerCellCount = 0;
+        let dataCellCount = 0;
+
+        for (const [row, rowMap] of this.grid.entries()) {
+            for (const [col, cell] of rowMap.entries()) {
+                if (row === 0 || col === 0) headerCellCount++;
+                else dataCellCount++;
+            }
+        }
+
+        const totalCells = headerCellCount + dataCellCount;
+        // Estimate: Each GridCell ~ 120 bytes (ID string, numbers, data, object overhead)
+        const bytesPerCell = 120;
+        const totalBytes = totalCells * bytesPerCell;
+        const mbUsed = totalBytes / (1024 * 1024);
+
+        console.log("=== GridMatrix Stats ===");
+        console.log(`Rows: ${this.noOfRows}`);
+        console.log(`Cols: ${this.noOfCols}`);
+        console.log(`Header cells: ${headerCellCount}`);
+        console.log(`Data cells: ${dataCellCount}`);
+        console.log(`Total GridCell objects: ${totalCells}`);
+        console.log(`Estimated memory used: ${mbUsed.toFixed(2)} MB`);
+        console.log("=======================");
+    }
     /**
      * Gets (or creates if missing) a cell at the given row and column.
      * @param row Row index

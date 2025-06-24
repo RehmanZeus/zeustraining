@@ -11,26 +11,25 @@ import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 
 
 
+const NUM_ROWS = 1000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
 
 
+// ...rest of your app
 window.onload = () => {
-    const setup = new SetupExcelSheet(MIN_GRIDCELL_WIDTH, MIN_GRIDCELL_HEIGHT, 100, 100);
+    const setup = new SetupExcelSheet(CELL_W,CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
     const canvas = setup.init();
     const ctx = setup.getContext();
 
     // Get the container after it's been created in init()
     const container = document.getElementById('excel-container') as HTMLDivElement;
 
-    const gridMatrix = new GridMatrix(ctx, 100, 100);
-    gridMatrix.drawGrid(ctx);
+    const gridMatrix = new GridMatrix(ctx, NUM_ROWS, NUM_COLS);
 
+    // --- Other grid features and selectors ---
     const resizer = new GridResizer(canvas, ctx, gridMatrix);
     const cellSelector = new CellSelector(canvas, ctx, gridMatrix);
     resizer.setCellSelector(cellSelector);
-
-    canvas.tabIndex = 0;
-    canvas.focus();
-
+    
     const gridDataLoader = new GridDataLoader(gridMatrix);
     const dataGen = new GridDataGen(200);
     const sampleData = dataGen.generateData();
@@ -45,29 +44,44 @@ window.onload = () => {
     const sumBtn = document.getElementById("calc-sum");
     const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx);
     sumBtn?.addEventListener("click", operations.sumRows.bind(operations));
-
+    // --- Only draw visible grid (viewport) ---
     function drawVisibleGrid() {
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
         const viewportWidth = container.clientWidth;
         const viewportHeight = container.clientHeight;
         ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Calculate and draw only cells that are visible (viewport)
         const viewport = gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
         gridMatrix.drawGrid(ctx, viewport);
 
         cellSelector.drawSelection(ctx);
-        rowSelector.drawSelection?.(ctx); // if you use row selection
-        colSelector.drawSelection?.(ctx); // if you use column selection
-
+        rowSelector.drawSelection?.(ctx); 
+        colSelector.drawSelection?.(ctx); 
     }
 
-    container.addEventListener('scroll', drawVisibleGrid);
+    // --- Use requestAnimationFrame to batch scroll redraws ---
+    let animationFrameId: number | null = null;
+    container.addEventListener('scroll', () => {
+        if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
+        animationFrameId = requestAnimationFrame(() => {
+            drawVisibleGrid();
+            animationFrameId = null;
+        });
+    });
 
-    // Assign the viewport draw to all selectors and resizer
+    // --- Initial draw ---
+    drawVisibleGrid();
+
+
+    canvas.tabIndex = 0;
+    canvas.focus();
+
+
+    // --- Pass viewport redraw to selectors and resizer ---
     cellSelector.setRedrawGridCallback(drawVisibleGrid);
     rowSelector.redrawGrid = drawVisibleGrid;
     colSelector.redrawGrid = drawVisibleGrid;
     resizer.setRedrawGridCallback(drawVisibleGrid);
-
-    drawVisibleGrid()
 };

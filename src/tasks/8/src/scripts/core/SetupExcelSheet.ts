@@ -1,127 +1,107 @@
-import {DPR} from '../constants.js'
-
-
+import { DPR } from '../constants.js';
 
 /**
- * SetupExcelSheet is responsible for initializing and configuring the canvas
- * used to render the Excel-like grid interface. It calculates canvas dimensions
- * based on grid size and provides access to the 2D rendering context.
+ * SetupExcelSheet implements "virtual scrolling" with a fixed-size canvas
+ * over a large scrollable area, enabling huge grids with smooth performance.
+ *
+ * Usage:
+ *   const setup = new SetupExcelSheet(cellWidth, cellHeight, numRows, numCols, viewportW, viewportH);
+ *   const canvas = setup.init();
+ *   const ctx = setup.getContext();
+ *   // On scroll, use setup.container.scrollLeft, scrollTop for visible region offsets.
  */
 export class SetupExcelSheet {
-
-    /** Width of the canvas in pixels, derived from number of columns and cell width */
-    canvasWidth: number; // Remove the default assignment
-
-    /** Height of the canvas in pixels, derived from number of rows and cell height */
-    canvasHeight: number; // Remove the default assignment
-
-    /** Reference to the HTML canvas element used for rendering */
+    canvasWidth: number;    // viewport width in px
+    canvasHeight: number;   // viewport height in px
+    totalWidth: number;     // total grid width in px
+    totalHeight: number;    // total grid height in px
     canvas!: HTMLCanvasElement;
-
-    /** 2D rendering context for drawing on the canvas */
     ctx!: CanvasRenderingContext2D;
+    container!: HTMLDivElement;
+    scrollArea!: HTMLDivElement;
 
-    /**
-     * Constructs the SetupExcelSheet instance and calculates canvas dimensions.
-     * 
-     * @param gridWidth - Width of each grid cell
-     * @param gridHeight - Height of each grid cell
-     * @param nrows - Total number of rows in the grid
-     * @param ncols - Total number of columns in the grid
-     */
-    constructor(gridWidth: number, gridHeight: number, nrows: number, ncols: number) {
-        // Calculate canvas dimensions based on total grid size
-        this.canvasWidth = gridWidth * ncols;
-        this.canvasHeight = gridHeight * nrows;
-        
-        // Debug: Log the calculated dimensions
-        console.log(`Calculated canvas dimensions: ${this.canvasWidth}x${this.canvasHeight}`);
-        console.log(`Grid: ${ncols} cols x ${nrows} rows, Cell: ${gridWidth}x${gridHeight}`);
+    constructor(
+        cellWidth: number, cellHeight: number,
+        nrows: number, ncols: number,
+        viewportWidth: number = 800, viewportHeight: number = 600 // sensible defaults
+    ) {
+        this.canvasWidth = viewportWidth;
+        this.canvasHeight = viewportHeight;
+        this.totalWidth = cellWidth * ncols;
+        this.totalHeight = cellHeight * nrows;
+
+        // Debug log
+        console.log(`Grid: ${ncols} cols x ${nrows} rows`);
+        console.log(`Cell size: ${cellWidth}x${cellHeight}`);
+        console.log(`Viewport: ${viewportWidth}x${viewportHeight}`);
+        console.log(`Total scroll size: ${this.totalWidth}x${this.totalHeight}`);
     }
 
     /**
-     * Initializes the canvas element by setting its dimensions and scaling
-     * for high-DPI displays. Also retrieves and stores the 2D rendering context.
-     * 
-     * @returns The initialized HTMLCanvasElement
+     * Initializes the scrollable container, virtual scroll area, and fixed-size canvas.
+     * Returns the canvas element for drawing.
      */
     init(): HTMLCanvasElement {
-        // Create canvas element
+        // 1. Container (viewport)
+        this.container = document.createElement('div');
+        this.container.id = 'excel-container';
+        this.container.style.width = this.canvasWidth + 'px';
+        this.container.style.height = this.canvasHeight + 'px';
+        this.container.style.overflow = 'auto';
+        this.container.style.position = 'relative';
+        this.container.style.margin = '0';
+        this.container.style.padding = '0';
+        this.container.style.boxSizing = 'border-box';
+
+        // 2. Virtual scroll area (sets scrollbar size)
+        this.scrollArea = document.createElement('div');
+        this.scrollArea.style.width = this.totalWidth + 'px';
+        this.scrollArea.style.height = this.totalHeight + 'px';
+        this.scrollArea.style.position = 'relative';
+
+        // 3. Canvas (fixed size, overlays viewport)
         this.canvas = document.createElement('canvas');
-        
-        // Set canvas dimensions in CSS pixels
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.top = '0';
+        this.canvas.style.left = '0';
         this.canvas.style.width = this.canvasWidth + 'px';
         this.canvas.style.height = this.canvasHeight + 'px';
-        this.canvas.style.display = 'block';
-        this.canvas.style.margin = '0';
-        this.canvas.style.padding = '0';
-        
-        // Set actual canvas dimensions accounting for device pixel ratio
         this.canvas.width = this.canvasWidth * DPR;
         this.canvas.height = this.canvasHeight * DPR;
-        
-        // Scale context to match DPR
+
         this.ctx = this.canvas.getContext('2d')!;
         this.ctx.scale(DPR, DPR);
-        
-        // Create a container with scrolling capability
-        const container = document.createElement('div');
-        container.id = 'excel-container';
-        
-        // Set container to viewport size
-        container.style.width = '100vw';
-        container.style.height = '100vh';
-        container.style.overflow = 'auto';
-        // container.style.position = 'fixed';
-        container.style.top = '0';
-        container.style.left = '0';
-        container.style.margin = '0';
-        container.style.padding = '0';
-        container.style.boxSizing = 'border-box';
 
-        // Ensure body doesn't interfere with scrolling
-        document.body.style.overflow = 'hidden';
-        document.body.style.margin = '0';
-        document.body.style.padding = '0';
-        
-        
-        
-        // Add the canvas to the container
-        container.appendChild(this.canvas);
-        document.body.appendChild(container);
-        
-        // Force reflow
-        container.offsetHeight;
-        
+        // 4. Compose DOM
+        this.scrollArea.appendChild(this.canvas); // canvas overlays scroll area
+        this.container.appendChild(this.scrollArea);
+        document.body.appendChild(this.container);
+
+        // 5. Keep canvas overlaying the visible area as you scroll
+        this.container.addEventListener('scroll', () => {
+            const scrollLeft = this.container.scrollLeft;
+            const scrollTop = this.container.scrollTop;
+            this.canvas.style.left = scrollLeft + 'px';
+            this.canvas.style.top = scrollTop + 'px';
+        });
+
+        // 6. Set initial canvas position (e.g. if container is scrolled on load)
+        this.canvas.style.left = this.container.scrollLeft + 'px';
+        this.canvas.style.top = this.container.scrollTop + 'px';
+
         // Debug logging
         console.log(`Canvas CSS dimensions: ${this.canvasWidth}x${this.canvasHeight}`);
         console.log(`Canvas actual dimensions: ${this.canvas.width}x${this.canvas.height}`);
-        console.log(`Container client size: ${container.clientWidth}x${container.clientHeight}`);
-        console.log(`Container scroll size: ${container.scrollWidth}x${container.scrollHeight}`);
-        
-        // Verify scrolling capability
-        const canScrollH = container.scrollWidth > container.clientWidth;
-        const canScrollV = container.scrollHeight > container.clientHeight;
-        console.log(`Can scroll horizontally: ${canScrollH}`);
-        console.log(`Can scroll vertically: ${canScrollV}`);
-        
-        if (!canScrollH && !canScrollV) {
-            console.warn('⚠️ Canvas is not larger than viewport - no scrolling needed');
-        } else {
-            console.log('✅ Canvas should be scrollable');
-        }
-        
+        console.log(`Container client size: ${this.container.clientWidth}x${this.container.clientHeight}`);
+        console.log(`Scroll area size: ${this.scrollArea.offsetWidth}x${this.scrollArea.offsetHeight}`);
+
         return this.canvas;
     }
 
     /**
-     * Provides access to the canvas's 2D rendering context.
-     * 
-     * @returns CanvasRenderingContext2D
+     * Returns the 2D canvas rendering context (after init()).
      */
     getContext(): CanvasRenderingContext2D {
         return this.ctx;
     }
 }
-
-

@@ -287,10 +287,9 @@ export class CellSelector {
         // Find column
         for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
             totalX += this.gridMatrix.columnWidths[i];
-            console.log(totalX)
+          
             if (x < totalX) {
                 col = i;
-                console.log(col);
                 break;
             }
         }
