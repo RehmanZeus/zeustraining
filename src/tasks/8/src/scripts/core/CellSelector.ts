@@ -287,7 +287,7 @@ export class CellSelector {
         // Find column
         for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
             totalX += this.gridMatrix.columnWidths[i];
-          
+
             if (x < totalX) {
                 col = i;
                 break;
@@ -309,13 +309,64 @@ export class CellSelector {
     /**
      * Draws the selection highlight
      */
-    drawSelection(ctx: CanvasRenderingContext2D) {
+     drawSelection(ctx: CanvasRenderingContext2D) {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
 
         const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        const header = this.gridMatrix.getCell(0, this.selectedCol);
+        const row = this.gridMatrix.getCell(this.selectedRow, 0);
 
-        // Draw selection background
-        ctx.fillStyle = 'rgba(255,255,255,0.125)'; // 12.5% opacity
+        // --- Highlight column header cell ---
+        ctx.save();
+        ctx.fillStyle = "#caead8";
+        ctx.fillRect(header.x, header.y, header.width, header.height);
+
+        // Redraw column header text
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#616161";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(
+            header.data || "",
+            header.x + header.width / 2,
+            header.y + header.height / 2
+        );
+        // Draw bottom border for the column header
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(header.x, header.y + header.height - 1);
+        ctx.lineTo(header.x + header.width, header.y + header.height - 1);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Highlight row header cell ---
+        ctx.save();
+        ctx.fillStyle = "#caead8";
+        ctx.fillRect(row.x, row.y, row.width, row.height);
+
+        // Redraw row header text
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#616161";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(
+            row.data || "",
+            row.x + row.width - 8,
+            row.y + row.height - 4
+        );
+        // Draw right border for the row header
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(row.x + row.width - 1, row.y);
+        ctx.lineTo(row.x + row.width - 1, row.y + row.height);
+        ctx.stroke();
+        ctx.restore();
+
+        // --- Draw selection background for main cell ---
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.125)';
         ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
 
         // Draw selection border
@@ -323,6 +374,7 @@ export class CellSelector {
         ctx.lineWidth = 2;
         ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
         ctx.lineWidth = 1; // Reset line width
+        ctx.restore();
     }
 
 
