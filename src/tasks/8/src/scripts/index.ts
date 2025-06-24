@@ -1,4 +1,3 @@
-import { MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "./constants.js";
 import { CellSelector } from "./core/CellSelector.js";
 import { ColumnSelector } from "./core/ColumnSelector.js";
 import { GridDataGen } from "./core/GridDataGen.js";
@@ -11,7 +10,7 @@ import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 
 
 
-const NUM_ROWS = 1000, NUM_COLS = 500, CELL_W = 70, CELL_H = 25;
+const NUM_ROWS = 1000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
 
 
 // ...rest of your app
@@ -84,4 +83,6 @@ window.onload = () => {
     rowSelector.redrawGrid = drawVisibleGrid;
     colSelector.redrawGrid = drawVisibleGrid;
     resizer.setRedrawGridCallback(drawVisibleGrid);
+
+    gridMatrix.logStats()
 };

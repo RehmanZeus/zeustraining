@@ -133,35 +133,38 @@ export class GridResizer {
         }
     }
 
+    // ...inside GridResizer...
     handleResize(e: PointerEvent) {
         const { x, y } = this.getMousePosition(e);
-
         let changed = false;
 
         if (this.isResizingCol && this.resizingColIndex >= 0) {
             const delta = x - this.startX;
             const newWidth = Math.max(MIN_GRIDCELL_WIDTH, this.initialWidth + delta);
-
             if (this.gridMatrix.columnWidths[this.resizingColIndex] !== newWidth) {
                 this.gridMatrix.columnWidths[this.resizingColIndex] = newWidth;
                 this.updateColumnLayout(this.resizingColIndex);
                 changed = true;
             }
         }
-
         if (this.isResizingRow && this.resizingRowIndex >= 0) {
             const delta = y - this.startY;
             const newHeight = Math.max(MIN_GRIDCELL_HEIGHT, this.initialHeight + delta);
-
             if (this.gridMatrix.rowHeights[this.resizingRowIndex] !== newHeight) {
                 this.gridMatrix.rowHeights[this.resizingRowIndex] = newHeight;
                 this.updateRowLayout(this.resizingRowIndex);
                 changed = true;
             }
         }
-
         if (changed) {
-            this.updateGridLayout(); // <-- update all cells!
+            // Only update the visible viewport
+            const container = this.canvas.parentElement!;
+            this.updateGridLayoutViewport(
+                container.scrollLeft,
+                container.scrollTop,
+                container.clientWidth,
+                container.clientHeight
+            );
             this.redrawGrid();
         }
     }
@@ -169,13 +172,31 @@ export class GridResizer {
     /**
      * Only update positions/dimensions for cells in the visible viewport + headers.
      */
-    updateGridLayoutViewport() {
+    /**
+ * Only update cell positions and sizes for the visible viewport.
+ * Call this instead of updateGridLayout() after a resize event.
+ */
+    updateGridLayoutViewport(scrollLeft: number, scrollTop: number, viewportWidth: number, viewportHeight: number) {
+        // Get visible bounds (plus header row/col)
+        const { startRow, endRow, startCol, endCol } = this.gridMatrix.getViewportBounds(
+            scrollLeft, scrollTop, viewportWidth, viewportHeight
+        );
+        // Always include header row/col
+        const rowStart = Math.max(0, startRow - 1);
+        const colStart = Math.max(0, startCol - 1);
 
-        if (this.isResizingCol && this.resizingColIndex >= 0) {
-            this.updateColumnLayout(this.resizingColIndex);
-        }
-        if (this.isResizingRow && this.resizingRowIndex >= 0) {
-            this.updateRowLayout(this.resizingRowIndex);
+        let y = this.gridMatrix.rowHeights.slice(0, rowStart).reduce((a, b) => a + b, 0);
+        for (let row = rowStart; row < endRow; row++) {
+            let x = this.gridMatrix.columnWidths.slice(0, colStart).reduce((a, b) => a + b, 0);
+            for (let col = colStart; col < endCol; col++) {
+                const cell = this.gridMatrix.getCell(row, col);
+                cell.x = x;
+                cell.y = y;
+                cell.width = this.gridMatrix.columnWidths[col];
+                cell.height = this.gridMatrix.rowHeights[row];
+                x += this.gridMatrix.columnWidths[col];
+            }
+            y += this.gridMatrix.rowHeights[row];
         }
     }
 

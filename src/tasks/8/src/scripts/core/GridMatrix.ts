@@ -12,6 +12,7 @@ export class GridMatrix {
     /** Total number of columns in the grid */
     noOfCols: number = MAX_GRID_COLS;
 
+
     /** 
      * Sparse representation of the grid using a Map of Maps:
      * - Top-level Map key: row index (number)
@@ -216,6 +217,10 @@ export class GridMatrix {
         startCol = Math.max(0, startCol - 1);
         return { startRow, endRow, startCol, endCol };
     }
+
+
+
+
     /**
      * Renders the entire grid onto the canvas, including cell borders and labels.
      * Only visible cells are fetched/generated for performance.
@@ -230,7 +235,6 @@ export class GridMatrix {
     ) {
         ctx.save();
 
-        // Default to 0 if not provided
         const offsetX = scrollLeft || 0;
         const offsetY = scrollTop || 0;
 
@@ -239,47 +243,11 @@ export class GridMatrix {
         const startCol = viewport?.startCol ?? 0;
         const endCol = viewport?.endCol ?? this.noOfCols;
 
-        // Draw column headers background & centered text
-        for (let col = startCol; col < endCol; col++) {
-            const cell = this.getCell(0, col);
-            ctx.fillStyle = "#f5f5f5";
-            ctx.fillRect(cell.x - offsetX, cell.y - offsetY, cell.width, cell.height);
-
-            if (cell.data) {
-                ctx.font = "14px Arial";
-                ctx.fillStyle = "#616161"; // header color
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(
-                    cell.data,
-                    cell.x - offsetX + cell.width / 2,
-                    cell.y - offsetY + cell.height / 2
-                );
-            }
-        }
-
-        // Draw row headers background & text (right bottom aligned)
-        for (let row = startRow; row < endRow; row++) {
-            const cell = this.getCell(row, 0);
-            ctx.fillStyle = "#f5f5f5";
-            ctx.fillRect(cell.x - offsetX, cell.y - offsetY, cell.width, cell.height);
-
-            if (cell.data) {
-                ctx.font = "14px Arial";
-                ctx.fillStyle = "#616161";
-                ctx.textAlign = "right";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(
-                    cell.data,
-                    cell.x - offsetX + cell.width - 8,
-                    cell.y - offsetY + cell.height - 4
-                );
-            }
-        }
-
-        // Draw regular cells (center aligned)
+        // 1. Draw all grid cells except headers
         for (let rowIndex = startRow; rowIndex < endRow; rowIndex++) {
             for (let colIndex = startCol; colIndex < endCol; colIndex++) {
+                // Skip headers for now
+                if (rowIndex === 0 || colIndex === 0) continue;
                 const cell = this.getCell(rowIndex, colIndex);
                 ctx.strokeStyle = "#e0e0e0";
                 ctx.lineWidth = 1;
@@ -289,8 +257,6 @@ export class GridMatrix {
                     cell.width,
                     cell.height
                 );
-
-                if (rowIndex === 0 || colIndex === 0) continue;
                 if (cell.data) {
                     ctx.font = "14px Arial";
                     ctx.fillStyle = "#000";
@@ -304,6 +270,70 @@ export class GridMatrix {
                 }
             }
         }
-        ctx.restore();
+
+        // 2. Draw column headers (row 0, all visible cols)
+        for (let col = startCol; col < endCol; col++) {
+            const cell = this.getCell(0, col);
+            ctx.fillStyle = "#f5f5f5";
+            // Only shift horizontally (sticky top)
+            ctx.fillRect(cell.x - offsetX, cell.y, cell.width, cell.height);
+
+            ctx.strokeStyle = "#e0e0e0";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(
+                Math.floor(cell.x - offsetX) + 0.5,
+                Math.floor(cell.y) + 0.5,
+                cell.width,
+                cell.height
+            );
+
+            if (cell.data) {
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#616161";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(
+                    cell.data,
+                    cell.x - offsetX + cell.width / 2,
+                    cell.y + cell.height / 2
+                );
+            }
+        }
+
+        // 3. Draw row headers (col 0, all visible rows)
+        for (let row = startRow; row < endRow; row++) {
+            const cell = this.getCell(row, 0);
+            ctx.fillStyle = "#f5f5f5";
+            // Only shift vertically (sticky left)
+            ctx.fillRect(cell.x, cell.y - offsetY, cell.width, cell.height);
+
+            ctx.strokeStyle = "#e0e0e0";
+            ctx.lineWidth = 1;
+            ctx.strokeRect(
+                Math.floor(cell.x) + 0.5,
+                Math.floor(cell.y - offsetY) + 0.5,
+                cell.width,
+                cell.height
+            );
+
+            if (cell.data) {
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#616161";
+                ctx.textAlign = "right";
+                ctx.textBaseline = "bottom";
+                ctx.fillText(
+                    cell.data,
+                    cell.x + cell.width - 8,
+                    cell.y - offsetY + cell.height - 4
+                );
+            }
+        }
+
+        // 4. Draw sticky corner cell (0,0) last
+        const cornerCell = this.getCell(0, 0);
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(cornerCell.x, cornerCell.y, cornerCell.width, cornerCell.height);
+        ctx.strokeStyle = "#e0e0e0";
+        ctx
     }
 }
