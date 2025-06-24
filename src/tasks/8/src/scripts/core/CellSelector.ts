@@ -29,7 +29,7 @@ export class CellSelector {
 
     /** Selection highlight color */
     selectionBorderColor = '#137e43';
-
+    redrawGrid: () => void = () => { };
     /**
      * Constructs a CellSelector instance and sets up input handling.
      * 
@@ -205,7 +205,7 @@ export class CellSelector {
     startEditing(initialValue?: string) {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
 
-        const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);;
         const canvasRect = this.canvas.getBoundingClientRect();
 
         // Correct: No scroll offsets if canvas is fixed
@@ -244,7 +244,7 @@ export class CellSelector {
     finishEditing() {
         if (!this.isEditing) return;
 
-        const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
         cell.data = this.inputElement.value;
 
         this.inputElement.style.display = 'none';
@@ -270,7 +270,7 @@ export class CellSelector {
     clearSelectedCell() {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
 
-        const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);;
         cell.data = '';
         this.redrawGrid();
     }
@@ -313,7 +313,7 @@ export class CellSelector {
     drawSelection(ctx: CanvasRenderingContext2D) {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
 
-        const cell = this.gridMatrix.grid[this.selectedRow][this.selectedCol];
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
 
         // Draw selection background
         ctx.fillStyle = 'rgba(255,255,255,0.125)'; // 12.5% opacity
@@ -331,10 +331,8 @@ export class CellSelector {
     /**
      * Redraws the entire grid with selection highlight
      */
-    redrawGrid() {
-        this.ctx.clearRect(0, 0, this.canvas.width / DPR, this.canvas.height / DPR);
-        this.gridMatrix.drawGrid(this.ctx);
-        this.drawSelection(this.ctx);
+    setRedrawGridCallback(redrawFn: () => void) {
+        this.redrawGrid = redrawFn;
     }
 
     /**
@@ -353,7 +351,7 @@ export class CellSelector {
      */
     getSelectedCellData(): string | undefined {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return undefined;
-        return this.gridMatrix.grid[this.selectedRow][this.selectedCol].data;
+        return this.gridMatrix.getCell(this.selectedRow, this.selectedCol).data;
     }
 
     /**

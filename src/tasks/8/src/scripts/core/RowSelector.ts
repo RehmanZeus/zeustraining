@@ -18,7 +18,7 @@ export class RowSelector {
         if (row < 1 || row >= this.gridMatrix.noOfRows) return; // skip header row
         this.selectedRow = row;
         this.redrawGrid();
-       
+
     }
 
     /** Deselect any row */
@@ -30,17 +30,19 @@ export class RowSelector {
     /** Get the data array for the selected row (excluding header col) */
     getSelectedRowData(): string[] | undefined {
         if (this.selectedRow < 1) return undefined;
-        return this.gridMatrix.grid[this.selectedRow]
-            .slice(1) // skip col 0 header
-            .map(cell => cell.data || "");
+        const data: string[] = [];
+        for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
+            const cell = this.gridMatrix.getCell(this.selectedRow, col);
+            data.push(cell.data || "");
+        }
+        return data;
     }
 
     /** Set the data for the selected row (excluding header col) */
     setSelectedRowData(data: string[]) {
         if (this.selectedRow < 1) return;
-        const row = this.gridMatrix.grid[this.selectedRow];
-        for (let col = 1; col < row.length && col - 1 < data.length; col++) {
-            row[col].data = data[col - 1];
+        for (let col = 1; col < this.gridMatrix.noOfCols && col - 1 < data.length; col++) {
+            this.gridMatrix.getCell(this.selectedRow, col).data = data[col - 1];
         }
         this.redrawGrid();
     }
@@ -48,33 +50,29 @@ export class RowSelector {
     /** Clear all cells in the selected row (excluding header col) */
     clearSelectedRow() {
         if (this.selectedRow < 1) return;
-        const row = this.gridMatrix.grid[this.selectedRow];
-        for (let col = 1; col < row.length; col++) {
-            row[col].data = "";
+        for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
+            this.gridMatrix.getCell(this.selectedRow, col).data = "";
         }
         this.redrawGrid();
     }
 
     /** Draw the row selection highlight (call after drawing grid) */
-    drawSelection() {
+    drawSelection(ctx: CanvasRenderingContext2D) {
         if (this.selectedRow < 1) return;
-        const row = this.gridMatrix.grid[this.selectedRow];
-        for (let col = 1; col < row.length; col++) {
-            const cell = row[col];
-            this.ctx.fillStyle = this.selectionColor + "20";
-            this.ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
-            // this.ctx.strokeStyle = this.selectionBorderColor;
-            // this.ctx.lineWidth = 2;
-            this.ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
+        for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
+            const cell = this.gridMatrix.getCell(this.selectedRow, col);
+            ctx.fillStyle = this.selectionColor + "20";
+            ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+            ctx.strokeRect(cell.x, cell.y, cell.width, cell.height);
         }
-        this.ctx.lineWidth = 1;
+        ctx.lineWidth = 1;
     }
 
     /** Redraws the entire grid with row selection highlight */
     redrawGrid() {
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
         this.gridMatrix.drawGrid(this.ctx);
-        this.drawSelection();
+        this.drawSelection(this.ctx);
     }
 
     /** Attach to canvas for row header click selection */

@@ -2,76 +2,72 @@ import { DPR, MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
 import { CellSelector } from "./CellSelector.js";
 import { GridMatrix } from "./GridMatrix.js";
 
-/**
- * GridResizer handles interactive resizing of grid columns and rows
- * via pointer events on the canvas. It updates the grid layout dynamically
- * and ensures accurate rendering and interaction after each resize.
- */
 export class GridResizer {
-    /** Canvas element where the grid is rendered */
     canvas: HTMLCanvasElement;
-
-    /** Canvas 2D rendering context */
     ctx: CanvasRenderingContext2D;
-
-    /** Reference to the GridMatrix instance being manipulated */
     gridMatrix: GridMatrix;
-
-    /** Reference to CellSelector for proper redrawing */
     cellSelector?: CellSelector;
 
-    /** Flags and indices for tracking active resize operations */
     isResizingCol = false;
     isResizingRow = false;
     resizingColIndex = -1;
     resizingRowIndex = -1;
 
-    /** Starting pointer coordinates for resize calculations */
     startX = 0;
     startY = 0;
-
-    /** Initial width/height when starting resize */
     initialWidth = 0;
     initialHeight = 0;
 
-    /** Pixel threshold to detect proximity to column/row edges */
     resizeThreshold = 5;
+    redrawGrid: () => void = () => { };
 
-    /**
-     * Constructs a GridResizer instance and attaches pointer event listeners.
-     * 
-     * @param canvas - HTML canvas element
-     * @param ctx - Canvas 2D rendering context
-     * @param gridMatrix - GridMatrix instance to be resized
-     */
     constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix) {
         this.canvas = canvas;
         this.ctx = ctx;
         this.gridMatrix = gridMatrix;
-
         this.attachEvents();
     }
 
-    /**
-     * Sets the CellSelector reference for proper redrawing
-     */
     setCellSelector(cellSelector: CellSelector) {
         this.cellSelector = cellSelector;
     }
 
-    /**
-     * Attaches pointer event listeners for resizing interactions.
-     */
+    setRedrawGridCallback(redrawFn: () => void) {
+        this.redrawGrid = redrawFn;
+    }
+
     attachEvents() {
         this.canvas.addEventListener("pointermove", this.handleMouseMove.bind(this));
         this.canvas.addEventListener("pointerdown", this.handleMouseDown.bind(this));
         this.canvas.addEventListener("pointerup", this.handleMouseUp.bind(this));
     }
 
-    /**
-     * Handles pointer movement to detect proximity to column or row edges
-     * and updates the cursor style accordingly.
-     */
+    updateColumnLayout(colIndex: number) {
+        let x = this.gridMatrix.columnWidths.slice(0, colIndex).reduce((a, b) => a + b, 0);
+        let width = this.gridMatrix.columnWidths[colIndex];
+        for (let row = 0; row < this.gridMatrix.noOfRows; row++) {
+            let y = this.gridMatrix.rowHeights.slice(0, row).reduce((a, b) => a + b, 0);
+            const cell = this.gridMatrix.getCell(row, colIndex);
+            cell.x = x;
+            cell.y = y;
+            cell.width = width;
+            cell.height = this.gridMatrix.rowHeights[row];
+        }
+    }
+
+    updateRowLayout(rowIndex: number) {
+        let y = this.gridMatrix.rowHeights.slice(0, rowIndex).reduce((a, b) => a + b, 0);
+        let height = this.gridMatrix.rowHeights[rowIndex];
+        for (let col = 0; col < this.gridMatrix.noOfCols; col++) {
+            let x = this.gridMatrix.columnWidths.slice(0, col).reduce((a, b) => a + b, 0);
+            const cell = this.gridMatrix.getCell(rowIndex, col);
+            cell.x = x;
+            cell.y = y;
+            cell.width = this.gridMatrix.columnWidths[col];
+            cell.height = height;
+        }
+    }
+
     handleMouseMove(e: PointerEvent) {
         if (this.isResizingCol || this.isResizingRow) {
             this.handleResize(e);
@@ -91,9 +87,6 @@ export class GridResizer {
         }
     }
 
-    /**
-     * Handles pointer down event to initiate column or row resizing.
-     */
     handleMouseDown(e: PointerEvent) {
         const { x, y } = this.getMousePosition(e);
         const { nearColEdge, colIndex } = this.isNearColumnEdge(x);
@@ -116,9 +109,6 @@ export class GridResizer {
         }
     }
 
-    /**
-     * Handles pointer up event to finalize resizing.
-     */
     handleMouseUp(e: PointerEvent) {
         this.isResizingCol = false;
         this.isResizingRow = false;
@@ -127,68 +117,68 @@ export class GridResizer {
         this.canvas.style.cursor = "default";
     }
 
-    /**
-     * Dynamically updates column widths or row heights based on pointer movement
-     * and recalculates cell positions and dimensions.
-     */
+    updateGridLayout() {
+        let y = 0;
+        for (let row = 0; row < this.gridMatrix.noOfRows; row++) {
+            let x = 0;
+            for (let col = 0; col < this.gridMatrix.noOfCols; col++) {
+                const cell = this.gridMatrix.getCell(row, col);
+                cell.x = x;
+                cell.y = y;
+                cell.width = this.gridMatrix.columnWidths[col];
+                cell.height = this.gridMatrix.rowHeights[row];
+                x += this.gridMatrix.columnWidths[col];
+            }
+            y += this.gridMatrix.rowHeights[row];
+        }
+    }
+
     handleResize(e: PointerEvent) {
         const { x, y } = this.getMousePosition(e);
+
+        let changed = false;
 
         if (this.isResizingCol && this.resizingColIndex >= 0) {
             const delta = x - this.startX;
             const newWidth = Math.max(MIN_GRIDCELL_WIDTH, this.initialWidth + delta);
-            
-            this.gridMatrix.columnWidths[this.resizingColIndex] = newWidth;
-            this.updateGridLayout();
-            this.redrawGrid();
+
+            if (this.gridMatrix.columnWidths[this.resizingColIndex] !== newWidth) {
+                this.gridMatrix.columnWidths[this.resizingColIndex] = newWidth;
+                this.updateColumnLayout(this.resizingColIndex);
+                changed = true;
+            }
         }
 
         if (this.isResizingRow && this.resizingRowIndex >= 0) {
             const delta = y - this.startY;
             const newHeight = Math.max(MIN_GRIDCELL_HEIGHT, this.initialHeight + delta);
-            
-            this.gridMatrix.rowHeights[this.resizingRowIndex] = newHeight;
-            this.updateGridLayout();
+
+            if (this.gridMatrix.rowHeights[this.resizingRowIndex] !== newHeight) {
+                this.gridMatrix.rowHeights[this.resizingRowIndex] = newHeight;
+                this.updateRowLayout(this.resizingRowIndex);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            this.updateGridLayout(); // <-- update all cells!
             this.redrawGrid();
         }
     }
 
     /**
-     * Updates the grid layout after resizing by recalculating all cell positions and dimensions
+     * Only update positions/dimensions for cells in the visible viewport + headers.
      */
-    updateGridLayout() {
-        for (let row = 0; row < this.gridMatrix.noOfRows; row++) {
-            let y = this.gridMatrix.rowHeights.slice(0, row).reduce((a, b) => a + b, 0);
-            const rowCells = this.gridMatrix.grid[row];
+    updateGridLayoutViewport() {
 
-            for (let col = 0; col < this.gridMatrix.noOfCols; col++) {
-                let x = this.gridMatrix.columnWidths.slice(0, col).reduce((a, b) => a + b, 0);
-                const cell = rowCells[col];
-
-                cell.x = x;
-                cell.y = y;
-                cell.width = this.gridMatrix.columnWidths[col];
-                cell.height = this.gridMatrix.rowHeights[row];
-            }
+        if (this.isResizingCol && this.resizingColIndex >= 0) {
+            this.updateColumnLayout(this.resizingColIndex);
+        }
+        if (this.isResizingRow && this.resizingRowIndex >= 0) {
+            this.updateRowLayout(this.resizingRowIndex);
         }
     }
 
-    /**
-     * Redraws the entire grid
-     */
-    redrawGrid() {
-        this.ctx.clearRect(0, 0, this.canvas.width / DPR, this.canvas.height / DPR);
-        this.gridMatrix.drawGrid(this.ctx);
-        
-        // Redraw selection if CellSelector is available
-        if (this.cellSelector) {
-            this.cellSelector.drawSelection(this.ctx);
-        }
-    }
-
-    /**
-     * Checks if the mouse is near a column edge and returns the edge information
-     */
     isNearColumnEdge(x: number): { nearColEdge: boolean, colIndex: number } {
         let total = 0;
         for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
@@ -200,9 +190,6 @@ export class GridResizer {
         return { nearColEdge: false, colIndex: -1 };
     }
 
-    /**
-     * Checks if the mouse is near a row edge and returns the edge information
-     */
     isNearRowEdge(y: number): { nearRowEdge: boolean, rowIndex: number } {
         let total = 0;
         for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
@@ -214,13 +201,9 @@ export class GridResizer {
         return { nearRowEdge: false, rowIndex: -1 };
     }
 
-    /**
-     * Converts pointer event coordinates to canvas-relative coordinates.
-     */
     getMousePosition(e: PointerEvent) {
         const rect = this.canvas.getBoundingClientRect();
         const container = this.canvas.parentElement!;
-        
         return {
             x: e.clientX - rect.left + container.scrollLeft,
             y: e.clientY - rect.top + container.scrollTop
