@@ -223,8 +223,16 @@ export class GridMatrix {
      * @param ctx - Canvas 2D rendering context
      * @param viewport Optional: {startRow, endRow, startCol, endCol} to render only visible cells
      */
-    drawGrid(ctx: CanvasRenderingContext2D, viewport?: { startRow: number, endRow: number, startCol: number, endCol: number }) {
+    drawGrid(
+        ctx: CanvasRenderingContext2D,
+        viewport?: { startRow: number, endRow: number, startCol: number, endCol: number },
+        scrollLeft: number = 0, scrollTop: number = 0
+    ) {
         ctx.save();
+
+        // Default to 0 if not provided
+        const offsetX = scrollLeft || 0;
+        const offsetY = scrollTop || 0;
 
         const startRow = viewport?.startRow ?? 0;
         const endRow = viewport?.endRow ?? this.noOfRows;
@@ -235,17 +243,17 @@ export class GridMatrix {
         for (let col = startCol; col < endCol; col++) {
             const cell = this.getCell(0, col);
             ctx.fillStyle = "#f5f5f5";
-            ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+            ctx.fillRect(cell.x - offsetX, cell.y - offsetY, cell.width, cell.height);
 
             if (cell.data) {
                 ctx.font = "14px Arial";
-                ctx.fillStyle = "#616161";
+                ctx.fillStyle = "#616161"; // header color
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 ctx.fillText(
                     cell.data,
-                    cell.x + cell.width / 2,
-                    cell.y + cell.height / 2
+                    cell.x - offsetX + cell.width / 2,
+                    cell.y - offsetY + cell.height / 2
                 );
             }
         }
@@ -254,7 +262,7 @@ export class GridMatrix {
         for (let row = startRow; row < endRow; row++) {
             const cell = this.getCell(row, 0);
             ctx.fillStyle = "#f5f5f5";
-            ctx.fillRect(cell.x, cell.y, cell.width, cell.height);
+            ctx.fillRect(cell.x - offsetX, cell.y - offsetY, cell.width, cell.height);
 
             if (cell.data) {
                 ctx.font = "14px Arial";
@@ -263,53 +271,35 @@ export class GridMatrix {
                 ctx.textBaseline = "bottom";
                 ctx.fillText(
                     cell.data,
-                    cell.x + cell.width - 8,
-                    cell.y + cell.height - 4
+                    cell.x - offsetX + cell.width - 8,
+                    cell.y - offsetY + cell.height - 4
                 );
             }
         }
 
-
-        // Draw all cells (including headers, but skip header text already drawn)
+        // Draw regular cells (center aligned)
         for (let rowIndex = startRow; rowIndex < endRow; rowIndex++) {
             for (let colIndex = startCol; colIndex < endCol; colIndex++) {
                 const cell = this.getCell(rowIndex, colIndex);
-
-                // Border for all cells
                 ctx.strokeStyle = "#e0e0e0";
                 ctx.lineWidth = 1;
                 ctx.strokeRect(
-                    Math.floor(cell.x) + 0.5,
-                    Math.floor(cell.y) + 0.5,
+                    Math.floor(cell.x - offsetX) + 0.5,
+                    Math.floor(cell.y - offsetY) + 0.5,
                     cell.width,
                     cell.height
                 );
 
-                // Skip already drawn header text
                 if (rowIndex === 0 || colIndex === 0) continue;
-
-                // Draw regular cell text, center aligned
                 if (cell.data) {
-                    let text = cell.data;
-                    const ellipsis = "...";
-                    const maxWidth = cell.width - 10;
-
-                    if (ctx.measureText(text).width > maxWidth) {
-                        let truncatedText = text;
-                        while (ctx.measureText(truncatedText + ellipsis).width > maxWidth && truncatedText.length > 0) {
-                            truncatedText = truncatedText.slice(0, -1);
-                        }
-                        text = truncatedText + ellipsis;
-                    }
-
                     ctx.font = "14px Arial";
                     ctx.fillStyle = "#000";
                     ctx.textAlign = "center";
                     ctx.textBaseline = "middle";
                     ctx.fillText(
-                        text,
-                        cell.x + cell.width / 2,
-                        cell.y + cell.height / 2
+                        cell.data,
+                        cell.x - offsetX + cell.width / 2,
+                        cell.y - offsetY + cell.height / 2
                     );
                 }
             }

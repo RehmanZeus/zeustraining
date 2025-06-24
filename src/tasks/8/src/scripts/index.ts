@@ -11,7 +11,7 @@ import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 
 
 
-const NUM_ROWS = 1000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
+const NUM_ROWS = 1000, NUM_COLS = 500, CELL_W = 70, CELL_H = 25;
 
 
 // ...rest of your app
@@ -54,7 +54,7 @@ window.onload = () => {
 
         // Calculate and draw only cells that are visible (viewport)
         const viewport = gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
-        gridMatrix.drawGrid(ctx, viewport);
+          gridMatrix.drawGrid(ctx, viewport, scrollLeft, scrollTop);
 
         cellSelector.drawSelection(ctx);
         rowSelector.drawSelection?.(ctx); 
