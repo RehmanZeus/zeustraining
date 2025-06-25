@@ -19,6 +19,12 @@ export class RowSelector {
     selectRow(row: number) {
         if (row < 1 || row >= this.gridMatrix.noOfRows) return;
         this.selectedRow = row;
+        // Clear cell selection and any drag selection
+        this.cellSelector.clearRangeSelection();
+        this.cellSelector.selectedRow = -1;
+        this.cellSelector.selectedCol = -1;
+        this.cellSelector.isEditing = false;
+        this.cellSelector.inputElement.style.display = 'none';
         this.redrawGrid();
     }
 

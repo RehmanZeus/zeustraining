@@ -37,7 +37,7 @@ window.onload = () => {
     const rowSelector = new RowSelector(ctx, gridMatrix,cellSelector);
     rowSelector.attachEvents(canvas);
 
-    const colSelector = new ColumnSelector(ctx, gridMatrix);
+    const colSelector = new ColumnSelector(ctx, gridMatrix, cellSelector);
     colSelector.attachEvents(canvas);
 
     const sumBtn = document.getElementById("calc-sum");

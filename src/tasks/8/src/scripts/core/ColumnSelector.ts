@@ -1,22 +1,33 @@
 import { GridMatrix } from "./GridMatrix";
+import { CellSelector } from "./CellSelector";
 
 export class ColumnSelector {
     ctx: CanvasRenderingContext2D;
     gridMatrix: GridMatrix;
     selectedCol = -1;
+    cellSelector?: CellSelector; // make optional, set from outside
 
     selectionColor = "#0f9d58";
     selectionBorderColor = "#0f9d58";
 
-    constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix) {
+    constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
         this.gridMatrix = gridMatrix;
+        this.cellSelector = cellSelector;
     }
 
     /** Select a column by index and redraw */
     selectCol(col: number) {
         if (col < 1 || col >= this.gridMatrix.noOfCols) return; // skip header col
         this.selectedCol = col;
+        // Clear cell selection and any drag selection, and editing if possible
+        if (this.cellSelector) {
+            this.cellSelector.clearRangeSelection();
+            this.cellSelector.selectedRow = -1;
+            this.cellSelector.selectedCol = -1;
+            this.cellSelector.isEditing = false;
+            this.cellSelector.inputElement.style.display = 'none';
+        }
         this.redrawGrid();
     }
 
