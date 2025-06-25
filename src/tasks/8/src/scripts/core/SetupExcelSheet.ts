@@ -61,7 +61,7 @@ export class SetupExcelSheet {
 
         // 3. Canvas (fixed size, overlays viewport)
         this.canvas = document.createElement('canvas');
-        this.canvas.style.position = 'absolute';
+        // this.canvas.style.position = 'absolute';
         this.canvas.style.top = '0';
         this.canvas.style.left = '0';
         this.canvas.style.width = this.canvasWidth + 'px';

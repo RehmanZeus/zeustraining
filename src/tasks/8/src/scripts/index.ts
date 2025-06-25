@@ -34,7 +34,7 @@ window.onload = () => {
     const sampleData = dataGen.generateData();
     gridDataLoader.loadJSONData(sampleData);
 
-    const rowSelector = new RowSelector(ctx, gridMatrix);
+    const rowSelector = new RowSelector(ctx, gridMatrix,cellSelector);
     rowSelector.attachEvents(canvas);
 
     const colSelector = new ColumnSelector(ctx, gridMatrix);
@@ -55,7 +55,7 @@ window.onload = () => {
         const viewport = gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
           gridMatrix.drawGrid(ctx, viewport, scrollLeft, scrollTop);
 
-        cellSelector.drawSelection(ctx);
+        cellSelector.drawSelection(ctx, scrollLeft, scrollTop);
         rowSelector.drawSelection?.(ctx); 
         colSelector.drawSelection?.(ctx); 
     }
