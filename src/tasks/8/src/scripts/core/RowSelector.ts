@@ -67,9 +67,13 @@ export class RowSelector {
         // 1. Highlight all body cells in the selected row
         for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
             const cell = this.gridMatrix.getCell(this.selectedRow, col);
+            const columHeaderCells = this.gridMatrix.getCell(0, col);
             ctx.fillStyle = this.selectionColor + "20";
             ctx.fillRect(cell.x - scrollLeft, cell.y - scrollTop, cell.width, cell.height);
             ctx.strokeRect(cell.x - scrollLeft, cell.y - scrollTop, cell.width, cell.height);
+            ctx.fillStyle = this.selectionColor + "44";
+            ctx.fillRect(columHeaderCells.x - scrollLeft, columHeaderCells.y, columHeaderCells.width, columHeaderCells.height);
+            ctx.strokeRect(columHeaderCells.x - scrollLeft, columHeaderCells.y, columHeaderCells.width, columHeaderCells.height);
         }
 
         // 2. Highlight the header cell for this row (col 0) - sticky left!

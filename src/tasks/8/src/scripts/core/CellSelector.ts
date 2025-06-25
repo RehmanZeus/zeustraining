@@ -31,6 +31,14 @@ export class CellSelector {
         y: 0
     };
 
+    selectedRangeCellData: { startRow: number, endRow: number, startCol: number, endCol: number, data: any[] } = {
+        startRow: -1,
+        endRow: -1,
+        startCol: -1,
+        endCol: -1,
+        data: []
+    };
+
     /** Dragging state */
     isDragging = false;
     dragStarted = false;
@@ -96,6 +104,7 @@ export class CellSelector {
         const { row, col } = this.getCellFromPosition(x, y);
         if (row > 0 && col > 0) {
             this.isDragging = true;
+            console.log(this.getRangeSelectionData());
             this.selectionStartRow = row;
             this.selectionStartCol = col;
             this.selectionEndRow = row;
@@ -132,6 +141,7 @@ export class CellSelector {
                 this.suppressNextClick = true; // only if actual drag
             }
             this.redrawGrid();
+
         }
     }
 
@@ -149,6 +159,7 @@ export class CellSelector {
         if (row > 0 && col > 0 && row < this.gridMatrix.noOfRows && col < this.gridMatrix.noOfCols) {
             this.clearRangeSelection();
             this.selectCell(row, col);
+            console.log(this.getSelectedCellData())
         }
     }
 
@@ -360,6 +371,8 @@ export class CellSelector {
                 (bottomRight.y + bottomRight.height) - topLeft.y
             );
             ctx.restore();
+
+
             return;
         }
 
@@ -460,6 +473,43 @@ export class CellSelector {
         };
     }
 
+
+    getRangeSelectionData(): {
+        startRow: number,
+        endRow: number,
+        startCol: number,
+        endCol: number,
+        data: any[]
+    } | undefined {
+        if (this.selectionStartRow <= -1 || this.selectionStartCol <= -1 || this.selectionEndRow <= -1 || this.selectionEndCol <= -1) {
+            return undefined;
+        }
+
+        const data: any[] = [];
+        this.selectedRangeCellData = {
+            startRow: -1,
+            endRow: -1,
+            startCol: -1,
+            endCol: -1,
+            data: []
+        };
+
+        for (let i = this.selectionStartRow; i <= this.selectionEndRow; ++i) {
+            for (let j = this.selectionStartCol; j <= this.selectionEndCol; ++j) {
+                const dataOfCell = this.gridMatrix.getCell(i, j).data;
+                if (!dataOfCell) continue;
+                data.push(dataOfCell)
+            }
+        }
+        this.selectedRangeCellData = {
+            startRow: this.selectionStartRow,
+            endRow: this.selectionEndRow,
+            startCol: this.selectionStartCol,
+            endCol: this.selectionEndCol,
+            data
+        };
+        return this.selectedRangeCellData;
+    }
     getSelectedCellData(): string | undefined {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return undefined;
         return this.gridMatrix.getCell(this.selectedRow, this.selectedCol).data;

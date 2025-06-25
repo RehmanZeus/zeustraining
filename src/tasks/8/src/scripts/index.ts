@@ -15,7 +15,7 @@ const NUM_ROWS = 1000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
 
 // ...rest of your app
 window.onload = () => {
-    const setup = new SetupExcelSheet(CELL_W,CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
+    const setup = new SetupExcelSheet(CELL_W, CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
     const canvas = setup.init();
     const ctx = setup.getContext();
 
@@ -28,13 +28,13 @@ window.onload = () => {
     const resizer = new GridResizer(canvas, ctx, gridMatrix);
     const cellSelector = new CellSelector(canvas, ctx, gridMatrix);
     resizer.setCellSelector(cellSelector);
-    
+
     const gridDataLoader = new GridDataLoader(gridMatrix);
     const dataGen = new GridDataGen(200);
     const sampleData = dataGen.generateData();
     gridDataLoader.loadJSONData(sampleData);
 
-    const rowSelector = new RowSelector(ctx, gridMatrix,cellSelector);
+    const rowSelector = new RowSelector(ctx, gridMatrix, cellSelector);
     rowSelector.attachEvents(canvas);
 
     const colSelector = new ColumnSelector(ctx, gridMatrix, cellSelector);
@@ -53,11 +53,11 @@ window.onload = () => {
 
         // Calculate and draw only cells that are visible (viewport)
         const viewport = gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
-          gridMatrix.drawGrid(ctx, viewport, scrollLeft, scrollTop);
+        gridMatrix.drawGrid(ctx, viewport, scrollLeft, scrollTop);
 
         cellSelector.drawSelection(ctx, scrollLeft, scrollTop);
-        rowSelector.drawSelection?.(ctx); 
-        colSelector.drawSelection?.(ctx); 
+        rowSelector.drawSelection?.(ctx);
+        colSelector.drawSelection?.(ctx);
     }
 
     // --- Use requestAnimationFrame to batch scroll redraws ---
@@ -85,4 +85,10 @@ window.onload = () => {
     resizer.setRedrawGridCallback(drawVisibleGrid);
 
     gridMatrix.logStats()
+
+    window.addEventListener('resize', () => {
+        // ... update canvas and context ...
+        drawVisibleGrid(); // or whatever your redraw function is
+    });
 };
+

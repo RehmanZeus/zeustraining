@@ -61,6 +61,12 @@ export class SetupExcelSheet {
 
         // 3. Canvas (fixed size, overlays viewport)
         this.canvas = document.createElement('canvas');
+        this.canvas.style.top = '0';
+        this.canvas.style.left = '0';
+        this.setCanvasResolution();
+
+        this.ctx = this.canvas.getContext('2d')!;
+        this.rescaleContext();
         // this.canvas.style.position = 'absolute';
         this.canvas.style.top = '0';
         this.canvas.style.left = '0';
@@ -88,6 +94,8 @@ export class SetupExcelSheet {
         // 6. Set initial canvas position (e.g. if container is scrolled on load)
         this.canvas.style.left = this.container.scrollLeft + 'px';
         this.canvas.style.top = this.container.scrollTop + 'px';
+        window.addEventListener('resize', this.handleResizeOrZoom.bind(this));
+        window.matchMedia(`(resolution: ${window.devicePixelRatio}dppx)`).addEventListener('change', this.handleResizeOrZoom.bind(this));
 
         // Debug logging
         console.log(`Canvas CSS dimensions: ${this.canvasWidth}x${this.canvasHeight}`);
@@ -103,5 +111,27 @@ export class SetupExcelSheet {
      */
     getContext(): CanvasRenderingContext2D {
         return this.ctx;
+    }
+
+    setCanvasResolution() {
+        const DPR = window.devicePixelRatio || 1;
+        this.canvas.style.width = this.canvasWidth + 'px';
+        this.canvas.style.height = this.canvasHeight + 'px';
+        this.canvas.width = Math.round(this.canvasWidth * DPR);
+        this.canvas.height = Math.round(this.canvasHeight * DPR);
+    }
+
+    rescaleContext() {
+        const DPR = window.devicePixelRatio || 1;
+        this.ctx = this.canvas.getContext('2d')!;
+        this.ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset any transforms
+        this.ctx.scale(DPR, DPR);
+    }
+
+    /** Re-apply resolution and scaling on resize/zoom */
+    handleResizeOrZoom() {
+        this.setCanvasResolution();
+        this.rescaleContext();
+        // Redraw grid here if needed (call your redraw function)
     }
 }
