@@ -55,7 +55,7 @@ export class CellSelector {
 
     // --- Event handler methods for EventAttacher ---
 
-     onPointerDown(e: PointerEvent) {
+    onPointerDown(e: PointerEvent) {
         if (e.button !== 0) return;
         this.pointerDownPosition = { x: e.clientX, y: e.clientY };
         this.dragStarted = false;
@@ -202,6 +202,11 @@ export class CellSelector {
                 e.preventDefault();
                 this.clearSelectedCell();
                 break;
+            case 'Escape':
+                e.preventDefault();
+                this.clearRangeSelection();
+                this.redrawGrid();
+                break;
             default:
                 if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
                     this.startEditing(e.key);
@@ -209,12 +214,11 @@ export class CellSelector {
                 break;
         }
     }
-
     handleShiftArrow(dRow: number, dCol: number) {
         // If not currently in range mode, start anchor at current cell
         if (
             this.selectionStartRow <= 0 || this.selectionStartCol <= 0 ||
-            this.selectionEndRow <= 0 || this.selectionEndCol <= 0
+            this.selectionEndRow <= 0 || this.selectionEndCol <= 0 || this.dragStarted
         ) {
             this.anchorRow = this.selectedRow;
             this.anchorCol = this.selectedCol;
@@ -249,12 +253,15 @@ export class CellSelector {
                 break;
             case 'Tab':
                 e.preventDefault();
+                alert("TAAA")
                 this.finishEditing();
                 this.moveSelection(0, e.shiftKey ? -1 : 1);
                 break;
             case 'Escape':
                 e.preventDefault();
                 this.cancelEditing();
+                this.clearRangeSelection();
+                this.redrawGrid();
                 break;
         }
     }
@@ -323,7 +330,7 @@ export class CellSelector {
         this.canvas.focus();
     }
 
-     cancelEditing() {
+    cancelEditing() {
         if (!this.isEditing) return;
         this.inputElement.style.display = 'none';
         this.isEditing = false;
@@ -482,13 +489,15 @@ export class CellSelector {
                 header.y + header.height / 2 - scrollTop
             );
             // Draw bottom border for the column header
-            ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(header.x - scrollLeft, header.y + header.height - 1 - scrollTop);
-            ctx.lineTo(header.x + header.width - scrollLeft, header.y + header.height - 1 - scrollTop);
-            ctx.stroke();
-            ctx.restore();
+            if (this.selectedRow !== 1) {
+                ctx.strokeStyle = this.selectionBorderColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(header.x - scrollLeft, header.y + header.height - 1 - scrollTop);
+                ctx.lineTo(header.x + header.width - scrollLeft, header.y + header.height - 1 - scrollTop);
+                ctx.stroke();
+                ctx.restore();
+            }
 
             // --- Highlight row header cell ---
             ctx.save();
@@ -506,13 +515,15 @@ export class CellSelector {
                 row.y + row.height - 4 - scrollTop
             );
             // Draw right border for the row header
-            ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(row.x + row.width - 1 - scrollLeft, row.y - scrollTop);
-            ctx.lineTo(row.x + row.width - 1 - scrollLeft, row.y + row.height - scrollTop);
-            ctx.stroke();
-            ctx.restore();
+            if (this.selectedCol !== 1) {
+                ctx.strokeStyle = this.selectionBorderColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(row.x + row.width - 1 - scrollLeft, row.y - scrollTop);
+                ctx.lineTo(row.x + row.width - 1 - scrollLeft, row.y + row.height - scrollTop);
+                ctx.stroke();
+                ctx.restore();
+            }
 
             // --- Draw selection background for main cell ---
             ctx.save();
@@ -527,7 +538,7 @@ export class CellSelector {
             ctx.restore();
         }
     }
-     clearEditing() {
+    clearEditing() {
         if (this.isEditing) {
             this.cancelEditing();
         }

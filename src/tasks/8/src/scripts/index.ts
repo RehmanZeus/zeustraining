@@ -73,6 +73,7 @@ window.onload = () => {
     resizer.setRedrawGridCallback(drawVisibleGrid);
 
     gridMatrix.logStats();
+    cellSelector.selectCell(1,1)
 
     window.addEventListener('resize', () => {
         drawVisibleGrid(); 
