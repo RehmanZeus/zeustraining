@@ -4,16 +4,22 @@
     box-sizing: border-box;
 }
 
-html, body {
-    height: 100% !important;
+html,
+body {
     width: 100% !important;
     margin: 0;
     padding: 0;
-    overflow: hidden; /* Prevent double scrollbars */
+    overflow: hidden;
+    /* Prevent double scrollbars */
     touch-action: none;
 }
 
-/* Style the container for better scrolling experience */
+.excel-header {
+
+    padding: 50px;
+    
+}
+
 #excel-container {
     /* Smooth scrolling */
     scroll-behavior: smooth;
@@ -49,5 +55,3 @@ canvas {
     padding: 0;
     position: relative;
 }
-
-

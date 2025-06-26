@@ -25,7 +25,6 @@ export class GridResizer {
         this.canvas = canvas;
         this.ctx = ctx;
         this.gridMatrix = gridMatrix;
-        this.attachEvents();
     }
 
     setCellSelector(cellSelector: CellSelector) {
@@ -36,10 +35,85 @@ export class GridResizer {
         this.redrawGrid = redrawFn;
     }
 
-    attachEvents() {
-        this.canvas.addEventListener("pointermove", this.handleMouseMove.bind(this));
-        this.canvas.addEventListener("pointerdown", this.handleMouseDown.bind(this));
-        this.canvas.addEventListener("pointerup", this.handleMouseUp.bind(this));
+    /** Returns true if pointer is near a column edge in the column header area (row 0) */
+    isNearColumnEdge(e: PointerEvent): boolean {
+        const { x, y } = this.getMousePosition(e);
+        // Only allow resizing if pointer is within the header row (y range of row 0)
+        const headerHeight = this.gridMatrix.rowHeights[0];
+        if (y > headerHeight) {
+            this.resizingColIndex = -1;
+            return false;
+        }
+        let total = 0;
+        for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
+            total += this.gridMatrix.columnWidths[i];
+            if (Math.abs(x - total) < this.resizeThreshold) {
+                this.resizingColIndex = i;
+                return true;
+            }
+        }
+        this.resizingColIndex = -1;
+        return false;
+    }
+
+    /** Returns true if pointer is near a row edge in the row header area (col 0) */
+    isNearRowEdge(e: PointerEvent): boolean {
+        const { x, y } = this.getMousePosition(e);
+        // Only allow resizing if pointer is within the header column (x range of col 0)
+        const headerWidth = this.gridMatrix.columnWidths[0];
+        if (x > headerWidth) {
+            this.resizingRowIndex = -1;
+            return false;
+        }
+        let total = 0;
+        for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
+            total += this.gridMatrix.rowHeights[i];
+            if (Math.abs(y - total) < this.resizeThreshold) {
+                this.resizingRowIndex = i;
+                return true;
+            }
+        }
+        this.resizingRowIndex = -1;
+        return false;
+    }
+
+    onPointerDown(e: PointerEvent) {
+        const { x, y } = this.getMousePosition(e);
+        if (this.isNearColumnEdge(e) && this.resizingColIndex > 0) {
+            this.isResizingCol = true;
+            this.startX = x;
+            this.initialWidth = this.gridMatrix.columnWidths[this.resizingColIndex];
+            this.canvas.style.cursor = "col-resize";
+            e.preventDefault();
+        } else if (this.isNearRowEdge(e) && this.resizingRowIndex > 0) {
+            this.isResizingRow = true;
+            this.startY = y;
+            this.initialHeight = this.gridMatrix.rowHeights[this.resizingRowIndex];
+            this.canvas.style.cursor = "row-resize";
+            e.preventDefault();
+        }
+    }
+
+    onPointerMove(e: PointerEvent) {
+        if (this.isResizingCol || this.isResizingRow) {
+            this.handleResize(e);
+            return;
+        }
+        if (this.isNearColumnEdge(e) && this.resizingColIndex > 0) {
+            this.canvas.style.cursor = "col-resize";
+        } else if (this.isNearRowEdge(e) && this.resizingRowIndex > 0) {
+            this.canvas.style.cursor = "row-resize";
+        } else {
+            this.canvas.style.cursor = "default";
+        }
+    }
+
+    onPointerUp(e: PointerEvent) {
+        this.isResizingCol = false;
+        this.isResizingRow = false;
+        this.resizingColIndex = -1;
+        this.resizingRowIndex = -1;
+        this.canvas.style.cursor = "default";
     }
 
     updateColumnLayout(colIndex: number) {
@@ -68,72 +142,6 @@ export class GridResizer {
         }
     }
 
-    handleMouseMove(e: PointerEvent) {
-        if (this.isResizingCol || this.isResizingRow) {
-            this.handleResize(e);
-            return;
-        }
-
-        const { x, y } = this.getMousePosition(e);
-        const { nearColEdge, colIndex } = this.isNearColumnEdge(x);
-        const { nearRowEdge, rowIndex } = this.isNearRowEdge(y);
-
-        if (nearColEdge && colIndex > 0) {
-            this.canvas.style.cursor = "col-resize";
-        } else if (nearRowEdge && rowIndex > 0) {
-            this.canvas.style.cursor = "row-resize";
-        } else {
-            this.canvas.style.cursor = "default";
-        }
-    }
-
-    handleMouseDown(e: PointerEvent) {
-        const { x, y } = this.getMousePosition(e);
-        const { nearColEdge, colIndex } = this.isNearColumnEdge(x);
-        const { nearRowEdge, rowIndex } = this.isNearRowEdge(y);
-
-        if (nearColEdge && colIndex > 0) {
-            this.isResizingCol = true;
-            this.resizingColIndex = colIndex;
-            this.startX = x;
-            this.initialWidth = this.gridMatrix.columnWidths[colIndex];
-            this.canvas.style.cursor = "col-resize";
-            e.preventDefault();
-        } else if (nearRowEdge && rowIndex > 0) {
-            this.isResizingRow = true;
-            this.resizingRowIndex = rowIndex;
-            this.startY = y;
-            this.initialHeight = this.gridMatrix.rowHeights[rowIndex];
-            this.canvas.style.cursor = "row-resize";
-            e.preventDefault();
-        }
-    }
-
-    handleMouseUp(e: PointerEvent) {
-        this.isResizingCol = false;
-        this.isResizingRow = false;
-        this.resizingColIndex = -1;
-        this.resizingRowIndex = -1;
-        this.canvas.style.cursor = "default";
-    }
-
-    updateGridLayout() {
-        let y = 0;
-        for (let row = 0; row < this.gridMatrix.noOfRows; row++) {
-            let x = 0;
-            for (let col = 0; col < this.gridMatrix.noOfCols; col++) {
-                const cell = this.gridMatrix.getCell(row, col);
-                cell.x = x;
-                cell.y = y;
-                cell.width = this.gridMatrix.columnWidths[col];
-                cell.height = this.gridMatrix.rowHeights[row];
-                x += this.gridMatrix.columnWidths[col];
-            }
-            y += this.gridMatrix.rowHeights[row];
-        }
-    }
-
-    // ...inside GridResizer...
     handleResize(e: PointerEvent) {
         const { x, y } = this.getMousePosition(e);
         let changed = false;
@@ -157,7 +165,6 @@ export class GridResizer {
             }
         }
         if (changed) {
-            // Only update the visible viewport
             const container = this.canvas.parentElement!;
             this.updateGridLayoutViewport(
                 container.scrollLeft,
@@ -169,19 +176,10 @@ export class GridResizer {
         }
     }
 
-    /**
-     * Only update positions/dimensions for cells in the visible viewport + headers.
-     */
-    /**
- * Only update cell positions and sizes for the visible viewport.
- * Call this instead of updateGridLayout() after a resize event.
- */
     updateGridLayoutViewport(scrollLeft: number, scrollTop: number, viewportWidth: number, viewportHeight: number) {
-        // Get visible bounds (plus header row/col)
         const { startRow, endRow, startCol, endCol } = this.gridMatrix.getViewportBounds(
             scrollLeft, scrollTop, viewportWidth, viewportHeight
         );
-        // Always include header row/col
         const rowStart = Math.max(0, startRow - 1);
         const colStart = Math.max(0, startCol - 1);
 
@@ -198,28 +196,6 @@ export class GridResizer {
             }
             y += this.gridMatrix.rowHeights[row];
         }
-    }
-
-    isNearColumnEdge(x: number): { nearColEdge: boolean, colIndex: number } {
-        let total = 0;
-        for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
-            total += this.gridMatrix.columnWidths[i];
-            if (Math.abs(x - total) < this.resizeThreshold) {
-                return { nearColEdge: true, colIndex: i };
-            }
-        }
-        return { nearColEdge: false, colIndex: -1 };
-    }
-
-    isNearRowEdge(y: number): { nearRowEdge: boolean, rowIndex: number } {
-        let total = 0;
-        for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
-            total += this.gridMatrix.rowHeights[i];
-            if (Math.abs(y - total) < this.resizeThreshold) {
-                return { nearRowEdge: true, rowIndex: i };
-            }
-        }
-        return { nearRowEdge: false, rowIndex: -1 };
     }
 
     getMousePosition(e: PointerEvent) {

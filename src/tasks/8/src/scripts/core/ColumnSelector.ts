@@ -5,17 +5,66 @@ export class ColumnSelector {
     ctx: CanvasRenderingContext2D;
     gridMatrix: GridMatrix;
     selectedCol = -1;
-    cellSelector?: CellSelector; // make optional, set from outside
+    cellSelector?: CellSelector;
 
     selectionColor = "#0f9d58";
     selectionBorderColor = "#137e43";
     columnHeaderBg = "#107c41";
     columnHeaderText = "#fff";
+    canvas: HTMLCanvasElement | null = null; // store if needed
 
     constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
         this.gridMatrix = gridMatrix;
         this.cellSelector = cellSelector;
+    }
+
+    setCanvas(canvas: HTMLCanvasElement) {
+        this.canvas = canvas;
+    }
+
+    isColumnHeader(e: MouseEvent): boolean {
+        // Use coordinates relative to the canvas (NOT grid, NO scroll offset!)
+        const rect = this.ctx.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        let totalX = 0;
+        let colIndex = -1;
+        for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
+            totalX += this.gridMatrix.columnWidths[col];
+            if (x < totalX) {
+                colIndex = col;
+                break;
+            }
+        }
+        const row0Height = this.gridMatrix.rowHeights[0];
+        // Y must be within the sticky header area (canvas top)
+        return (colIndex !== -1 && y >= 0 && y < row0Height && colIndex < this.gridMatrix.noOfCols);
+    }
+
+    onClick(e: MouseEvent) {
+        if (!this.canvas) return;
+        const { x, y } = this.getMousePosition(e, this.canvas);
+        let totalX = 0;
+        let colIndex = -1;
+        for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
+            totalX += this.gridMatrix.columnWidths[col];
+            if (x < totalX) {
+                colIndex = col;
+                break;
+            }
+        }
+        const row0Height = this.gridMatrix.rowHeights[0];
+        if (colIndex === -1 || y >= row0Height || colIndex >= this.gridMatrix.noOfCols) {
+            this.clearSelection();
+            return;
+        }
+        if (this.selectedCol === colIndex) {
+            this.clearSelection();
+        } else {
+            this.selectCol(colIndex);
+        }
     }
 
     /** Select a column by index and redraw */
@@ -188,37 +237,7 @@ export class ColumnSelector {
         this.drawSelection(this.ctx, scrollLeft, scrollTop);
     }
 
-    /** Attach to canvas for column header click selection */
-    attachEvents(canvas: HTMLCanvasElement) {
-        canvas.addEventListener("click", e => {
-            const { x, y } = this.getMousePosition(e, canvas);
 
-            let totalX = 0;
-            let colIndex = -1;
-            for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
-                totalX += this.gridMatrix.columnWidths[col];
-                if (x < totalX) {
-                    colIndex = col;
-                    break;
-                }
-            }
-
-            const row0Height = this.gridMatrix.rowHeights[0];
-
-            // If click is not in a column header, clear selection
-            if (colIndex === -1 || y >= row0Height || colIndex >= this.gridMatrix.noOfCols) {
-                this.clearSelection();
-                return;
-            }
-
-            // If click is in a column header, toggle selection
-            if (this.selectedCol === colIndex) {
-                this.clearSelection();
-            } else {
-                this.selectCol(colIndex);
-            }
-        });
-    }
 
     /** Utility: Get mouse position relative to canvas (with scroll offset!) */
     getMousePosition(e: MouseEvent, canvas: HTMLCanvasElement) {
