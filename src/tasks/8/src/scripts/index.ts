@@ -44,21 +44,45 @@ window.onload = () => {
         const scrollTop = container.scrollTop;
         const viewportWidth = container.clientWidth;
         const viewportHeight = container.clientHeight;
+
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         const viewport = gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
+
+        // 1. Draw grid
         gridMatrix.drawGrid(ctx, viewport, scrollLeft, scrollTop);
 
+        // 2. Draw selections
         cellSelector.drawSelection(ctx, scrollLeft, scrollTop);
-        rowSelector.drawSelection?.(ctx);
-        colSelector.drawSelection?.(ctx);
+        if (rowSelector.drawSelection) {
+            rowSelector.drawSelection(ctx, scrollLeft, scrollTop);
+        }
+        if (colSelector.drawSelection) {
+            colSelector.drawSelection(ctx, scrollLeft, scrollTop);
+        }
+
+        // 3. ALWAYS draw corner cell last to ensure it's on top
+        drawCornerCell(ctx);
+    }
+
+    function drawCornerCell(ctx: CanvasRenderingContext2D) {
+        const cornerWidth = gridMatrix.columnWidths[0];
+        const cornerHeight = gridMatrix.rowHeights[0];
+
+        ctx.save();
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(0, 0, cornerWidth, cornerHeight);
+        ctx.strokeStyle = "#e0e0e0";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0.5, 0.5, cornerWidth, cornerHeight);
+        ctx.restore();
     }
 
     let animationFrameId: number | null = null;
     container.addEventListener('scroll', () => {
         if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
         animationFrameId = requestAnimationFrame(() => {
-            drawVisibleGrid();
+            drawVisibleGrid(); // This should redraw the selection with new scroll position
             animationFrameId = null;
         });
     });
@@ -74,10 +98,10 @@ window.onload = () => {
     resizer.setRedrawGridCallback(drawVisibleGrid);
 
     // gridMatrix.logStats();
-    cellSelector.selectCell(1,1)
+    cellSelector.selectCell(1, 1)
 
     window.addEventListener('resize', () => {
-        drawVisibleGrid(); 
+        drawVisibleGrid();
     });
 
 

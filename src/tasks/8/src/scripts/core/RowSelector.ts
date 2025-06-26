@@ -26,7 +26,8 @@ export class RowSelector {
 
     /** Returns true if the mouse event is on a row header cell (excluding col 0, row 0) */
     isRowHeader(e: MouseEvent): boolean {
-        const rect = this.ctx.canvas.getBoundingClientRect();
+        if (!this.canvas) return false;
+        const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
@@ -40,7 +41,6 @@ export class RowSelector {
             }
         }
         const col0Width = this.gridMatrix.columnWidths[0];
-        // X must be within the sticky row header area (canvas left)
         return (
             rowIndex !== -1 &&
             x >= 0 &&
@@ -78,15 +78,14 @@ export class RowSelector {
         }
 
         // Support Ctrl+Click for multi-selection
-        if (e.ctrlKey || e.metaKey) { // metaKey for MacOS Cmd
+        if (e.ctrlKey || e.metaKey) {
             const idx = this.selectedRows.indexOf(rowIndex);
             if (idx === -1) {
                 this.selectedRows.push(rowIndex);
             } else {
-                this.selectedRows.splice(idx, 1); // Deselect if already selected
+                this.selectedRows.splice(idx, 1);
             }
             this.selectedRow = rowIndex;
-            // Clear cell selection and any drag selection, and editing if possible
             this.cellSelector.clearRangeSelection();
             this.cellSelector.selectedRow = -1;
             this.cellSelector.selectedCol = -1;
@@ -112,7 +111,6 @@ export class RowSelector {
         if (row < 1 || row >= this.gridMatrix.noOfRows) return;
         this.selectedRow = row;
         this.selectedRows = [row];
-        // Clear cell selection and any drag selection
         this.cellSelector.clearRangeSelection();
         this.cellSelector.selectedRow = -1;
         this.cellSelector.selectedCol = -1;
@@ -121,7 +119,6 @@ export class RowSelector {
         this.redrawGrid();
     }
 
-    /** Deselect any row */
     clearSelection() {
         this.selectedRow = -1;
         this.selectedRows = [];
@@ -154,142 +151,133 @@ export class RowSelector {
         this.redrawGrid();
     }
 
-    /** Draw the row selection highlight (call after drawing grid) */
+    /** Optimized row selection drawing with sticky headers and viewport culling */
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
         if (!this.selectedRows || this.selectedRows.length === 0) return;
 
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const currentScrollLeft = scrollLeft || container.scrollLeft;
+        const currentScrollTop = scrollTop || container.scrollTop;
+        
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+        const viewport = this.gridMatrix.getViewportBounds(currentScrollLeft, currentScrollTop, viewportWidth, viewportHeight);
+
         for (const selectedRow of this.selectedRows) {
-            let firstCellRect = null, lastCellRect = null;
-            for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
-                const cell = this.gridMatrix.getCell(selectedRow, col);
-                const colHeaderCell = this.gridMatrix.getCell(0, col);
-                const { x, y, width, height } = GridCell.getCellRect(
-                    selectedRow, col,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                const { x: colHeaderX, y: colHeaderY, width: colHeaderW, height: colHeaderH } = GridCell.getCellRect(
-                    0, col,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-
-                if (!firstCellRect) firstCellRect = { x, y, width, height };
-                lastCellRect = { x, y, width, height };
-
-                // Highlight all body cells in the selected row
-                ctx.save();
-                ctx.fillStyle = this.selectionColor + "20";
-                ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
-                ctx.lineWidth = 1;
-                ctx.strokeStyle = "#e0e0e0";
-                ctx.strokeRect(
-                    Math.floor(x - scrollLeft) + 0.5,
-                    Math.floor(y - scrollTop) + 0.5,
-                    width, height
-                );
-                ctx.restore();
-
-                // Column header background
-                ctx.save();
-                ctx.fillStyle = "#caead8";
-                ctx.fillRect(colHeaderX - scrollLeft, colHeaderY, colHeaderW, colHeaderH);
-                // Thin border for header cell
-                ctx.strokeStyle = "#e0e0e0";
-                ctx.lineWidth = 1;
-                ctx.strokeRect(
-                    Math.floor(colHeaderX - scrollLeft) + 0.5,
-                    Math.floor(colHeaderY) + 0.5,
-                    colHeaderW, colHeaderH
-                );
-                // Column header text (green, bold)
-                ctx.font = "bold 14px Arial";
-                ctx.fillStyle = "#107c41";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(
-                    colHeaderCell.data || "",
-                    colHeaderX - scrollLeft + colHeaderW / 2,
-                    colHeaderY + colHeaderH / 2
-                );
-                // Thick green bottom border
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(
-                    colHeaderX - scrollLeft,
-                    colHeaderY + colHeaderH - 1
-                );
-                ctx.lineTo(
-                    colHeaderX - scrollLeft + colHeaderW,
-                    colHeaderY + colHeaderH - 1
-                );
-                ctx.stroke();
-                ctx.restore();
+            // Get row position
+            const headerRect = GridCell.getCellRect(selectedRow, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+            
+            // Skip drawing if row is completely out of view
+            const rowTop = headerRect.y - currentScrollTop;
+            const rowBottom = rowTop + headerRect.height;
+            if (rowBottom < 0 || rowTop > viewportHeight) {
+                continue; // Row is not visible, skip drawing
             }
 
-            // Highlight the header cell for this row (col 0)
+            // 1. Draw STICKY row header highlight (scrolls vertically, fixed at left)
             const headerCell = this.gridMatrix.getCell(selectedRow, 0);
-            const { x: headerX, y: headerY, width: headerW, height: headerH } = GridCell.getCellRect(
-                selectedRow, 0,
-                this.gridMatrix.rowHeights,
-                this.gridMatrix.columnWidths
-            );
-
+            
             ctx.save();
-            // Background
             ctx.fillStyle = this.rowHeaderBg;
-            ctx.fillRect(headerX, headerY - scrollTop, headerW, headerH);
+            ctx.fillRect(0, headerRect.y - currentScrollTop, headerRect.width, headerRect.height);
 
-            // Thin border for row header cell
-            ctx.strokeStyle = "#e0e0e0";
-            ctx.lineWidth = 1;
-            ctx.strokeRect(
-                Math.floor(headerX) + 0.5,
-                Math.floor(headerY - scrollTop) + 0.5,
-                headerW, headerH
-            );
-
-            // Text (white, bold, right-aligned, bottom)
             ctx.font = "bold 14px Arial";
             ctx.fillStyle = this.rowHeaderText;
             ctx.textAlign = "right";
             ctx.textBaseline = "bottom";
             ctx.fillText(
                 headerCell.data || "",
-                headerX + headerW - 8,
-                headerY + headerH - 4 - scrollTop
+                headerRect.width - 8,
+                headerRect.y - currentScrollTop + headerRect.height - 4
             );
 
-            // Borders (top & bottom, thick, green)
+            // Row header borders
             ctx.strokeStyle = this.selectionBorderColor;
             ctx.lineWidth = 2;
-            // Top border
-            ctx.beginPath();
-            ctx.moveTo(headerX, headerY - scrollTop + 1);
-            ctx.lineTo(headerX + headerW, headerY - scrollTop + 1);
-            ctx.stroke();
-            // Bottom border
-            ctx.beginPath();
-            ctx.moveTo(headerX, headerY + headerH - scrollTop - 1);
-            ctx.lineTo(headerX + headerW, headerY + headerH - scrollTop - 1);
-            ctx.stroke();
+            ctx.strokeRect(0, headerRect.y - currentScrollTop, headerRect.width, headerRect.height);
             ctx.restore();
 
-            // Draw border around the entire selected row (from header to last cell)
-            if (firstCellRect && lastCellRect) {
+            // 2. Draw visible data cell highlights (scroll in both directions)
+            for (let col = Math.max(1, viewport.startCol); col < viewport.endCol; col++) {
+                const rect = GridCell.getCellRect(selectedRow, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+                
                 ctx.save();
+                ctx.fillStyle = this.selectionColor + "20";
+                ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
                 ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.strokeRect(
-                    Math.floor(headerX) + 0.5,
-                    Math.floor(headerY - scrollTop) + 0.5,
-                    (lastCellRect.x + lastCellRect.width) - headerX,
-                    headerH
-                );
+                ctx.lineWidth = 1;
+                ctx.strokeRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
                 ctx.restore();
             }
+
+            // 3. Draw sticky column header highlights for visible columns
+            for (let col = Math.max(1, viewport.startCol); col < viewport.endCol; col++) {
+                const colHeaderRect = GridCell.getCellRect(0, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+                const colHeaderCell = this.gridMatrix.getCell(0, col);
+                
+                ctx.save();
+                ctx.fillStyle = "#caead8";
+                ctx.fillRect(colHeaderRect.x - currentScrollLeft, 0, colHeaderRect.width, colHeaderRect.height);
+                
+                ctx.font = "bold 14px Arial";
+                ctx.fillStyle = "#107c41";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(
+                    colHeaderCell.data || "",
+                    colHeaderRect.x - currentScrollLeft + colHeaderRect.width / 2,
+                    colHeaderRect.height / 2
+                );
+
+                // Thick green bottom border for column headers
+                ctx.strokeStyle = this.selectionBorderColor;
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(colHeaderRect.x - currentScrollLeft, colHeaderRect.height - 1);
+                ctx.lineTo(colHeaderRect.x - currentScrollLeft + colHeaderRect.width, colHeaderRect.height - 1);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // 4. Draw overall row selection border (optional visual enhancement)
+            ctx.save();
+            ctx.strokeStyle = this.selectionBorderColor;
+            ctx.lineWidth = 3;
+            ctx.setLineDash([5, 5]); // Dashed border for the full row
+            
+            // Draw border from row header to right edge of visible area
+            const leftX = 0;
+            const rightX = Math.min(
+                this.gridMatrix.columnWidths.slice(0, viewport.endCol).reduce((a, b) => a + b, 0) - currentScrollLeft,
+                viewportWidth
+            );
+            
+            ctx.beginPath();
+            ctx.rect(leftX, headerRect.y - currentScrollTop, rightX - leftX, headerRect.height);
+            ctx.stroke();
+            ctx.restore();
         }
+
+        // 5. REDRAW CORNER CELL (0,0) to ensure it's always on top
+        this.drawCornerCell(ctx);
+    }
+
+    // Add this new method to RowSelector
+    private drawCornerCell(ctx: CanvasRenderingContext2D) {
+        const cornerWidth = this.gridMatrix.columnWidths[0];
+        const cornerHeight = this.gridMatrix.rowHeights[0];
+        
+        ctx.save();
+        // Corner cell background
+        ctx.fillStyle = "#f5f5f5";
+        ctx.fillRect(0, 0, cornerWidth, cornerHeight);
+        
+        // Corner cell border
+        ctx.strokeStyle = "#e0e0e0";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(0.5, 0.5, cornerWidth, cornerHeight);
+        
+        ctx.restore();
     }
 
     /** Redraws the entire grid with row selection highlight */
@@ -297,12 +285,25 @@ export class RowSelector {
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+        
+        const viewport = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
+
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
-        this.gridMatrix.drawGrid(this.ctx, undefined, scrollLeft, scrollTop);
+
+        // Draw grid first
+        this.gridMatrix.drawGrid(this.ctx, viewport, scrollLeft, scrollTop);
+        
+        // Draw row selection with current scroll values
         this.drawSelection(this.ctx, scrollLeft, scrollTop);
+        
+        // Also draw other selections if they exist
+        if (this.cellSelector) {
+            this.cellSelector.drawSelection(this.ctx, scrollLeft, scrollTop);
+        }
     }
 
-    /** Utility: Get mouse position relative to canvas (with scroll offset!) */
     getMousePosition(e: MouseEvent, canvas: HTMLCanvasElement) {
         const rect = canvas.getBoundingClientRect();
         const container = document.getElementById('excel-container') as HTMLDivElement;

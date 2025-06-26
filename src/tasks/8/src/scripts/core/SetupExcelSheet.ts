@@ -67,7 +67,7 @@ export class SetupExcelSheet {
 
         this.ctx = this.canvas.getContext('2d')!;
         this.rescaleContext();
-        // this.canvas.style.position = 'absolute';
+        this.canvas.style.position = 'absolute';
         this.canvas.style.top = '0';
         this.canvas.style.left = '0';
         this.canvas.style.width = this.canvasWidth + 'px';
