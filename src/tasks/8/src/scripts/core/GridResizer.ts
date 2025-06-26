@@ -1,5 +1,6 @@
-import { DPR, MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
 import { CellSelector } from "./CellSelector.js";
+import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
 
 export class GridResizer {
@@ -38,7 +39,6 @@ export class GridResizer {
     /** Returns true if pointer is near a column edge in the column header area (row 0) */
     isNearColumnEdge(e: PointerEvent): boolean {
         const { x, y } = this.getMousePosition(e);
-        // Only allow resizing if pointer is within the header row (y range of row 0)
         const headerHeight = this.gridMatrix.rowHeights[0];
         if (y > headerHeight) {
             this.resizingColIndex = -1;
@@ -59,7 +59,6 @@ export class GridResizer {
     /** Returns true if pointer is near a row edge in the row header area (col 0) */
     isNearRowEdge(e: PointerEvent): boolean {
         const { x, y } = this.getMousePosition(e);
-        // Only allow resizing if pointer is within the header column (x range of col 0)
         const headerWidth = this.gridMatrix.columnWidths[0];
         if (x > headerWidth) {
             this.resizingRowIndex = -1;
@@ -108,38 +107,12 @@ export class GridResizer {
         }
     }
 
-    onPointerUp(e: PointerEvent) {
+    onPointerUp(_e: PointerEvent) {
         this.isResizingCol = false;
         this.isResizingRow = false;
         this.resizingColIndex = -1;
         this.resizingRowIndex = -1;
         this.canvas.style.cursor = "default";
-    }
-
-    updateColumnLayout(colIndex: number) {
-        let x = this.gridMatrix.columnWidths.slice(0, colIndex).reduce((a, b) => a + b, 0);
-        let width = this.gridMatrix.columnWidths[colIndex];
-        for (let row = 0; row < this.gridMatrix.noOfRows; row++) {
-            let y = this.gridMatrix.rowHeights.slice(0, row).reduce((a, b) => a + b, 0);
-            const cell = this.gridMatrix.getCell(row, colIndex);
-            cell.x = x;
-            cell.y = y;
-            cell.width = width;
-            cell.height = this.gridMatrix.rowHeights[row];
-        }
-    }
-
-    updateRowLayout(rowIndex: number) {
-        let y = this.gridMatrix.rowHeights.slice(0, rowIndex).reduce((a, b) => a + b, 0);
-        let height = this.gridMatrix.rowHeights[rowIndex];
-        for (let col = 0; col < this.gridMatrix.noOfCols; col++) {
-            let x = this.gridMatrix.columnWidths.slice(0, col).reduce((a, b) => a + b, 0);
-            const cell = this.gridMatrix.getCell(rowIndex, col);
-            cell.x = x;
-            cell.y = y;
-            cell.width = this.gridMatrix.columnWidths[col];
-            cell.height = height;
-        }
     }
 
     handleResize(e: PointerEvent) {
@@ -151,7 +124,6 @@ export class GridResizer {
             const newWidth = Math.max(MIN_GRIDCELL_WIDTH, this.initialWidth + delta);
             if (this.gridMatrix.columnWidths[this.resizingColIndex] !== newWidth) {
                 this.gridMatrix.columnWidths[this.resizingColIndex] = newWidth;
-                this.updateColumnLayout(this.resizingColIndex);
                 changed = true;
             }
         }
@@ -160,41 +132,11 @@ export class GridResizer {
             const newHeight = Math.max(MIN_GRIDCELL_HEIGHT, this.initialHeight + delta);
             if (this.gridMatrix.rowHeights[this.resizingRowIndex] !== newHeight) {
                 this.gridMatrix.rowHeights[this.resizingRowIndex] = newHeight;
-                this.updateRowLayout(this.resizingRowIndex);
                 changed = true;
             }
         }
         if (changed) {
-            const container = this.canvas.parentElement!;
-            this.updateGridLayoutViewport(
-                container.scrollLeft,
-                container.scrollTop,
-                container.clientWidth,
-                container.clientHeight
-            );
             this.redrawGrid();
-        }
-    }
-
-    updateGridLayoutViewport(scrollLeft: number, scrollTop: number, viewportWidth: number, viewportHeight: number) {
-        const { startRow, endRow, startCol, endCol } = this.gridMatrix.getViewportBounds(
-            scrollLeft, scrollTop, viewportWidth, viewportHeight
-        );
-        const rowStart = Math.max(0, startRow - 1);
-        const colStart = Math.max(0, startCol - 1);
-
-        let y = this.gridMatrix.rowHeights.slice(0, rowStart).reduce((a, b) => a + b, 0);
-        for (let row = rowStart; row < endRow; row++) {
-            let x = this.gridMatrix.columnWidths.slice(0, colStart).reduce((a, b) => a + b, 0);
-            for (let col = colStart; col < endCol; col++) {
-                const cell = this.gridMatrix.getCell(row, col);
-                cell.x = x;
-                cell.y = y;
-                cell.width = this.gridMatrix.columnWidths[col];
-                cell.height = this.gridMatrix.rowHeights[row];
-                x += this.gridMatrix.columnWidths[col];
-            }
-            y += this.gridMatrix.rowHeights[row];
         }
     }
 

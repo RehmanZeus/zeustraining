@@ -13,40 +13,33 @@ export class GridDataLoader {
             return;
         }
 
-        console.log(`Data Array Length: ${dataArray.length}\n
-            Data Columns: ${Object.keys(dataArray[0] as object).length}\n
-            Data Rows: ${Object.values(dataArray).length}\n
-            No. of Cols: ${this.gridMatrix.noOfCols}\n
-            No.of Rows: ${this.gridMatrix.noOfRows}`)
-        // 1. Get column names from the first object
+        // 1. Get column names and dimensions up front
         const columnNames = Object.keys(dataArray[0] as object);
+        const requiredRows = dataArray.length + 2;
+        const requiredCols = columnNames.length + 1;
+        const gridMatrix = this.gridMatrix; // local for speed
 
+        // 2. Expand grid if needed (this is fast, only updates headers and arrays)
+        gridMatrix.addMoreGrids(requiredRows, requiredCols);
 
-        const requiredRows = dataArray.length + 2; 
-        const requiredCols = columnNames.length + 1; 
-        
-        this.gridMatrix.addMoreGrids(requiredRows, requiredCols);
-
-
-        // 2. Write custom headers to row 1 (leave [0][*] as Excel style)
-        for (let col = 0; col < columnNames.length; col++) {
-            this.gridMatrix.getCell(1, col + 1).data = columnNames[col];
+        // 3. Write custom headers (row 1)
+        for (let col = 0; col < columnNames.length; ++col) {
+            gridMatrix.getCell(1, col + 1).data = columnNames[col];
         }
 
-        // 3. Write data, starting from row 2
-        for (let row = 0; row < dataArray.length; row++) {
+        // 4. Write data (row 2+)
+        for (let row = 0; row < dataArray.length; ++row) {
             const dataObj = dataArray[row] as Record<string, any>;
-            for (let col = 0; col < columnNames.length; col++) {
+            for (let col = 0; col < columnNames.length; ++col) {
                 let cellValue = dataObj[columnNames[col]];
-                if (typeof cellValue === "object") {
-                    let isArray = Array.isArray(cellValue);
-                    if (isArray) {
+                if (typeof cellValue === "object" && cellValue !== null) {
+                    if (Array.isArray(cellValue)) {
                         cellValue = cellValue.join(", ");
                     } else {
                         cellValue = JSON.stringify(cellValue);
                     }
                 }
-                this.gridMatrix.getCell(row+2, col + 1).data = cellValue; // <-- row+2
+                gridMatrix.getCell(row + 2, col + 1).data = cellValue;
             }
         }
     }

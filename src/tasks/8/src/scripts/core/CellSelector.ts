@@ -285,40 +285,44 @@ export class CellSelector {
     }
 
     startEditing(initialValue?: string) {
-        if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
+    if (this.selectedRow <= 0 || this.selectedCol <= 0) return;
 
-        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
-        const canvasRect = this.canvas.getBoundingClientRect();
-        const container = document.getElementById('excel-container') as HTMLDivElement;
-        const scrollLeft = container.scrollLeft;
-        const scrollTop = container.scrollTop;
+    const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+    const { x, y, width, height } = GridCell.getCellRect(
+        this.selectedRow, this.selectedCol,
+        this.gridMatrix.rowHeights, this.gridMatrix.columnWidths
+    );
+    const canvasRect = this.canvas.getBoundingClientRect();
+    const container = document.getElementById('excel-container') as HTMLDivElement;
+    const scrollLeft = container.scrollLeft;
+    const scrollTop = container.scrollTop;
 
-        const exactLeft = canvasRect.left + cell.x - scrollLeft;
-        const exactTop = canvasRect.top + cell.y - scrollTop;
+    const exactLeft = canvasRect.left + x - scrollLeft;
+    const exactTop = canvasRect.top + y - scrollTop;
 
-        this.inputElement.style.position = 'absolute';
-        this.inputElement.style.left = exactLeft + 'px';
-        this.inputElement.style.top = exactTop + 'px';
-        this.inputElement.style.width = cell.width + 'px';
-        this.inputElement.style.height = cell.height + 'px';
+    this.inputElement.style.position = 'absolute';
+    this.inputElement.style.left = exactLeft + 'px';
+    this.inputElement.style.top = exactTop + 'px';
+    this.inputElement.style.width = width + 'px';
+    this.inputElement.style.height = height + 'px';
 
-        // Reset styles
-        this.inputElement.style.transform = 'none';
-        this.inputElement.style.margin = '0';
-        this.inputElement.style.padding = '0 4px';
-        this.inputElement.style.display = 'block';
-        this.inputElement.style.fontSize = '12px';
-        this.inputElement.style.fontFamily = 'Arial';
-        this.inputElement.style.lineHeight = cell.height + 'px';
-        this.inputElement.style.boxSizing = 'border-box';
+    // Reset styles
+    this.inputElement.style.transform = 'none';
+    this.inputElement.style.margin = '0';
+    this.inputElement.style.padding = '0 4px';
+    this.inputElement.style.display = 'block';
+    this.inputElement.style.fontSize = '12px';
+    this.inputElement.style.fontFamily = 'Arial';
+    this.inputElement.style.lineHeight = height + 'px';
+    this.inputElement.style.boxSizing = 'border-box';
 
-        this.inputElement.value = initialValue !== undefined ? initialValue : (cell.data || '');
+    this.inputElement.value = initialValue !== undefined ? initialValue : (cell.data || '');
 
-        this.inputElement.style.display = 'block';
-        this.inputElement.focus();
-        this.inputElement.select();
-        this.isEditing = true;
-    }
+    this.inputElement.style.display = 'block';
+    this.inputElement.focus();
+    this.inputElement.select();
+    this.isEditing = true;
+}
 
     finishEditing() {
         if (!this.isEditing) return;
@@ -367,177 +371,230 @@ export class CellSelector {
     }
 
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
-        // If a range selection is present, draw the range highlight
-        if (
-            this.selectionStartRow > 0 && this.selectionStartCol > 0 &&
-            this.selectionEndRow > 0 && this.selectionEndCol > 0 &&
-            (this.selectionStartRow !== this.selectionEndRow || this.selectionStartCol !== this.selectionEndCol)
-        ) {
-            let minRow = Math.min(this.selectionStartRow, this.selectionEndRow);
-            let maxRow = Math.max(this.selectionStartRow, this.selectionEndRow);
-            let minCol = Math.min(this.selectionStartCol, this.selectionEndCol);
-            let maxCol = Math.max(this.selectionStartCol, this.selectionEndCol);
+    // If a range selection is present, draw the range highlight
+    if (
+        this.selectionStartRow > 0 && this.selectionStartCol > 0 &&
+        this.selectionEndRow > 0 && this.selectionEndCol > 0 &&
+        (this.selectionStartRow !== this.selectionEndRow || this.selectionStartCol !== this.selectionEndCol)
+    ) {
+        let minRow = Math.min(this.selectionStartRow, this.selectionEndRow);
+        let maxRow = Math.max(this.selectionStartRow, this.selectionEndRow);
+        let minCol = Math.min(this.selectionStartCol, this.selectionEndCol);
+        let maxCol = Math.max(this.selectionStartCol, this.selectionEndCol);
 
-            // 1. Fill selection cells and headers background
-            ctx.save();
-            ctx.globalAlpha = 0.2;
-            for (let row = minRow; row <= maxRow; row++) {
-                for (let col = minCol; col <= maxCol; col++) {
-                    if (row === minRow && col === minCol) continue;
-                    const cell = this.gridMatrix.getCell(row, col);
-                    ctx.fillStyle = '#caead8';
-                    ctx.fillRect(cell.x - scrollLeft, cell.y - scrollTop, cell.width, cell.height);
-                }
-            }
+        // 1. Fill selection cells and headers background
+        ctx.save();
+        ctx.globalAlpha = 0.2;
+        for (let row = minRow; row <= maxRow; row++) {
             for (let col = minCol; col <= maxCol; col++) {
-                const colHeader = this.gridMatrix.getCell(0, col);
-                ctx.fillStyle = "#caead8"; // dark green for header (like column selector)
-                ctx.fillRect(colHeader.x - scrollLeft, colHeader.y, colHeader.width, colHeader.height);
-            }
-            for (let row = minRow; row <= maxRow; row++) {
-                const rowHeader = this.gridMatrix.getCell(row, 0);
-                ctx.fillStyle = "#caead8"; // yellow for header (like row selector)
-                ctx.fillRect(rowHeader.x, rowHeader.y - scrollTop, rowHeader.width, rowHeader.height);
-            }
-            ctx.globalAlpha = 1.0;
-
-            // 2. Draw header text (white)
-            for (let col = minCol; col <= maxCol; col++) {
-                const colHeader = this.gridMatrix.getCell(0, col);
-                ctx.font = "14px Arial";
-                ctx.fillStyle = "#0f7d87";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(
-                    colHeader.data || "",
-                    colHeader.x + colHeader.width / 2 - scrollLeft,
-                    colHeader.y + colHeader.height / 2
+                if (row === minRow && col === minCol) continue;
+                const { x, y, width, height } = GridCell.getCellRect(
+                    row, col,
+                    this.gridMatrix.rowHeights,
+                    this.gridMatrix.columnWidths
                 );
+                ctx.fillStyle = '#caead8';
+                ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
             }
-            for (let row = minRow; row <= maxRow; row++) {
-                const rowHeader = this.gridMatrix.getCell(row, 0);
-                ctx.font = "14px Arial";
-                ctx.fillStyle = "#0f7d87";
-                ctx.textAlign = "right";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(
-                    rowHeader.data || "",
-                    rowHeader.x + rowHeader.width - 8,
-                    rowHeader.y + rowHeader.height - 4 - scrollTop
-                );
-            }
-
-            // 3. Draw thick header borders
-            ctx.save();
-            ctx.strokeStyle = "#107c41"; // green for column header bottom
-            ctx.lineWidth = 2;
-            for (let col = minCol; col <= maxCol; col++) {
-                const colHeader = this.gridMatrix.getCell(0, col);
-                ctx.beginPath();
-                ctx.moveTo(colHeader.x - scrollLeft, colHeader.y + colHeader.height - 1);
-                ctx.lineTo(colHeader.x - scrollLeft + colHeader.width, colHeader.y + colHeader.height - 1);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            ctx.save();
-            ctx.strokeStyle = "#107c41";
-            ctx.lineWidth = 2;
-            for (let row = minRow; row <= maxRow; row++) {
-                const rowHeader = this.gridMatrix.getCell(row, 0);
-                ctx.beginPath();
-                ctx.moveTo(rowHeader.x + rowHeader.width - 1, rowHeader.y - scrollTop);
-                ctx.lineTo(rowHeader.x + rowHeader.width - 1, rowHeader.y + rowHeader.height - scrollTop);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            // 4. Draw border around the selection
-            ctx.save();
-            ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 2;
-            const topLeft = this.gridMatrix.getCell(minRow, minCol);
-            const bottomRight = this.gridMatrix.getCell(maxRow, maxCol);
-            ctx.strokeRect(
-                topLeft.x - scrollLeft, topLeft.y - scrollTop,
-                (bottomRight.x + bottomRight.width) - topLeft.x,
-                (bottomRight.y + bottomRight.height) - topLeft.y
-            );
-            ctx.restore();
-
-            return;
         }
-        // Otherwise, draw single cell highlight if available and not dragging
-        if (this.selectedRow > 0 && this.selectedCol > 0) {
-            const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
-            const header = this.gridMatrix.getCell(0, this.selectedCol);
-            const row = this.gridMatrix.getCell(this.selectedRow, 0);
-
-            // --- Highlight column header cell ---
-            ctx.save();
+        for (let col = minCol; col <= maxCol; col++) {
+            const { x, y, width, height } = GridCell.getCellRect(
+                0, col,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
             ctx.fillStyle = "#caead8";
-            ctx.fillRect(header.x - scrollLeft, header.y - scrollTop, header.width, header.height);
+            ctx.fillRect(x - scrollLeft, y, width, height);
+        }
+        for (let row = minRow; row <= maxRow; row++) {
+            const { x, y, width, height } = GridCell.getCellRect(
+                row, 0,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
+            ctx.fillStyle = "#caead8";
+            ctx.fillRect(x, y - scrollTop, width, height);
+        }
+        ctx.globalAlpha = 1.0;
 
-            // Redraw column header text
+        // 2. Draw header text (white)
+        for (let col = minCol; col <= maxCol; col++) {
+            const colHeader = this.gridMatrix.getCell(0, col);
+            const { x, y, width, height } = GridCell.getCellRect(
+                0, col,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
             ctx.font = "14px Arial";
-            ctx.fillStyle = "#616161";
+            ctx.fillStyle = "#0f7d87";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(
-                header.data || "",
-                header.x + header.width / 2 - scrollLeft,
-                header.y + header.height / 2 - scrollTop
+                colHeader.data || "",
+                x + width / 2 - scrollLeft,
+                y + height / 2
             );
-            // Draw bottom border for the column header
-            if (this.selectedRow !== 1) {
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(header.x - scrollLeft, header.y + header.height - 1 - scrollTop);
-                ctx.lineTo(header.x + header.width - scrollLeft, header.y + header.height - 1 - scrollTop);
-                ctx.stroke();
-                ctx.restore();
-            }
-
-            // --- Highlight row header cell ---
-            ctx.save();
-            ctx.fillStyle = "#caead8";
-            ctx.fillRect(row.x - scrollLeft, row.y - scrollTop, row.width, row.height);
-
-            // Redraw row header text
+        }
+        for (let row = minRow; row <= maxRow; row++) {
+            const rowHeader = this.gridMatrix.getCell(row, 0);
+            const { x, y, width, height } = GridCell.getCellRect(
+                row, 0,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
             ctx.font = "14px Arial";
-            ctx.fillStyle = "#616161";
+            ctx.fillStyle = "#0f7d87";
             ctx.textAlign = "right";
             ctx.textBaseline = "bottom";
             ctx.fillText(
-                row.data || "",
-                row.x + row.width - 8 - scrollLeft,
-                row.y + row.height - 4 - scrollTop
+                rowHeader.data || "",
+                x + width - 8,
+                y + height - 4 - scrollTop
             );
-            // Draw right border for the row header
-            if (this.selectedCol !== 1) {
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(row.x + row.width - 1 - scrollLeft, row.y - scrollTop);
-                ctx.lineTo(row.x + row.width - 1 - scrollLeft, row.y + row.height - scrollTop);
-                ctx.stroke();
-                ctx.restore();
-            }
+        }
 
-            // --- Draw selection background for main cell ---
-            ctx.save();
-            ctx.fillStyle = 'rgba(255,255,255,0.125)';
-            ctx.fillRect(cell.x - scrollLeft, cell.y - scrollTop, cell.width, cell.height);
+        // 3. Draw thick header borders
+        ctx.save();
+        ctx.strokeStyle = "#107c41";
+        ctx.lineWidth = 2;
+        for (let col = minCol; col <= maxCol; col++) {
+            const { x, y, width, height } = GridCell.getCellRect(
+                0, col,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
+            ctx.beginPath();
+            ctx.moveTo(x - scrollLeft, y + height - 1);
+            ctx.lineTo(x - scrollLeft + width, y + height - 1);
+            ctx.stroke();
+        }
+        ctx.restore();
 
-            // Draw selection border
+        ctx.save();
+        ctx.strokeStyle = "#107c41";
+        ctx.lineWidth = 2;
+        for (let row = minRow; row <= maxRow; row++) {
+            const { x, y, width, height } = GridCell.getCellRect(
+                row, 0,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
+            ctx.beginPath();
+            ctx.moveTo(x + width - 1, y - scrollTop);
+            ctx.lineTo(x + width - 1, y + height - scrollTop);
+            ctx.stroke();
+        }
+        ctx.restore();
+
+        // 4. Draw border around the selection
+        ctx.save();
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        const { x: topLeftX, y: topLeftY } = GridCell.getCellRect(
+            minRow, minCol,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+        const { x: bottomRightX, y: bottomRightY, width: bottomRightW, height: bottomRightH } = GridCell.getCellRect(
+            maxRow, maxCol,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+        ctx.strokeRect(
+            topLeftX - scrollLeft, topLeftY - scrollTop,
+            (bottomRightX + bottomRightW) - topLeftX,
+            (bottomRightY + bottomRightH) - topLeftY
+        );
+        ctx.restore();
+        return;
+    }
+    // Otherwise, draw single cell highlight if available and not dragging
+    if (this.selectedRow > 0 && this.selectedCol > 0) {
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        const header = this.gridMatrix.getCell(0, this.selectedCol);
+        const row = this.gridMatrix.getCell(this.selectedRow, 0);
+
+        const { x, y, width, height } = GridCell.getCellRect(
+            this.selectedRow, this.selectedCol,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+        const { x: hx, y: hy, width: hw, height: hh } = GridCell.getCellRect(
+            0, this.selectedCol,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+        const { x: rx, y: ry, width: rw, height: rh } = GridCell.getCellRect(
+            this.selectedRow, 0,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+
+        // --- Highlight column header cell ---
+        ctx.save();
+        ctx.fillStyle = "#caead8";
+        ctx.fillRect(hx - scrollLeft, hy - scrollTop, hw, hh);
+
+        // Redraw column header text
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#616161";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(
+            header.data || "",
+            hx + hw / 2 - scrollLeft,
+            hy + hh / 2 - scrollTop
+        );
+        // Draw bottom border for the column header
+        if (this.selectedRow !== 1) {
             ctx.strokeStyle = this.selectionBorderColor;
             ctx.lineWidth = 2;
-            ctx.strokeRect(cell.x - scrollLeft, cell.y - scrollTop, cell.width, cell.height);
-            ctx.lineWidth = 1; // Reset line width
+            ctx.beginPath();
+            ctx.moveTo(hx - scrollLeft, hy + hh - 1 - scrollTop);
+            ctx.lineTo(hx + hw - scrollLeft, hy + hh - 1 - scrollTop);
+            ctx.stroke();
             ctx.restore();
         }
+
+        // --- Highlight row header cell ---
+        ctx.save();
+        ctx.fillStyle = "#caead8";
+        ctx.fillRect(rx - scrollLeft, ry - scrollTop, rw, rh);
+
+        // Redraw row header text
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#616161";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(
+            row.data || "",
+            rx + rw - 8 - scrollLeft,
+            ry + rh - 4 - scrollTop
+        );
+        // Draw right border for the row header
+        if (this.selectedCol !== 1) {
+            ctx.strokeStyle = this.selectionBorderColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(rx + rw - 1 - scrollLeft, ry - scrollTop);
+            ctx.lineTo(rx + rw - 1 - scrollLeft, ry + rh - scrollTop);
+            ctx.stroke();
+            ctx.restore();
+        }
+
+        // --- Draw selection background for main cell ---
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.125)';
+        ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
+
+        // Draw selection border
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x - scrollLeft, y - scrollTop, width, height);
+        ctx.lineWidth = 1; // Reset line width
+        ctx.restore();
     }
+}
     clearEditing() {
         if (this.isEditing) {
             this.cancelEditing();

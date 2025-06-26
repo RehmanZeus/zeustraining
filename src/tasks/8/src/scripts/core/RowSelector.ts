@@ -1,5 +1,6 @@
-import { CellSelector } from "./CellSelector";
-import { GridMatrix } from "./GridMatrix";
+import { CellSelector } from "./CellSelector.js";
+import { GridCell } from "./GridCell.js";
+import { GridMatrix } from "./GridMatrix.js";
 
 export class RowSelector {
     ctx: CanvasRenderingContext2D;
@@ -158,38 +159,48 @@ export class RowSelector {
         if (!this.selectedRows || this.selectedRows.length === 0) return;
 
         for (const selectedRow of this.selectedRows) {
-            let firstCell = null, lastCell = null;
+            let firstCellRect = null, lastCellRect = null;
             for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
                 const cell = this.gridMatrix.getCell(selectedRow, col);
                 const colHeaderCell = this.gridMatrix.getCell(0, col);
+                const { x, y, width, height } = GridCell.getCellRect(
+                    selectedRow, col,
+                    this.gridMatrix.rowHeights,
+                    this.gridMatrix.columnWidths
+                );
+                const { x: colHeaderX, y: colHeaderY, width: colHeaderW, height: colHeaderH } = GridCell.getCellRect(
+                    0, col,
+                    this.gridMatrix.rowHeights,
+                    this.gridMatrix.columnWidths
+                );
 
-                if (!firstCell) firstCell = cell;
-                lastCell = cell;
+                if (!firstCellRect) firstCellRect = { x, y, width, height };
+                lastCellRect = { x, y, width, height };
 
                 // Highlight all body cells in the selected row
                 ctx.save();
                 ctx.fillStyle = this.selectionColor + "20";
-                ctx.fillRect(cell.x - scrollLeft, cell.y - scrollTop, cell.width, cell.height);
+                ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
                 ctx.lineWidth = 1;
                 ctx.strokeStyle = "#e0e0e0";
                 ctx.strokeRect(
-                    Math.floor(cell.x - scrollLeft) + 0.5,
-                    Math.floor(cell.y - scrollTop) + 0.5,
-                    cell.width, cell.height
+                    Math.floor(x - scrollLeft) + 0.5,
+                    Math.floor(y - scrollTop) + 0.5,
+                    width, height
                 );
                 ctx.restore();
 
                 // Column header background
                 ctx.save();
                 ctx.fillStyle = "#caead8";
-                ctx.fillRect(colHeaderCell.x - scrollLeft, colHeaderCell.y, colHeaderCell.width, colHeaderCell.height);
+                ctx.fillRect(colHeaderX - scrollLeft, colHeaderY, colHeaderW, colHeaderH);
                 // Thin border for header cell
                 ctx.strokeStyle = "#e0e0e0";
                 ctx.lineWidth = 1;
                 ctx.strokeRect(
-                    Math.floor(colHeaderCell.x - scrollLeft) + 0.5,
-                    Math.floor(colHeaderCell.y) + 0.5,
-                    colHeaderCell.width, colHeaderCell.height
+                    Math.floor(colHeaderX - scrollLeft) + 0.5,
+                    Math.floor(colHeaderY) + 0.5,
+                    colHeaderW, colHeaderH
                 );
                 // Column header text (green, bold)
                 ctx.font = "bold 14px Arial";
@@ -198,20 +209,20 @@ export class RowSelector {
                 ctx.textBaseline = "middle";
                 ctx.fillText(
                     colHeaderCell.data || "",
-                    colHeaderCell.x - scrollLeft + colHeaderCell.width / 2,
-                    colHeaderCell.y + colHeaderCell.height / 2
+                    colHeaderX - scrollLeft + colHeaderW / 2,
+                    colHeaderY + colHeaderH / 2
                 );
                 // Thick green bottom border
                 ctx.strokeStyle = this.selectionBorderColor;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(
-                    colHeaderCell.x - scrollLeft,
-                    colHeaderCell.y + colHeaderCell.height - 1
+                    colHeaderX - scrollLeft,
+                    colHeaderY + colHeaderH - 1
                 );
                 ctx.lineTo(
-                    colHeaderCell.x - scrollLeft + colHeaderCell.width,
-                    colHeaderCell.y + colHeaderCell.height - 1
+                    colHeaderX - scrollLeft + colHeaderW,
+                    colHeaderY + colHeaderH - 1
                 );
                 ctx.stroke();
                 ctx.restore();
@@ -219,18 +230,24 @@ export class RowSelector {
 
             // Highlight the header cell for this row (col 0)
             const headerCell = this.gridMatrix.getCell(selectedRow, 0);
+            const { x: headerX, y: headerY, width: headerW, height: headerH } = GridCell.getCellRect(
+                selectedRow, 0,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
+
             ctx.save();
             // Background
             ctx.fillStyle = this.rowHeaderBg;
-            ctx.fillRect(headerCell.x, headerCell.y - scrollTop, headerCell.width, headerCell.height);
+            ctx.fillRect(headerX, headerY - scrollTop, headerW, headerH);
 
             // Thin border for row header cell
             ctx.strokeStyle = "#e0e0e0";
             ctx.lineWidth = 1;
             ctx.strokeRect(
-                Math.floor(headerCell.x) + 0.5,
-                Math.floor(headerCell.y - scrollTop) + 0.5,
-                headerCell.width, headerCell.height
+                Math.floor(headerX) + 0.5,
+                Math.floor(headerY - scrollTop) + 0.5,
+                headerW, headerH
             );
 
             // Text (white, bold, right-aligned, bottom)
@@ -240,8 +257,8 @@ export class RowSelector {
             ctx.textBaseline = "bottom";
             ctx.fillText(
                 headerCell.data || "",
-                headerCell.x + headerCell.width - 8,
-                headerCell.y + headerCell.height - 4 - scrollTop
+                headerX + headerW - 8,
+                headerY + headerH - 4 - scrollTop
             );
 
             // Borders (top & bottom, thick, green)
@@ -249,26 +266,26 @@ export class RowSelector {
             ctx.lineWidth = 2;
             // Top border
             ctx.beginPath();
-            ctx.moveTo(headerCell.x, headerCell.y - scrollTop + 1);
-            ctx.lineTo(headerCell.x + headerCell.width, headerCell.y - scrollTop + 1);
+            ctx.moveTo(headerX, headerY - scrollTop + 1);
+            ctx.lineTo(headerX + headerW, headerY - scrollTop + 1);
             ctx.stroke();
             // Bottom border
             ctx.beginPath();
-            ctx.moveTo(headerCell.x, headerCell.y + headerCell.height - scrollTop - 1);
-            ctx.lineTo(headerCell.x + headerCell.width, headerCell.y + headerCell.height - scrollTop - 1);
+            ctx.moveTo(headerX, headerY + headerH - scrollTop - 1);
+            ctx.lineTo(headerX + headerW, headerY + headerH - scrollTop - 1);
             ctx.stroke();
             ctx.restore();
 
             // Draw border around the entire selected row (from header to last cell)
-            if (firstCell && lastCell) {
+            if (firstCellRect && lastCellRect) {
                 ctx.save();
                 ctx.strokeStyle = this.selectionBorderColor;
                 ctx.lineWidth = 2;
                 ctx.strokeRect(
-                    Math.floor(headerCell.x) + 0.5,
-                    Math.floor(headerCell.y - scrollTop) + 0.5,
-                    (lastCell.x + lastCell.width) - headerCell.x,
-                    headerCell.height
+                    Math.floor(headerX) + 0.5,
+                    Math.floor(headerY - scrollTop) + 0.5,
+                    (lastCellRect.x + lastCellRect.width) - headerX,
+                    headerH
                 );
                 ctx.restore();
             }

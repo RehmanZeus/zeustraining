@@ -1,6 +1,7 @@
 import { CellSelector } from "./core/CellSelector.js";
 import { ColumnSelector } from "./core/ColumnSelector.js";
 import { EventManager } from "./core/EventManager.js";
+import { ExcelHeader } from "./core/ExcelHeader.js";
 import { GridDataGen } from "./core/GridDataGen.js";
 import { GridDataLoader } from "./core/GridDataLoader.js";
 import { GridMatrix } from "./core/GridMatrix.js";
@@ -9,7 +10,7 @@ import { Operations } from "./core/Operations.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 
-const NUM_ROWS = 1000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
+const NUM_ROWS = 100000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
 
 window.onload = () => {
     const setup = new SetupExcelSheet(CELL_W, CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
@@ -24,7 +25,7 @@ window.onload = () => {
     resizer.setCellSelector(cellSelector);
 
     const gridDataLoader = new GridDataLoader(gridMatrix);
-    const dataGen = new GridDataGen(200);
+    const dataGen = new GridDataGen(50000);
     const sampleData = dataGen.generateData();
     gridDataLoader.loadJSONData(sampleData);
 
@@ -72,12 +73,13 @@ window.onload = () => {
     colSelector.redrawGrid = drawVisibleGrid;
     resizer.setRedrawGridCallback(drawVisibleGrid);
 
-    gridMatrix.logStats();
+    // gridMatrix.logStats();
     cellSelector.selectCell(1,1)
 
     window.addEventListener('resize', () => {
         drawVisibleGrid(); 
     });
+
 
     // --- Attach all pointer/click events to EventAttacher! ---
     new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer);
