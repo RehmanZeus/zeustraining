@@ -1,6 +1,6 @@
 import { CellSelector } from "./core/CellSelector.js";
 import { ColumnSelector } from "./core/ColumnSelector.js";
-import { EventAttacher } from "./core/EventAttacher.js";
+import { EventManager } from "./core/EventManager.js";
 import { GridDataGen } from "./core/GridDataGen.js";
 import { GridDataLoader } from "./core/GridDataLoader.js";
 import { GridMatrix } from "./core/GridMatrix.js";
@@ -79,5 +79,5 @@ window.onload = () => {
     });
 
     // --- Attach all pointer/click events to EventAttacher! ---
-    new EventAttacher(canvas, cellSelector, colSelector, rowSelector, resizer);
+    new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer);
 };

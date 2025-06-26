@@ -5,7 +5,7 @@ import { GridResizer } from "./GridResizer.js";
 
 type Mode = "idle" | "dragging" | "resizing" | "editing";
 
-export class EventAttacher {
+export class EventManager {
     canvas: HTMLCanvasElement;
     cellSelector: CellSelector;
     columnSelector: ColumnSelector;

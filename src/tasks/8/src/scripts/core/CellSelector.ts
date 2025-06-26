@@ -21,6 +21,10 @@ export class CellSelector {
     selectionEndCol = -1;
     pointerDownPosition: { x: number, y: number } = { x: 0, y: 0 };
 
+    // For shift-selection anchor
+    anchorRow: number | null = null;
+    anchorCol: number | null = null;
+
     selectedRangeCellData: { startRow: number, endRow: number, startCol: number, endCol: number } = {
         startRow: -1, endRow: -1, startCol: -1, endCol: -1
     };
@@ -48,9 +52,10 @@ export class CellSelector {
         return row > 0 && col > 0 && row < this.gridMatrix.noOfRows && col < this.gridMatrix.noOfCols;
     }
 
+
     // --- Event handler methods for EventAttacher ---
 
-    onPointerDown(e: PointerEvent) {
+     onPointerDown(e: PointerEvent) {
         if (e.button !== 0) return;
         this.pointerDownPosition = { x: e.clientX, y: e.clientY };
         this.dragStarted = false;
@@ -64,6 +69,8 @@ export class CellSelector {
             this.selectionEndRow = row;
             this.selectionEndCol = col;
             // don't clear selection yet
+            this.anchorRow = row;
+            this.anchorCol = col;
         }
     }
 
@@ -120,8 +127,6 @@ export class CellSelector {
         }
     }
 
-    // --- End event handler methods ---
-
     createInputElement() {
         this.inputElement = document.createElement('input');
         this.inputElement.type = 'text';
@@ -149,6 +154,26 @@ export class CellSelector {
         if (this.isEditing) return;
         if (this.selectedRow === -1 || this.selectedCol === -1) return;
 
+        const shift = e.shiftKey;
+
+        if (shift) {
+            // --- Shift+Arrow: expand/shrink selection range ---
+            let dRow = 0, dCol = 0;
+            switch (e.key) {
+                case 'ArrowUp': dRow = -1; break;
+                case 'ArrowDown': dRow = 1; break;
+                case 'ArrowLeft': dCol = -1; break;
+                case 'ArrowRight': dCol = 1; break;
+                default: break;
+            }
+            if (dRow !== 0 || dCol !== 0) {
+                e.preventDefault();
+                this.handleShiftArrow(dRow, dCol);
+                return;
+            }
+        }
+
+        // --- Normal navigation ---
         switch (e.key) {
             case 'ArrowUp':
                 e.preventDefault();
@@ -185,6 +210,36 @@ export class CellSelector {
         }
     }
 
+    handleShiftArrow(dRow: number, dCol: number) {
+        // If not currently in range mode, start anchor at current cell
+        if (
+            this.selectionStartRow <= 0 || this.selectionStartCol <= 0 ||
+            this.selectionEndRow <= 0 || this.selectionEndCol <= 0
+        ) {
+            this.anchorRow = this.selectedRow;
+            this.anchorCol = this.selectedCol;
+            this.selectionStartRow = this.anchorRow;
+            this.selectionStartCol = this.anchorCol;
+            this.selectionEndRow = this.anchorRow;
+            this.selectionEndCol = this.anchorCol;
+        }
+
+        // Expand end in the requested direction
+        let newEndRow = this.selectionEndRow + dRow;
+        let newEndCol = this.selectionEndCol + dCol;
+        newEndRow = Math.max(1, Math.min(this.gridMatrix.noOfRows - 1, newEndRow));
+        newEndCol = Math.max(1, Math.min(this.gridMatrix.noOfCols - 1, newEndCol));
+
+        this.selectionEndRow = newEndRow;
+        this.selectionEndCol = newEndCol;
+
+        // When dragging with shift, don't move the selected cell, just update the range.
+        this.selectedRow = this.selectionEndRow;
+        this.selectedCol = this.selectionEndCol;
+
+        this.redrawGrid();
+    }
+
     handleInputKeydown(e: KeyboardEvent) {
         switch (e.key) {
             case 'Enter':
@@ -210,6 +265,9 @@ export class CellSelector {
         }
         this.selectedRow = row;
         this.selectedCol = col;
+        this.anchorRow = null;
+        this.anchorCol = null;
+        this.clearRangeSelection();
         this.redrawGrid();
     }
 
@@ -265,7 +323,7 @@ export class CellSelector {
         this.canvas.focus();
     }
 
-    cancelEditing() {
+     cancelEditing() {
         if (!this.isEditing) return;
         this.inputElement.style.display = 'none';
         this.isEditing = false;
@@ -313,23 +371,84 @@ export class CellSelector {
             let minCol = Math.min(this.selectionStartCol, this.selectionEndCol);
             let maxCol = Math.max(this.selectionStartCol, this.selectionEndCol);
 
+            // 1. Fill selection cells and headers background
             ctx.save();
-            ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 2;
             ctx.globalAlpha = 0.2;
             for (let row = minRow; row <= maxRow; row++) {
                 for (let col = minCol; col <= maxCol; col++) {
+                    if (row === minRow && col === minCol) continue;
                     const cell = this.gridMatrix.getCell(row, col);
-                    const rows = this.gridMatrix.getCell(0, col);
-                    const cols = this.gridMatrix.getCell(row, 0);
-                    ctx.fillStyle = '#b7e4c7';
+                    ctx.fillStyle = '#caead8';
                     ctx.fillRect(cell.x - scrollLeft, cell.y - scrollTop, cell.width, cell.height);
-                    ctx.fillRect(rows.x - scrollLeft, rows.y - scrollTop, rows.width, rows.height);
-                    ctx.fillRect(cols.x - scrollLeft, cols.y - scrollTop, cols.width, cols.height);
                 }
             }
+            for (let col = minCol; col <= maxCol; col++) {
+                const colHeader = this.gridMatrix.getCell(0, col);
+                ctx.fillStyle = "#caead8"; // dark green for header (like column selector)
+                ctx.fillRect(colHeader.x - scrollLeft, colHeader.y, colHeader.width, colHeader.height);
+            }
+            for (let row = minRow; row <= maxRow; row++) {
+                const rowHeader = this.gridMatrix.getCell(row, 0);
+                ctx.fillStyle = "#caead8"; // yellow for header (like row selector)
+                ctx.fillRect(rowHeader.x, rowHeader.y - scrollTop, rowHeader.width, rowHeader.height);
+            }
             ctx.globalAlpha = 1.0;
-            // Draw border around the selection
+
+            // 2. Draw header text (white)
+            for (let col = minCol; col <= maxCol; col++) {
+                const colHeader = this.gridMatrix.getCell(0, col);
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#0f7d87";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(
+                    colHeader.data || "",
+                    colHeader.x + colHeader.width / 2 - scrollLeft,
+                    colHeader.y + colHeader.height / 2
+                );
+            }
+            for (let row = minRow; row <= maxRow; row++) {
+                const rowHeader = this.gridMatrix.getCell(row, 0);
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#0f7d87";
+                ctx.textAlign = "right";
+                ctx.textBaseline = "bottom";
+                ctx.fillText(
+                    rowHeader.data || "",
+                    rowHeader.x + rowHeader.width - 8,
+                    rowHeader.y + rowHeader.height - 4 - scrollTop
+                );
+            }
+
+            // 3. Draw thick header borders
+            ctx.save();
+            ctx.strokeStyle = "#107c41"; // green for column header bottom
+            ctx.lineWidth = 2;
+            for (let col = minCol; col <= maxCol; col++) {
+                const colHeader = this.gridMatrix.getCell(0, col);
+                ctx.beginPath();
+                ctx.moveTo(colHeader.x - scrollLeft, colHeader.y + colHeader.height - 1);
+                ctx.lineTo(colHeader.x - scrollLeft + colHeader.width, colHeader.y + colHeader.height - 1);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            ctx.save();
+            ctx.strokeStyle = "#107c41";
+            ctx.lineWidth = 2;
+            for (let row = minRow; row <= maxRow; row++) {
+                const rowHeader = this.gridMatrix.getCell(row, 0);
+                ctx.beginPath();
+                ctx.moveTo(rowHeader.x + rowHeader.width - 1, rowHeader.y - scrollTop);
+                ctx.lineTo(rowHeader.x + rowHeader.width - 1, rowHeader.y + rowHeader.height - scrollTop);
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 4. Draw border around the selection
+            ctx.save();
+            ctx.strokeStyle = this.selectionBorderColor;
+            ctx.lineWidth = 2;
             const topLeft = this.gridMatrix.getCell(minRow, minCol);
             const bottomRight = this.gridMatrix.getCell(maxRow, maxCol);
             ctx.strokeRect(
@@ -339,10 +458,8 @@ export class CellSelector {
             );
             ctx.restore();
 
-
             return;
         }
-
         // Otherwise, draw single cell highlight if available and not dragging
         if (this.selectedRow > 0 && this.selectedCol > 0) {
             const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
@@ -410,7 +527,7 @@ export class CellSelector {
             ctx.restore();
         }
     }
-    clearEditing() {
+     clearEditing() {
         if (this.isEditing) {
             this.cancelEditing();
         }
@@ -425,6 +542,8 @@ export class CellSelector {
         this.selectionStartCol = -1;
         this.selectionEndRow = -1;
         this.selectionEndCol = -1;
+        this.anchorRow = null;
+        this.anchorCol = null;
     }
 
     setRedrawGridCallback(redrawFn: () => void) {
