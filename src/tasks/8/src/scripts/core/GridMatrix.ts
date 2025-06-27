@@ -1,15 +1,33 @@
 import { MAX_GRID_COLS, MAX_GRID_ROWS, MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
 import { GridCell } from "./GridCell.js";
 
+
+/**
+ * GridMatrix represents a 2D grid of cells with dynamic row/column management.
+ * It handles cell creation, resizing, and viewport calculations.
+ */
 export class GridMatrix {
+    /** Default number of rows and columns in the grid */
     noOfRows: number = MAX_GRID_ROWS;
+    /** Default number of columns in the grid */
     noOfCols: number = MAX_GRID_COLS;
 
+    /** 2D Map to store GridCell objects, indexed by row and column */
+    // Using Map for dynamic resizing and efficient access
     grid: Map<number, Map<number, GridCell>> = new Map();
 
+    /** Widths of each column in pixels */
     columnWidths: number[] = [];
+    /** Heights of each row in pixels */
     rowHeights: number[] = [];
 
+
+    /**
+     * Creates a new GridMatrix instance.
+     * @param _c CanvasRenderingContext2D - Not used directly, but can be used for drawing.
+     * @param rows Optional initial number of rows (default is MAX_GRID_ROWS).
+     * @param cols Optional initial number of columns (default is MAX_GRID_COLS).
+     */
     constructor(_c: CanvasRenderingContext2D, rows?: number, cols?: number) {
         this.noOfRows = rows ?? this.noOfRows;
         this.noOfCols = cols ?? this.noOfCols;
@@ -18,10 +36,22 @@ export class GridMatrix {
         this.initializeGrid();
     }
 
+    /**
+     * Initializes the grid with empty cells.
+     * This is called in the constructor to set up the initial grid state.
+     */
     initializeGrid() {
         this.grid = new Map();
     }
 
+
+    /**
+     * Gets a GridCell at the specified row and column.
+     * If the cell does not exist, it creates a new one with default data.
+     * @param row The row index (zero-based).
+     * @param col The column index (zero-based).
+     * @returns The GridCell at the specified position.
+     */
     getCell(row: number, col: number): GridCell {
         if (!this.grid.has(row)) this.grid.set(row, new Map<number, GridCell>());
         const rowMap = this.grid.get(row)!;
@@ -37,6 +67,11 @@ export class GridMatrix {
         return cell;
     }
 
+    /**
+     * Adds more rows and columns to the grid as needed.
+     * @param requiredRows The total number of rows required.
+     * @param requiredCols The total number of columns required.
+     */
     addMoreGrids(requiredRows: number, requiredCols: number) {
         // Add more rows if needed
         while (this.noOfRows < requiredRows) {
@@ -50,18 +85,38 @@ export class GridMatrix {
         }
     }
 
-    // Helper to get cumulative offset for a row/col
+
+    /**
+     * Gets the vertical offset position of a specific row.
+     * @param row The row index (zero-based).
+     * @returns The vertical offset in pixels.
+     */
     getRowOffset(row: number): number {
         let sum = 0;
         for (let i = 0; i < row; ++i) sum += this.rowHeights[i];
         return sum;
     }
+
+    /**
+     * Gets the horizontal offset position of a specific column.
+     * @param col The column index (zero-based).
+     * @returns The horizontal offset in pixels.
+     */
     getColOffset(col: number): number {
         let sum = 0;
         for (let i = 0; i < col; ++i) sum += this.columnWidths[i];
         return sum;
     }
 
+
+    /**
+     * Gets the bounds of the visible viewport in the grid.
+     * @param scrollLeft The horizontal scroll position.
+     * @param scrollTop The vertical scroll position.
+     * @param viewportWidth The width of the viewport.
+     * @param viewportHeight The height of the viewport.
+     * @returns An object containing the start and end row/column indices.
+     */
     getViewportBounds(
         scrollLeft: number,
         scrollTop: number,
@@ -87,9 +142,14 @@ export class GridMatrix {
         return { startRow, endRow, startCol, endCol };
     }
 
+    
     /**
- * Draw the grid using lines for cell borders with STICKY HEADERS, and render text for headers/data only.
- */
+     * Draws the grid on the specified canvas context.
+     * @param ctx CanvasRenderingContext2D - The context to draw on.
+     * @param viewport The visible area of the grid.
+     * @param scrollLeft The horizontal scroll position.
+     * @param scrollTop The vertical scroll position.
+     */
     drawGrid(
         ctx: CanvasRenderingContext2D,
         viewport?: { startRow: number, endRow: number, startCol: number, endCol: number },

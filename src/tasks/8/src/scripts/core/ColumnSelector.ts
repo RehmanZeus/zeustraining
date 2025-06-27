@@ -2,28 +2,60 @@ import { GridMatrix } from "./GridMatrix.js";
 import { CellSelector } from "./CellSelector.js";
 import { GridCell } from "./GridCell.js";
 
+/**
+ * ColumnSelector manages column selection in the grid,
+ * allowing single or multi-column selection, and provides methods
+ * to manipulate selected columns.
+ */
 export class ColumnSelector {
+
+    /** Canvas rendering context for drawing */
     ctx: CanvasRenderingContext2D;
+    /** The grid matrix containing all cells */
     gridMatrix: GridMatrix;
+    /** Currently selected column index, -1 if none */
     selectedCol = -1;
+    /** Cell selector instance for managing cell selections */
     cellSelector?: CellSelector;
+    /** Currently selected columns */
     selectedCols: number[] = [];
+    /** Color for selected columns */
     selectionColor = "#0f9d58";
+    /** Border color for selected columns */
     selectionBorderColor = "#137e43";
+    /** Background color for column headers */
     columnHeaderBg = "#107c41";
+    /** Text color for column headers */
     columnHeaderText = "#fff";
+    /** Canvas element for drawing */
     canvas: HTMLCanvasElement | null = null;
 
+    /**
+     * Constructor for ColumnSelector.
+     * @param ctx Canvas rendering context to draw on
+     * @param gridMatrix The grid matrix containing all cells
+     * @param cellSelector The cell selector instance for managing cell selections
+     */
     constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
         this.gridMatrix = gridMatrix;
         this.cellSelector = cellSelector;
     }
 
+    /**
+     * Sets the canvas element for drawing.
+     * @param canvas The canvas element to set for drawing
+     */
     setCanvas(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
     }
 
+
+    /**
+     * Checks if the mouse event occurred on a column header.
+     * @param e Mouse event to check if it occurred on a column header
+     * @returns True if the mouse event is on a column header, false otherwise.
+     */
     isColumnHeader(e: MouseEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
@@ -43,6 +75,11 @@ export class ColumnSelector {
         return (colIndex !== -1 && y >= 0 && y < row0Height && colIndex < this.gridMatrix.noOfCols);
     }
 
+    /**
+     * Handles the click event to select a column.
+     * @param e MouseEvent that triggered the click
+     * @returns void
+     */
     onClick(e: MouseEvent) {
         if (!this.canvas) return;
         const { x, y } = this.getMousePosition(e, this.canvas);
@@ -96,7 +133,11 @@ export class ColumnSelector {
         this.redrawGrid();
     }
 
-    /** Select a column by index and redraw */
+    /**
+     * @param col The column index to select (1-based).
+     *            Note: 0 is reserved for row headers, so valid columns start from 1.
+     * @returns void
+     */
     selectCol(col: number) {
         if (col < 1 || col >= this.gridMatrix.noOfCols) return;
         this.selectedCol = col;
@@ -110,12 +151,21 @@ export class ColumnSelector {
         this.redrawGrid();
     }
 
+    /**
+     * Clears the current column selection.
+     * @returns void
+     */
     clearSelection() {
         this.selectedCol = -1;
         this.selectedCols = [];
         this.redrawGrid();
     }
 
+    /**
+     * 
+     * @returns The data of the currently selected column, or undefined if no column is selected.
+     *          Returns undefined if the selected column is not valid (col < 1).
+     */
     getSelectedColData(): string[] | undefined {
         if (this.selectedCol < 1) return undefined;
         const col = this.selectedCol;
@@ -127,6 +177,14 @@ export class ColumnSelector {
         return data;
     }
 
+    /**
+     * 
+     * @param data Array of strings to set as data for the selected column.
+     *             The length of the array should match the number of rows in the grid (excluding the header row).
+     *             If the array is shorter than the number of rows, only the first N rows will be set.
+     *             If the array is longer than the number of rows, only the first N elements will be used.
+     * @returns void
+     */
     setSelectedColData(data: string[]) {
         if (this.selectedCol < 1) return;
         for (let row = 1; row < this.gridMatrix.noOfRows && row - 1 < data.length; row++) {
@@ -135,6 +193,10 @@ export class ColumnSelector {
         this.redrawGrid();
     }
 
+    /**
+     * Clears the data in the currently selected column.
+     * @returns void
+     */
     clearSelectedCol() {
         if (this.selectedCol < 1) return;
         for (let row = 1; row < this.gridMatrix.noOfRows; row++) {
@@ -143,6 +205,13 @@ export class ColumnSelector {
         this.redrawGrid();
     }
 
+    /**
+     * Draws the selection rectangle for the currently selected columns.
+     * @param ctx Canvas rendering context to draw the selection
+     * @param scrollLeft Horizontal scroll position
+     * @param scrollTop Vertical scroll position
+     * @returns void
+     */
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
         if (!this.selectedCols || this.selectedCols.length === 0) return;
 
@@ -218,6 +287,9 @@ export class ColumnSelector {
         }
     }
 
+    /**
+     * Redraws the grid and its selections.
+     */
     redrawGrid() {
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const scrollLeft = container.scrollLeft;
@@ -243,6 +315,12 @@ export class ColumnSelector {
         }
     }
 
+    /**
+     * Gets the mouse position relative to the canvas.
+     * @param e MouseEvent to get the mouse position from
+     * @param canvas The canvas element being used
+     * @returns The mouse position relative to the canvas
+     */
     getMousePosition(e: MouseEvent, canvas: HTMLCanvasElement) {
         const rect = canvas.getBoundingClientRect();
         const container = document.getElementById('excel-container') as HTMLDivElement;

@@ -9,6 +9,7 @@ import { GridResizer } from "./core/GridResizer.js";
 import { Operations } from "./core/Operations.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
+import { Logger } from "./core/Logger.js";
 
 const NUM_ROWS = 100000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
 
@@ -16,6 +17,7 @@ window.onload = () => {
     const setup = new SetupExcelSheet(CELL_W, CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
     const canvas = setup.init();
     const ctx = setup.getContext();
+    const logger = Logger.getInstance();
 
     const container = document.getElementById('excel-container') as HTMLDivElement;
     const gridMatrix = new GridMatrix(ctx, NUM_ROWS, NUM_COLS);
@@ -107,4 +109,7 @@ window.onload = () => {
 
     // --- Attach all pointer/click events to EventAttacher! ---
     new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer);
+
+    new ExcelHeader(cellSelector, gridMatrix);
+
 };

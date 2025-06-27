@@ -10,21 +10,27 @@ body {
     margin: 0;
     padding: 0;
     overflow: hidden;
-    /* Prevent double scrollbars */
     touch-action: none;
 }
 
 .excel-header {
-
-    padding: 50px;
-    
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    z-index: 999;
+    background: #fff;
+    padding: 8px 32px 8px 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    height: 56px;
 }
 
 #excel-container {
-    /* Smooth scrolling */
+    padding: auto;/* Match the .excel-header height */
     scroll-behavior: smooth;
-    margin-top: -100;
-    /* Custom scrollbar styling (optional) */
     scrollbar-width: thin;
     scrollbar-color: #888 #f1f1f1;
 }
@@ -53,4 +59,5 @@ canvas {
     display: block;
     margin: 0;
     padding: 0;
+    position: relative;
 }

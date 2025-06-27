@@ -50,7 +50,7 @@ export class SetupExcelSheet {
         this.container.style.overflow = 'auto';
         this.container.style.position = 'relative';
         this.container.style.margin = '0';
-        this.container.style.padding = '0';
+        this.container.style.padding = '56px 0 0 0'; // space for header
         this.container.style.boxSizing = 'border-box';
 
         // 2. Virtual scroll area (sets scrollbar size)
