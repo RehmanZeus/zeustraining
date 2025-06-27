@@ -12,7 +12,9 @@ body {
     overflow: hidden;
     touch-action: none;
 }
-
+input{
+    outline: none;
+}
 .excel-header {
     position: fixed;
     top: 0;

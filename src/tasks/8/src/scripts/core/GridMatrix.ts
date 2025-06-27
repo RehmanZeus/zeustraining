@@ -1,4 +1,5 @@
 import { MAX_GRID_COLS, MAX_GRID_ROWS, MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { CellSelector } from "./CellSelector.js";
 import { GridCell } from "./GridCell.js";
 
 
@@ -20,6 +21,9 @@ export class GridMatrix {
     columnWidths: number[] = [];
     /** Heights of each row in pixels */
     rowHeights: number[] = [];
+
+    cellSelector: CellSelector | undefined;
+
 
 
     /**
@@ -45,6 +49,9 @@ export class GridMatrix {
     }
 
 
+    setCellSelector(c: CellSelector) {
+        this.cellSelector = c;
+    }
     /**
      * Gets a GridCell at the specified row and column.
      * If the cell does not exist, it creates a new one with default data.
@@ -142,7 +149,7 @@ export class GridMatrix {
         return { startRow, endRow, startCol, endCol };
     }
 
-    
+
     /**
      * Draws the grid on the specified canvas context.
      * @param ctx CanvasRenderingContext2D - The context to draw on.
@@ -210,33 +217,51 @@ export class GridMatrix {
             }
         }
 
-        // 3. Draw STICKY COLUMN HEADERS (row 0, fixed at top)
-        ctx.fillStyle = "#f5f5f5";
         for (let col = startCol; col < endCol; ++col) {
             const x = colOffsets[col] - scrollLeft;
-            const y = 0; // STICKY: Always at top
+            const y = 0;
             const width = this.columnWidths[col];
             const height = this.rowHeights[0];
+            const selectedCol = this.cellSelector?.selectedCol;
 
-            // Header background
+            // Background
+            if (selectedCol === col) {
+                ctx.fillStyle = "#caead8";
+            } else {
+                ctx.fillStyle = "#f5f5f5";
+            }
             ctx.fillRect(x, y, width, height);
 
-            // Header border
+            // Border
             ctx.strokeStyle = "#e0e0e0";
             ctx.lineWidth = 1;
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
-            // Header text
+            // Thick green border for selected
+            if (selectedCol === col) {
+                ctx.save();
+                ctx.strokeStyle = "#107c41";
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x, y + height - 1.5);
+                ctx.lineTo(x + width, y + height - 1.5);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Text
             const cell = this.getCell(0, col);
             if (cell.data) {
-                ctx.fillStyle = "#616161";
                 ctx.font = "14px Arial";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
+
+                ctx.fillStyle = "#616161";
+
                 ctx.fillText(cell.data, x + width / 2, y + height / 2);
             }
-            ctx.fillStyle = "#f5f5f5"; // Reset for next iteration
         }
+
 
         // 4. Draw STICKY ROW HEADERS (col 0, fixed at left)
         for (let row = startRow; row < endRow; ++row) {
@@ -245,24 +270,45 @@ export class GridMatrix {
             const width = this.columnWidths[0];
             const height = this.rowHeights[row];
 
+            const selectedRow = this.cellSelector?.selectedRow;
+
+            // Set background color for selected row header
+            if (selectedRow === row) {
+                ctx.fillStyle = "#caead8"; // Excel-like green, change as needed
+            } else {
+                ctx.fillStyle = "#f5f5f5";
+            }
             // Header background
             ctx.fillRect(x, y, width, height);
 
-            // Header border
+            // Header border (thin gray all sides)
             ctx.strokeStyle = "#e0e0e0";
             ctx.lineWidth = 1;
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
+            // Draw thick green right border if selected
+            if (selectedRow === row) {
+                ctx.save();
+                ctx.strokeStyle = "#107c41"; // Excel green, change as needed
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                ctx.moveTo(x + width - 1.5, y);
+                ctx.lineTo(x + width - 1.5, y + height);
+                ctx.stroke();
+                ctx.restore();
+            }
+
             // Header text
             const cell = this.getCell(row, 0);
             if (cell.data) {
-                ctx.fillStyle = "#616161";
+
+                ctx.fillStyle = "#616161"; // Grey text for unselected
                 ctx.font = "14px Arial";
                 ctx.textAlign = "right";
                 ctx.textBaseline = "bottom";
                 ctx.fillText(cell.data, x + width - 8, y + height - 4);
             }
-            ctx.fillStyle = "#f5f5f5"; // Reset for next iteration
+            // No need to reset fillStyle here
         }
 
         // 5. Draw CORNER CELL (0,0) - Always visible

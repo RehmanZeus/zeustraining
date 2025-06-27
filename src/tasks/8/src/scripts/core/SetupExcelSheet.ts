@@ -69,15 +69,11 @@ export class SetupExcelSheet {
         this.ctx = this.canvas.getContext('2d')!;
         this.rescaleContext();
         this.canvas.style.position = 'absolute';
-        this.canvas.style.top = '0';
-        this.canvas.style.left = '0';
         this.canvas.style.cursor = "cell";
         this.canvas.style.width = this.canvasWidth + 'px';
         this.canvas.style.height = this.canvasHeight + 'px';
         this.canvas.width = this.canvasWidth * DPR;
         this.canvas.height = this.canvasHeight * DPR;
-
-        this.ctx = this.canvas.getContext('2d')!;
         this.ctx.scale(DPR, DPR);
 
         // 4. Compose DOM

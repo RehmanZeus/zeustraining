@@ -14,10 +14,10 @@ import { Logger } from "./core/Logger.js";
 const NUM_ROWS = 10000, NUM_COLS = 1000, CELL_W = 70, CELL_H = 25;
 
 window.onload = () => {
+    console.log(window.innerHeight,window.innerWidth)
     const setup = new SetupExcelSheet(CELL_W, CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
     const canvas = setup.init();
     const ctx = setup.getContext();
-    const logger = Logger.getInstance();
 
     const container = document.getElementById('excel-container') as HTMLDivElement;
     const gridMatrix = new GridMatrix(ctx, NUM_ROWS, NUM_COLS);
@@ -40,7 +40,7 @@ window.onload = () => {
     const sumBtn = document.getElementById("calc-sum");
     const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
     sumBtn?.addEventListener("click", operations.sumRows.bind(operations));
-
+    gridMatrix.setCellSelector(cellSelector);
     function drawVisibleGrid() {
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;

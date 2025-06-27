@@ -404,7 +404,8 @@ export class CellSelector {
         this.inputElement.style.margin = '0';
         this.inputElement.style.padding = '0 4px';
         this.inputElement.style.display = 'block';
-        this.inputElement.style.fontSize = '12px';
+        this.inputElement.style.textAlign = "center";
+        this.inputElement.style.fontSize = '14px';
         this.inputElement.style.fontFamily = 'Arial';
         this.inputElement.style.lineHeight = height + 'px';
         this.inputElement.style.boxSizing = 'border-box';
@@ -413,7 +414,6 @@ export class CellSelector {
 
         this.inputElement.style.display = 'block';
         this.inputElement.focus();
-        this.inputElement.select();
         this.isEditing = true;
 
         if (this.onCellEdit) this.onCellEdit(this.inputElement.value);
