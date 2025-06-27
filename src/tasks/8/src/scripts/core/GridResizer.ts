@@ -1,7 +1,7 @@
-import { MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { DPR, MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
 import { CellSelector } from "./CellSelector.js";
-import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
+import { GridCell } from "./GridCell.js";
 
 export class GridResizer {
     canvas: HTMLCanvasElement;
@@ -36,18 +36,21 @@ export class GridResizer {
         this.redrawGrid = redrawFn;
     }
 
-    /** Returns true if pointer is near a column edge in the column header area (row 0) */
+    /**
+     * Returns true if pointer is near a column edge in the column header area (row 0)
+     * Uses canvas-relative pointer position for hit-testing (ignores scroll offset)
+     */
     isNearColumnEdge(e: PointerEvent): boolean {
-        const { x, y } = this.getMousePosition(e);
+        const { x, y } = this.getMousePositionForEdgeDetection(e);
         const headerHeight = this.gridMatrix.rowHeights[0];
         if (y > headerHeight) {
             this.resizingColIndex = -1;
             return false;
         }
-        let total = 0;
+        // Use GridCell.getCellRect for edge detection
         for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
-            total += this.gridMatrix.columnWidths[i];
-            if (Math.abs(x - total) < this.resizeThreshold) {
+            const rect = GridCell.getCellRect(0, i, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+            if (Math.abs(x - (rect.x + rect.width)) < this.resizeThreshold) {
                 this.resizingColIndex = i;
                 return true;
             }
@@ -56,18 +59,21 @@ export class GridResizer {
         return false;
     }
 
-    /** Returns true if pointer is near a row edge in the row header area (col 0) */
+    /**
+     * Returns true if pointer is near a row edge in the row header area (col 0)
+     * Uses canvas-relative pointer position for hit-testing (ignores scroll offset)
+     */
     isNearRowEdge(e: PointerEvent): boolean {
-        const { x, y } = this.getMousePosition(e);
+        const { x, y } = this.getMousePositionForEdgeDetection(e);
         const headerWidth = this.gridMatrix.columnWidths[0];
         if (x > headerWidth) {
             this.resizingRowIndex = -1;
             return false;
         }
-        let total = 0;
+        // Use GridCell.getCellRect for edge detection
         for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
-            total += this.gridMatrix.rowHeights[i];
-            if (Math.abs(y - total) < this.resizeThreshold) {
+            const rect = GridCell.getCellRect(i, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+            if (Math.abs(y - (rect.y + rect.height)) < this.resizeThreshold) {
                 this.resizingRowIndex = i;
                 return true;
             }
@@ -77,18 +83,19 @@ export class GridResizer {
     }
 
     onPointerDown(e: PointerEvent) {
-        const { x, y } = this.getMousePosition(e);
+        // For edge detection: use canvas-relative position (not scrolled!)
+        const { x, y } = this.getMousePositionForEdgeDetection(e);
         if (this.isNearColumnEdge(e) && this.resizingColIndex > 0) {
             this.isResizingCol = true;
             this.startX = x;
             this.initialWidth = this.gridMatrix.columnWidths[this.resizingColIndex];
-            this.canvas.style.cursor = "col-resize";
+            this.canvas.style.cursor = "ew-resize";
             e.preventDefault();
         } else if (this.isNearRowEdge(e) && this.resizingRowIndex > 0) {
             this.isResizingRow = true;
             this.startY = y;
             this.initialHeight = this.gridMatrix.rowHeights[this.resizingRowIndex];
-            this.canvas.style.cursor = "row-resize";
+            this.canvas.style.cursor = "ns-resize";
             e.preventDefault();
         }
     }
@@ -99,24 +106,27 @@ export class GridResizer {
             return;
         }
         if (this.isNearColumnEdge(e) && this.resizingColIndex > 0) {
-            this.canvas.style.cursor = "col-resize";
+            this.canvas.style.cursor = "ew-resize";
         } else if (this.isNearRowEdge(e) && this.resizingRowIndex > 0) {
-            this.canvas.style.cursor = "row-resize";
+            this.canvas.style.cursor = "ns-resize";
         } else {
-            this.canvas.style.cursor = "default";
+            this.canvas.style.cursor = "cell";
         }
     }
 
-    onPointerUp(_e: PointerEvent) {
+    onPointerUp(e: PointerEvent) {
         this.isResizingCol = false;
         this.isResizingRow = false;
         this.resizingColIndex = -1;
         this.resizingRowIndex = -1;
-        this.canvas.style.cursor = "default";
+        this.canvas.style.cursor = "cell";
     }
 
+    // No need to update cell positions, always use GridCell.getCellRect when needed
+
     handleResize(e: PointerEvent) {
-        const { x, y } = this.getMousePosition(e);
+        // For resizing, use canvas-relative pointer position (not scrolled!)
+        const { x, y } = this.getMousePositionForEdgeDetection(e);
         let changed = false;
 
         if (this.isResizingCol && this.resizingColIndex >= 0) {
@@ -136,10 +146,29 @@ export class GridResizer {
             }
         }
         if (changed) {
+            const container = this.canvas.parentElement!;
             this.redrawGrid();
         }
     }
 
+    /**
+     * Returns the pointer position relative to the canvas's visible area (not scrolled content).
+     * This is used for edge detection and resize dragging, so that scroll works correctly.
+     */
+    getMousePositionForEdgeDetection(e: PointerEvent) {
+        const rect = this.canvas.getBoundingClientRect();
+        // DO NOT add scroll offset here for edge detection!
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
+    }
+
+    /**
+     * Returns the pointer position relative to the grid content (including scroll).
+     * Use this ONLY if you actually need the scrolled content coordinates.
+     * (For most resizer logic, you want getMousePositionForEdgeDetection instead!)
+     */
     getMousePosition(e: PointerEvent) {
         const rect = this.canvas.getBoundingClientRect();
         const container = this.canvas.parentElement!;

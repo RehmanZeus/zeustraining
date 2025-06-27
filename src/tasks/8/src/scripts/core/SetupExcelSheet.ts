@@ -49,8 +49,9 @@ export class SetupExcelSheet {
         this.container.style.height = this.canvasHeight + 'px';
         this.container.style.overflow = 'auto';
         this.container.style.position = 'relative';
+        this.container.style.cursor = "cell";
         this.container.style.margin = '0';
-        this.container.style.padding = '56px 0 0 0'; // space for header
+        this.container.style.padding = '0'; // space for header
         this.container.style.boxSizing = 'border-box';
 
         // 2. Virtual scroll area (sets scrollbar size)
@@ -70,6 +71,7 @@ export class SetupExcelSheet {
         this.canvas.style.position = 'absolute';
         this.canvas.style.top = '0';
         this.canvas.style.left = '0';
+        this.canvas.style.cursor = "cell";
         this.canvas.style.width = this.canvasWidth + 'px';
         this.canvas.style.height = this.canvasHeight + 'px';
         this.canvas.width = this.canvasWidth * DPR;

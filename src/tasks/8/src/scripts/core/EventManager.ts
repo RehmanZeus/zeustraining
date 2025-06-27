@@ -62,13 +62,20 @@ export class EventManager {
             return;
         }
         if (this.gridResizer.isNearColumnEdge(e)) {
-            this.canvas.style.cursor = "col-resize";
+            this.canvas.style.cursor = "ew-resize";
         } else if (this.gridResizer.isNearRowEdge(e)) {
-            this.canvas.style.cursor = "row-resize";
+            this.canvas.style.cursor = "ns-resize";
         } else {
-            this.canvas.style.cursor = "default";
+            this.canvas.style.cursor = "cell";
         }
+
+        // if(this.columnSelector.isColumnHeader(e)){
+        //     this.canvas.style.cursor = "s-resize";
+        // }
     }
+
+
+
 
     handlePointerUp(e: PointerEvent) {
         if (this.mode === "resizing") {

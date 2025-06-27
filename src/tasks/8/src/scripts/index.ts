@@ -11,7 +11,7 @@ import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 import { Logger } from "./core/Logger.js";
 
-const NUM_ROWS = 100000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
+const NUM_ROWS = 10000, NUM_COLS = 1000, CELL_W = 70, CELL_H = 25;
 
 window.onload = () => {
     const setup = new SetupExcelSheet(CELL_W, CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
@@ -27,7 +27,7 @@ window.onload = () => {
     resizer.setCellSelector(cellSelector);
 
     const gridDataLoader = new GridDataLoader(gridMatrix);
-    const dataGen = new GridDataGen(50000);
+    const dataGen = new GridDataGen(500);
     const sampleData = dataGen.generateData();
     gridDataLoader.loadJSONData(sampleData);
 
@@ -38,7 +38,7 @@ window.onload = () => {
     colSelector.setCanvas(canvas);
 
     const sumBtn = document.getElementById("calc-sum");
-    const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx);
+    const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
     sumBtn?.addEventListener("click", operations.sumRows.bind(operations));
 
     function drawVisibleGrid() {
@@ -110,6 +110,6 @@ window.onload = () => {
     // --- Attach all pointer/click events to EventAttacher! ---
     new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer);
 
-    new ExcelHeader(cellSelector, gridMatrix);
+    // new ExcelHeader(cellSelector, gridMatrix, operations);
 
 };

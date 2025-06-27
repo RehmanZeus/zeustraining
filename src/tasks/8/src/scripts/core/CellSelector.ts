@@ -798,6 +798,8 @@ export class CellSelector {
         return this.gridMatrix.getCell(this.selectedRow, this.selectedCol).data;
     }
 
+
+
     /**
      * 
      * @returns The reference of the currently selected cell in A1 notation (e.g., "A1", "B2").

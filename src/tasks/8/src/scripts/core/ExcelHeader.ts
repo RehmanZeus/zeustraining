@@ -1,5 +1,6 @@
 import { CellSelector } from "./CellSelector.js";
 import { GridMatrix } from "./GridMatrix.js";
+import { Operations } from "./Operations.js";
 
 /**
  * ExcelHeader manages the header UI above the grid,
@@ -11,13 +12,16 @@ export class ExcelHeader {
     inputBox: HTMLInputElement;
     colorPicker: HTMLInputElement;
     selectionInfo: HTMLDivElement;
+    operationsMenu: HTMLDivElement;
 
     cellSelector: CellSelector;
     gridMatrix: GridMatrix;
+    operations: Operations;
 
-    constructor(cellSelector: CellSelector, gridMatrix: GridMatrix) {
+    constructor(cellSelector: CellSelector, gridMatrix: GridMatrix, operations: Operations) {
         this.cellSelector = cellSelector;
         this.gridMatrix = gridMatrix;
+        this.operations = operations;
 
         // Create header elements
         this.container = document.createElement("div");
@@ -39,6 +43,36 @@ export class ExcelHeader {
         this.colorPicker.type = "color";
         this.colorPicker.className = "color-picker";
 
+        this.operationsMenu = document.createElement("div");
+        this.operationsMenu.className = "operations-menu";
+        this.operationsMenu.innerHTML = `
+            <button class="btn" id="sum">Sum</button>
+            <button class="btn" id="average">Average</button>
+            <button class="btn" id="count">Count</button>
+            <button class="btn" id="clear">Clear</button>
+        `;
+        this.operationsMenu.querySelector("#sum")!.addEventListener("click", () => {
+            const sum = operations.rangeSelectionSum();
+            alert(`Sum: ${sum}`);
+            this.inputBox.value = sum.toString();
+            this.cellSelector.redrawGrid();
+        });
+
+        // this.operationsMenu.querySelector("#average")!.addEventListener("click", () => {
+        //     const sum = operations.rangeSelectionSum();
+        //     const count = operations.cellSelector.getRangeSelectionData()?.length || 0;
+        //     const average = count > 0 ? sum / count : 0;
+        //     this.inputBox.value = average.toString();
+        //     this.cellSelector.redrawGrid();
+        // });
+
+        // this.operationsMenu.querySelector("#count")!.addEventListener("click", () => {
+        //     const count = operations.cellSelector.getRangeSelectionData()?.length || 0;
+        //     this.inputBox.value = count.toString();
+        //     this.cellSelector.redrawGrid();
+        // });
+
+        this.container.appendChild(this.operationsMenu);
         this.container.appendChild(this.refDisplay);
         this.container.appendChild(this.selectionInfo);
         this.container.appendChild(this.inputBox);
