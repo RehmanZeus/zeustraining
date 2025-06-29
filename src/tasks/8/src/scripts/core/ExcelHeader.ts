@@ -4,166 +4,144 @@ import { Operations } from "./Operations.js";
 
 /**
  * ExcelHeader manages the header UI above the grid,
- * including cell reference, input box, color picker, and selection info.
+ * including cell reference, input box, and operations menu.
  */
 export class ExcelHeader {
-    container: HTMLDivElement;
-    refDisplay: HTMLDivElement;
-    inputBox: HTMLInputElement;
-    colorPicker: HTMLInputElement;
-    selectionInfo: HTMLDivElement;
-    operationsMenu: HTMLDivElement;
+  container: HTMLDivElement;
+  refDisplay: HTMLDivElement;
+  inputBox: HTMLInputElement;
+  selectionInfo: HTMLDivElement;
+  operationsMenu: HTMLDivElement;
 
-    cellSelector: CellSelector;
-    gridMatrix: GridMatrix;
-    operations: Operations;
+  cellSelector: CellSelector;
+  gridMatrix: GridMatrix;
+  operations: Operations;
 
-    constructor(cellSelector: CellSelector, gridMatrix: GridMatrix, operations: Operations) {
-        this.cellSelector = cellSelector;
-        this.gridMatrix = gridMatrix;
-        this.operations = operations;
+  constructor(
+    cellSelector: CellSelector,
+    gridMatrix: GridMatrix,
+    operations: Operations
+  ) {
+    this.cellSelector = cellSelector;
+    this.gridMatrix = gridMatrix;
+    this.operations = operations;
 
-        // Create header elements
-        this.container = document.createElement("div");
-        this.container.className = "excel-header";
+    // Create header container
+    this.container = document.createElement("div");
+    this.container.className = "excel-header";
 
-        this.refDisplay = document.createElement("div");
-        this.refDisplay.className = "cell-ref";
-        this.refDisplay.textContent = "";
-
-        this.selectionInfo = document.createElement("div");
-        this.selectionInfo.className = "selection-info";
-        this.selectionInfo.textContent = "";
-
-        this.inputBox = document.createElement("input");
-        this.inputBox.className = "cell-input";
-        this.inputBox.type = "text";
-
-        this.colorPicker = document.createElement("input");
-        this.colorPicker.type = "color";
-        this.colorPicker.className = "color-picker";
-
-        this.operationsMenu = document.createElement("div");
-        this.operationsMenu.className = "operations-menu";
-        this.operationsMenu.innerHTML = `
-            <button class="btn" id="sum">Sum</button>
-            <button class="btn" id="average">Average</button>
-            <button class="btn" id="count">Count</button>
-            <button class="btn" id="clear">Clear</button>
-        `;
-        this.operationsMenu.querySelector("#sum")!.addEventListener("click", () => {
-            const sum = operations.rangeSelectionSum();
-            alert(`Sum: ${sum}`);
-            this.inputBox.value = sum.toString();
+    // Operations menu (Sum, Average, Count, Clear)
+    this.operationsMenu = document.createElement("div");
+    this.operationsMenu.className = "operations-menu";
+    ["Sum","Average","Count","Clear"].forEach((label) => {
+      const btn = document.createElement("button");
+      btn.className = "btn";
+      btn.textContent = label;
+      btn.addEventListener("click", () => {
+        let value: number|undefined;
+        switch(label) {
+          case "Sum": value = this.operations.rangeSelectionSum(); break;
+          case "Average":
+            const sum = this.operations.rangeSelectionSum();
+            const data = this.cellSelector.getRangeSelectionData();
+            const count = data
+              ? (data.endRow - data.startRow + 1) * (data.endCol - data.startCol + 1)
+              : 0;
+            value = count>0 ? sum / count : 0;
+            break;
+          case "Count":
+            const r = this.cellSelector.getRangeSelectionData();
+            value = r
+              ? (r.endRow - r.startRow + 1) * (r.endCol - r.startCol + 1)
+              : 0;
+            break;
+          case "Clear":
+            this.inputBox.value = "";
+            this.cellSelector.clearSelectedCell();
             this.cellSelector.redrawGrid();
-        });
-
-        // this.operationsMenu.querySelector("#average")!.addEventListener("click", () => {
-        //     const sum = operations.rangeSelectionSum();
-        //     const count = operations.cellSelector.getRangeSelectionData()?.length || 0;
-        //     const average = count > 0 ? sum / count : 0;
-        //     this.inputBox.value = average.toString();
-        //     this.cellSelector.redrawGrid();
-        // });
-
-        // this.operationsMenu.querySelector("#count")!.addEventListener("click", () => {
-        //     const count = operations.cellSelector.getRangeSelectionData()?.length || 0;
-        //     this.inputBox.value = count.toString();
-        //     this.cellSelector.redrawGrid();
-        // });
-
-        this.container.appendChild(this.operationsMenu);
-        this.container.appendChild(this.refDisplay);
-        this.container.appendChild(this.selectionInfo);
-        this.container.appendChild(this.inputBox);
-        this.container.appendChild(this.colorPicker);
-
-        // Insert above the excel-container
-        const excelContainer = document.getElementById("excel-container");
-        if (excelContainer && excelContainer.parentElement) {
-            excelContainer.parentElement.insertBefore(this.container, excelContainer);
-        } else {
-            document.body.insertBefore(this.container, document.body.firstChild);
+            return;
         }
+        this.inputBox.value = (value ?? 0).toString();
+      });
+      this.operationsMenu.appendChild(btn);
+    });
 
-        // Initial update
-        this.updateHeader();
+    // Cell reference display (e.g. A1 or Range)
+    this.refDisplay = document.createElement("div");
+    this.refDisplay.className = "cell-ref";
 
-        // Events
-        this.inputBox.addEventListener("input", this.handleInputBoxInput.bind(this));
-        this.colorPicker.addEventListener("input", this.handleColorChange.bind(this));
+    // Selection details (Row:1, Col:1 or 2R x 3C)
+    this.selectionInfo = document.createElement("div");
+    this.selectionInfo.className = "selection-info";
 
-        // Listen for selection changes by monkey-patching selectCell
-        const origSelectCell = this.cellSelector.selectCell.bind(this.cellSelector);
-        this.cellSelector.selectCell = (row: number, col: number) => {
-            origSelectCell(row, col);
-            this.updateHeader();
-        };
+    // Input box for direct cell editing
+    this.inputBox = document.createElement("input");
+    this.inputBox.className = "cell-input";
+    this.inputBox.type = "text";
+    this.inputBox.addEventListener("input", this.handleInputBoxInput.bind(this));
 
-        // Listen for range selection changes (e.g., after drag)
-        const origRedraw = this.cellSelector.redrawGrid.bind(this.cellSelector);
-        this.cellSelector.redrawGrid = () => {
-            origRedraw();
-            this.updateHeader();
-        };
+    // Assemble header
+    this.container.append(
+      this.operationsMenu,
+      this.refDisplay,
+      this.selectionInfo,
+      this.inputBox
+    );
 
-        this.cellSelector.onCellEdit = (value: string) => {
-            this.inputBox.value = value;
-        };
-        this.cellSelector.onCellEditFinish = (value: string) => {
-            this.inputBox.value = value;
-            this.updateHeader();
-        };
+    // Insert above the excel container
+    const excelContainer = document.getElementById("excel-container");
+    if (excelContainer && excelContainer.parentElement) {
+      excelContainer.parentElement.insertBefore(this.container, excelContainer);
+    } else {
+      document.body.insertBefore(this.container, document.body.firstChild);
     }
 
-    handleInputBoxInput(e: Event) {
-        if (this.cellSelector.selectedRow > 0 && this.cellSelector.selectedCol > 0) {
-            const cell = this.gridMatrix.getCell(
-                this.cellSelector.selectedRow,
-                this.cellSelector.selectedCol
-            );
-            cell.data = this.inputBox.value;
-            // Sync to in-cell editor if open
-            if (this.cellSelector.isEditing) {
-                this.cellSelector.inputElement.value = this.inputBox.value;
-            }
-            this.cellSelector.redrawGrid();
-        }
-    }
-    /**
-     * 
-     */
-    updateHeader() {
-        // Detect range selection
-        const isRange = (
-            this.cellSelector.selectionStartRow > 0 &&
-            this.cellSelector.selectionStartCol > 0 &&
-            (
-                this.cellSelector.selectionStartRow !== this.cellSelector.selectionEndRow ||
-                this.cellSelector.selectionStartCol !== this.cellSelector.selectionEndCol
-            )
-        );
+    // Hook into selection/edit events to refresh header
+    const origSelect = this.cellSelector.selectCell.bind(this.cellSelector);
+    this.cellSelector.selectCell = (r, c) => {
+      origSelect(r, c);
+      this.updateHeader();
+    };
+    const origRedraw = this.cellSelector.redrawGrid.bind(this.cellSelector);
+    this.cellSelector.redrawGrid = () => {
+      origRedraw();
+      this.updateHeader();
+    };
+    this.cellSelector.onCellEditFinish = () => this.updateHeader();
 
-        if (!isRange) {
-            const ref = this.cellSelector.getSelectedCellReference();
-            this.refDisplay.textContent = `Cell: ${ref}`;
-            this.selectionInfo.textContent = `Row: ${this.cellSelector.selectedRow}, Col: ${this.cellSelector.selectedCol}`;
-            this.inputBox.value = this.cellSelector.getSelectedCellData() || "";
-        } else {
-            const sr = this.cellSelector.selectionStartRow;
-            const sc = this.cellSelector.selectionStartCol;
-            const er = this.cellSelector.selectionEndRow;
-            const ec = this.cellSelector.selectionEndCol;
-            this.refDisplay.textContent = "Range";
-            this.selectionInfo.textContent = `Rows: ${sr}-${er}, Cols: ${sc}-${ec} (${Math.abs(er - sr) + 1}R x ${Math.abs(ec - sc) + 1}C)`;
-            this.inputBox.value = ""; // or maybe sum/count values in range?
-        }
-        // Color picker logic omitted for now
-    }
+    this.updateHeader();
+  }
 
-   
-
-    handleColorChange(e: Event) {
-        // ...
+  private handleInputBoxInput() {
+    const r = this.cellSelector.selectedRow;
+    const c = this.cellSelector.selectedCol;
+    if (r > 0 && c > 0) {
+      const cell = this.gridMatrix.getCell(r, c);
+      cell.data = this.inputBox.value;
+      this.cellSelector.redrawGrid();
     }
+  }
+
+  private updateHeader() {
+    // Range?
+    const sel = this.cellSelector.getRangeSelectionData();
+    const isRange = sel != null && (
+      sel.startRow !== sel.endRow || sel.startCol !== sel.endCol
+    );
+
+    if (!isRange) {
+      const ref = this.cellSelector.getSelectedCellReference() || "—";
+      const r = this.cellSelector.selectedRow;
+      const c = this.cellSelector.selectedCol;
+      this.refDisplay.textContent = `Cell: ${ref}`;
+      this.selectionInfo.textContent = `Row: ${r>0?r:"—"}, Col: ${c>0?c:"—"}`;
+      this.inputBox.value = this.cellSelector.getSelectedCellData() || "";
+    } else {
+      this.refDisplay.textContent = "Range";
+      const rows = sel.endRow - sel.startRow + 1;
+      const cols = sel.endCol - sel.startCol + 1;
+      this.selectionInfo.textContent = `${rows}R × ${cols}C`;
+      this.inputBox.value = "";
+    }
+  }
 }
