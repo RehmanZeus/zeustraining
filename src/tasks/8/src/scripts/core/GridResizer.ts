@@ -51,7 +51,7 @@ export class GridResizer {
         this.viewportEndCol = endCol;
         this.viewportStartRow = startRow;
         this.viewportEndRow = endRow;
-        
+
     }
 
     /**
@@ -59,25 +59,28 @@ export class GridResizer {
    * Handles virtual scrolling by using viewport bounds and scroll-adjusted positions
    */
     isNearColumnEdge(e: PointerEvent): boolean {
-        // 1) Compute mouse X/Y in full “grid space” (ignoring viewport clipping)
-        const container = document.getElementById('excel-container') as HTMLDivElement;
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left + container.scrollLeft;
-        const y = e.clientY - rect.top + container.scrollTop;
+        const rawX = e.clientX - rect.left;
+        const rawY = e.clientY - rect.top;
 
-        // 2) Bail if we’re below the header
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        // Y uses scrollTop only when below the sticky header
         const headerHeight = this.gridMatrix.rowHeights[0];
+        const y = rawY + (rawY > headerHeight ? container.scrollTop : 0);
         if (y >= headerHeight) {
             this.resizingColIndex = -1;
             return false;
         }
 
-        // 3) Compute total width of columns *before* viewportStartCol
+        // X always uses scrollLeft (columns still slide under the sticky header)
+        const x = rawX + container.scrollLeft;
+
+        // Compute hidden width of columns left of viewportStartCol
         const hiddenOffset = this.gridMatrix.columnWidths
             .slice(0, this.viewportStartCol)
             .reduce((sum, w) => sum + w, 0);
 
-        // 4) Walk visible cols, checking each right‐edge against x
+        // Walk visible columns
         let cumX = hiddenOffset;
         for (let col = this.viewportStartCol; col < this.viewportEndCol; col++) {
             const w = this.gridMatrix.columnWidths[col];
@@ -87,41 +90,43 @@ export class GridResizer {
                 this.resizingColIndex = col;
                 return true;
             }
-
             cumX = rightEdge;
-            if (cumX > x + this.resizeThreshold) {
-                break;  // no chance further cols matter
-            }
+            if (cumX > x + this.resizeThreshold) break;
         }
 
         this.resizingColIndex = -1;
         return false;
     }
 
+
     /**
      * Returns true if pointer is near a row edge in the row header area (col 0)
      * Uses canvas-relative pointer position for hit-testing (ignores scroll offset)
      */
     isNearRowEdge(e: PointerEvent): boolean {
-        // 1) Compute absolute grid-space X/Y
         const rect = this.canvas.getBoundingClientRect();
-        const container = document.getElementById('excel-container') as HTMLDivElement;
-        const x = e.clientX - rect.left + container.scrollLeft;
-        const y = e.clientY - rect.top + container.scrollTop;
+        const rawX = e.clientX - rect.left;
+        const rawY = e.clientY - rect.top;
+            const container = document.getElementById('excel-container') as HTMLDivElement;
 
-        // 2) Bail if we're to the right of the row-header column
+
+        // X uses scrollLeft only when to the right of the sticky header
         const headerWidth = this.gridMatrix.columnWidths[0];
+        const x = rawX + (rawX > headerWidth ? container.scrollLeft : 0);
         if (x > headerWidth) {
             this.resizingRowIndex = -1;
             return false;
         }
 
-        // 3) Compute total height of rows hidden above viewportStartRow
+        // Y always uses scrollTop (rows still slide under the sticky row header)
+        const y = rawY + container.scrollTop;
+
+        // Compute hidden height of rows above viewportStartRow
         const hiddenOffset = this.gridMatrix.rowHeights
             .slice(0, this.viewportStartRow)
             .reduce((sum, h) => sum + h, 0);
 
-        // 4) Walk visible rows, checking each bottom edge against y
+        // Walk visible rows
         let cumY = hiddenOffset;
         for (let row = this.viewportStartRow; row < this.viewportEndRow; row++) {
             const h = this.gridMatrix.rowHeights[row];
@@ -131,11 +136,8 @@ export class GridResizer {
                 this.resizingRowIndex = row;
                 return true;
             }
-
             cumY = bottomEdge;
-            if (cumY > y + this.resizeThreshold) {
-                break;
-            }
+            if (cumY > y + this.resizeThreshold) break;
         }
 
         this.resizingRowIndex = -1;
