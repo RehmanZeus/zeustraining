@@ -22,6 +22,12 @@ export class GridResizer {
     resizeThreshold = 5;
     redrawGrid: () => void = () => { };
 
+    // Track visible viewport
+    private viewportStartCol: number = 0;
+    private viewportEndCol: number = 0;
+    private viewportStartRow: number = 0;
+    private viewportEndRow: number = 0;
+
     constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix) {
         this.canvas = canvas;
         this.ctx = ctx;
@@ -37,24 +43,57 @@ export class GridResizer {
     }
 
     /**
-     * Returns true if pointer is near a column edge in the column header area (row 0)
-     * Uses canvas-relative pointer position for hit-testing (ignores scroll offset)
+     * Set the visible viewport bounds. Call this before pointer events (from drawVisibleGrid).
      */
+
+    setViewport(startCol: number, endCol: number, startRow: number, endRow: number) {
+        this.viewportStartCol = startCol;
+        this.viewportEndCol = endCol;
+        this.viewportStartRow = startRow;
+        this.viewportEndRow = endRow;
+        
+    }
+
+    /**
+   * Returns true if pointer is near a column edge in the column header area (row 0)
+   * Handles virtual scrolling by using viewport bounds and scroll-adjusted positions
+   */
     isNearColumnEdge(e: PointerEvent): boolean {
-        const { x, y } = this.getMousePositionForEdgeDetection(e);
+        // 1) Compute mouse X/Y in full “grid space” (ignoring viewport clipping)
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const rect = this.canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left + container.scrollLeft;
+        const y = e.clientY - rect.top + container.scrollTop;
+
+        // 2) Bail if we’re below the header
         const headerHeight = this.gridMatrix.rowHeights[0];
-        if (y > headerHeight) {
+        if (y >= headerHeight) {
             this.resizingColIndex = -1;
             return false;
         }
-        // Use GridCell.getCellRect for edge detection
-        for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
-            const rect = GridCell.getCellRect(0, i, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
-            if (Math.abs(x - (rect.x + rect.width)) < this.resizeThreshold) {
-                this.resizingColIndex = i;
+
+        // 3) Compute total width of columns *before* viewportStartCol
+        const hiddenOffset = this.gridMatrix.columnWidths
+            .slice(0, this.viewportStartCol)
+            .reduce((sum, w) => sum + w, 0);
+
+        // 4) Walk visible cols, checking each right‐edge against x
+        let cumX = hiddenOffset;
+        for (let col = this.viewportStartCol; col < this.viewportEndCol; col++) {
+            const w = this.gridMatrix.columnWidths[col];
+            const rightEdge = cumX + w;
+
+            if (Math.abs(x - rightEdge) < this.resizeThreshold) {
+                this.resizingColIndex = col;
                 return true;
             }
+
+            cumX = rightEdge;
+            if (cumX > x + this.resizeThreshold) {
+                break;  // no chance further cols matter
+            }
         }
+
         this.resizingColIndex = -1;
         return false;
     }
@@ -64,26 +103,46 @@ export class GridResizer {
      * Uses canvas-relative pointer position for hit-testing (ignores scroll offset)
      */
     isNearRowEdge(e: PointerEvent): boolean {
-        const { x, y } = this.getMousePositionForEdgeDetection(e);
+        // 1) Compute absolute grid-space X/Y
+        const rect = this.canvas.getBoundingClientRect();
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const x = e.clientX - rect.left + container.scrollLeft;
+        const y = e.clientY - rect.top + container.scrollTop;
+
+        // 2) Bail if we're to the right of the row-header column
         const headerWidth = this.gridMatrix.columnWidths[0];
         if (x > headerWidth) {
             this.resizingRowIndex = -1;
             return false;
         }
-        // Use GridCell.getCellRect for edge detection
-        for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
-            const rect = GridCell.getCellRect(i, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
-            if (Math.abs(y - (rect.y + rect.height)) < this.resizeThreshold) {
-                this.resizingRowIndex = i;
+
+        // 3) Compute total height of rows hidden above viewportStartRow
+        const hiddenOffset = this.gridMatrix.rowHeights
+            .slice(0, this.viewportStartRow)
+            .reduce((sum, h) => sum + h, 0);
+
+        // 4) Walk visible rows, checking each bottom edge against y
+        let cumY = hiddenOffset;
+        for (let row = this.viewportStartRow; row < this.viewportEndRow; row++) {
+            const h = this.gridMatrix.rowHeights[row];
+            const bottomEdge = cumY + h;
+
+            if (Math.abs(y - bottomEdge) < this.resizeThreshold) {
+                this.resizingRowIndex = row;
                 return true;
             }
+
+            cumY = bottomEdge;
+            if (cumY > y + this.resizeThreshold) {
+                break;
+            }
         }
+
         this.resizingRowIndex = -1;
         return false;
     }
 
     onPointerDown(e: PointerEvent) {
-        // For edge detection: use canvas-relative position (not scrolled!)
         const { x, y } = this.getMousePositionForEdgeDetection(e);
         if (this.isNearColumnEdge(e) && this.resizingColIndex > 0) {
             this.isResizingCol = true;
@@ -122,10 +181,7 @@ export class GridResizer {
         this.canvas.style.cursor = "cell";
     }
 
-    // No need to update cell positions, always use GridCell.getCellRect when needed
-
     handleResize(e: PointerEvent) {
-        // For resizing, use canvas-relative pointer position (not scrolled!)
         const { x, y } = this.getMousePositionForEdgeDetection(e);
         let changed = false;
 
@@ -146,7 +202,6 @@ export class GridResizer {
             }
         }
         if (changed) {
-            const container = this.canvas.parentElement!;
             this.redrawGrid();
         }
     }

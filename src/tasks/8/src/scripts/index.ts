@@ -51,6 +51,8 @@ window.onload = () => {
 
         const viewport = gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
 
+        // Pass viewport to resizer before any pointer event
+        resizer.setViewport(viewport.startCol, viewport.endCol, viewport.startRow, viewport.endRow);
         // 1. Draw grid
         gridMatrix.drawGrid(ctx, viewport, scrollLeft, scrollTop);
 
@@ -108,7 +110,7 @@ window.onload = () => {
 
 
     // --- Attach all pointer/click events to EventAttacher! ---
-    new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer);
+    new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer, gridMatrix);
 
     // new ExcelHeader(cellSelector, gridMatrix, operations);
 
