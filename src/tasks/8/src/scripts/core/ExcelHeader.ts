@@ -47,7 +47,7 @@ export class ExcelHeader {
             const count = data
               ? (data.endRow - data.startRow + 1) * (data.endCol - data.startCol + 1)
               : 0;
-            value = count>0 ? sum / count : 0;
+            value = count>0 ? Math.floor(sum / count) : 0;
             break;
           case "Count":
             const r = this.cellSelector.getRangeSelectionData();
@@ -140,7 +140,7 @@ export class ExcelHeader {
       this.refDisplay.textContent = "Range";
       const rows = sel.endRow - sel.startRow + 1;
       const cols = sel.endCol - sel.startCol + 1;
-      this.selectionInfo.textContent = `${rows}R × ${cols}C`;
+      this.selectionInfo.textContent = `${rows}R x ${cols}C`;
       this.inputBox.value = "";
     }
   }

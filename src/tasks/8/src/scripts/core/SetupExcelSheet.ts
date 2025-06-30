@@ -46,7 +46,8 @@ export class SetupExcelSheet {
         this.container = document.createElement('div');
         this.container.id = 'excel-container';
         this.container.style.width = this.canvasWidth + 'px';
-        this.container.style.height = this.canvasHeight + 'px';
+        this.container.style.top = "56px"; // Not "!important"
+        this.container.style.height = `calc(100vh - 56px)`; // Fill below the header
         this.container.style.overflow = 'auto';
         this.container.style.position = 'relative';
         this.container.style.cursor = "cell";

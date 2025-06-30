@@ -308,7 +308,7 @@ export class RowSelector {
         const rect = canvas.getBoundingClientRect();
         const container = document.getElementById('excel-container') as HTMLDivElement;
         return {
-            x: e.clientX - rect.left + container.scrollLeft,
+            x: e.clientX - rect.left ,
             y: e.clientY - rect.top + container.scrollTop
         };
     }

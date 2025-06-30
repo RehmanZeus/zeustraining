@@ -326,7 +326,7 @@ export class ColumnSelector {
         const container = document.getElementById('excel-container') as HTMLDivElement;
         return {
             x: e.clientX - rect.left + container.scrollLeft,
-            y: e.clientY - rect.top + container.scrollTop
+            y: e.clientY - rect.top 
         };
     }
 }
