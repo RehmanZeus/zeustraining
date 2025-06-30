@@ -1,9 +1,10 @@
-import { DPR, MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import {  MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
 import { CellSelector } from "./CellSelector.js";
 import { GridMatrix } from "./GridMatrix.js";
-import { GridCell } from "./GridCell.js";
 
 export class GridResizer {
+
+    
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     gridMatrix: GridMatrix;
@@ -28,24 +29,42 @@ export class GridResizer {
     private viewportStartRow: number = 0;
     private viewportEndRow: number = 0;
 
+    /**
+     * Creates a new GridResizer instance.
+     * @param canvas The HTML canvas element where the grid is rendered.
+     * @param ctx The 2D rendering context of the canvas.
+     * @param gridMatrix The GridMatrix instance that manages the grid data.
+     */
     constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix) {
         this.canvas = canvas;
         this.ctx = ctx;
         this.gridMatrix = gridMatrix;
     }
 
+    /**
+     * Sets the cell selector for the grid resizer.
+     * @param cellSelector defines the cellSelector used in the gridMatrix class
+     */
     setCellSelector(cellSelector: CellSelector) {
         this.cellSelector = cellSelector;
     }
 
+    /**
+     * Sets the redraw grid callback for the grid resizer.
+     * @param redrawFn defines the gridDraw function used in the gridMatrix class
+     */
     setRedrawGridCallback(redrawFn: () => void) {
         this.redrawGrid = redrawFn;
     }
 
-    /**
-     * Set the visible viewport bounds. Call this before pointer events (from drawVisibleGrid).
-     */
 
+    /**
+     * 
+     * @param startCol defines the column from where to start rendering
+     * @param endCol defines the column from where to stop rendering
+     * @param startRow defines the row from where to start rendering
+     * @param endRow defines the row from where to stop rendering
+     */
     setViewport(startCol: number, endCol: number, startRow: number, endRow: number) {
         this.viewportStartCol = startCol;
         this.viewportEndCol = endCol;
@@ -55,9 +74,10 @@ export class GridResizer {
     }
 
     /**
-   * Returns true if pointer is near a column edge in the column header area (row 0)
-   * Handles virtual scrolling by using viewport bounds and scroll-adjusted positions
-   */
+     * 
+     * @param e Takes a pointer events helps in determining the position of the mouse on the canvas
+     * @returns  true if the mouse pointer is near a column edge otherwise false
+     */
     isNearColumnEdge(e: PointerEvent): boolean {
         const rect = this.canvas.getBoundingClientRect();
         const rawX = e.clientX - rect.left;
@@ -144,6 +164,11 @@ export class GridResizer {
         return false;
     }
 
+    /**
+     * Handles the pointer down event for resizing.
+     * @param e Takes a pointer event and determines if the pointer is near a column or row edge.
+     * If it is near a column edge, it starts resizing the column.
+     */
     onPointerDown(e: PointerEvent) {
         const { x, y } = this.getMousePositionForEdgeDetection(e);
         if (this.isNearColumnEdge(e) && this.resizingColIndex > 0) {
@@ -161,6 +186,11 @@ export class GridResizer {
         }
     }
 
+    /**
+     * Handles the pointer move event for resizing.
+     * @param e Takes a pointer event and checks if the pointer is near a column or row edge.
+     * If it is, it changes the cursor style to indicate resizing.
+     */
     onPointerMove(e: PointerEvent) {
         if (this.isResizingCol || this.isResizingRow) {
             this.handleResize(e);
@@ -175,6 +205,10 @@ export class GridResizer {
         }
     }
 
+    /**
+     * Handles the pointer up event for resizing.
+     * @param e Takes a pointer event and resets the resizing state.
+     */
     onPointerUp(e: PointerEvent) {
         this.isResizingCol = false;
         this.isResizingRow = false;
@@ -183,6 +217,10 @@ export class GridResizer {
         this.canvas.style.cursor = "cell";
     }
 
+    /**
+     * Handles the resizing logic for columns and rows.
+     * @param e Takes a pointer event and updates the grid dimensions accordingly.
+     */
     handleResize(e: PointerEvent) {
         const { x, y } = this.getMousePositionForEdgeDetection(e);
         let changed = false;
@@ -209,8 +247,10 @@ export class GridResizer {
     }
 
     /**
-     * Returns the pointer position relative to the canvas's visible area (not scrolled content).
-     * This is used for edge detection and resize dragging, so that scroll works correctly.
+     * Gets the mouse position for edge detection.
+     * @param e Takes a pointer event and returns the mouse position relative to the grid content (ignoring scroll).
+     * This is used for edge detection logic, so DO NOT add scroll offset here!
+     * @returns The mouse position relative to the grid content.
      */
     getMousePositionForEdgeDetection(e: PointerEvent) {
         const rect = this.canvas.getBoundingClientRect();
@@ -222,9 +262,10 @@ export class GridResizer {
     }
 
     /**
-     * Returns the pointer position relative to the grid content (including scroll).
-     * Use this ONLY if you actually need the scrolled content coordinates.
-     * (For most resizer logic, you want getMousePositionForEdgeDetection instead!)
+     * Gets the mouse position for actual grid interaction.
+     * @param e Takes a pointer event and returns the mouse position relative to the grid content, including scroll offsets.
+     * This is used for actual grid interaction (e.g. cell selection), so it includes scroll offsets.
+     * @returns The mouse position relative to the grid content, including scroll offsets.
      */
     getMousePosition(e: PointerEvent) {
         const rect = this.canvas.getBoundingClientRect();

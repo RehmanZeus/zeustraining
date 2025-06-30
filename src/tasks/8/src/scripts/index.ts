@@ -48,6 +48,11 @@ window.onload = () => {
     gridMatrix.setCellSelector(cellSelector);
 
 
+    /**
+     * Draws the visible grid area based on the current scroll position and viewport size.  
+     * This function clears the canvas, calculates the viewport bounds, and draws the grid, selections, and corner cell.
+     * It is called on scroll events and initial load to ensure the grid is rendered correctly.
+     */
     function drawVisibleGrid() {
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
@@ -76,6 +81,11 @@ window.onload = () => {
         drawCornerCell(ctx);
     }
 
+    /**
+     * Draws the top-left corner cell of the grid, which is used for selection.
+     * @param ctx The canvas rendering context to draw the corner cell.
+     * This function draws the top-left corner cell of the grid, which is used for selection
+     */
     function drawCornerCell(ctx: CanvasRenderingContext2D) {
         const cornerWidth = gridMatrix.columnWidths[0];
         const cornerHeight = gridMatrix.rowHeights[0];
@@ -90,6 +100,9 @@ window.onload = () => {
     }
 
     let animationFrameId: number | null = null;
+    /**
+     * Handles the scroll event for the container.
+     */
     container.addEventListener('scroll', () => {
         if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
         animationFrameId = requestAnimationFrame(() => {
@@ -121,6 +134,11 @@ window.onload = () => {
 
     new ExcelHeader(cellSelector, gridMatrix, operations);
 
+    /**
+     * Handles the keydown event for the document.
+     * This function listens for Ctrl+Z and Ctrl+Y key combinations to trigger undo and redo commands.
+     * It uses the CommandManager to manage the command history and execute undo/redo operations
+     */
     document.addEventListener('keydown', (e) => {
         if (e.ctrlKey && e.key === 'z') {
             commandManager.undo();

@@ -6,6 +6,11 @@ import { GridMatrix } from "./GridMatrix.js";
 
 type Mode = "idle" | "dragging" | "resizing" | "editing";
 
+/**
+ * The EventManager class handles user interactions with the grid.
+ * It manages pointer events for cell selection, column and row resizing, and keyboard events for editing.
+ * It coordinates between the CellSelector, ColumnSelector, RowSelector, and GridResizer to ensure smooth interactions.
+ */
 export class EventManager {
     canvas: HTMLCanvasElement;
     cellSelector: CellSelector;
@@ -16,6 +21,15 @@ export class EventManager {
     suppressNextClick = false;
     gridMatrix: GridMatrix;
 
+    /**
+     * Creates an instance of the EventManager.
+     * @param canvas The HTML canvas element where the grid is rendered.
+     * @param cellSelector The CellSelector instance for managing cell selection.
+     * @param columnSelector The ColumnSelector instance for managing column selection.
+     * @param rowSelector The RowSelector instance for managing row selection.
+     * @param gridResizer The GridResizer instance for managing grid resizing.
+     * @param gridMatrix The GridMatrix instance for managing grid data.
+     */
     constructor(
         canvas: HTMLCanvasElement,
         cellSelector: CellSelector,
@@ -33,6 +47,12 @@ export class EventManager {
         this.attachEvents();
     }
 
+    /**
+     * Gets the index of the first visible column in the viewport.
+     * @returns The index of the first visible column in the viewport.
+     * This is determined by the current scroll position and viewport size.
+     */
+
     getStartColumnIndex() {
 
         const container = document.getElementById('excel-container') as HTMLDivElement;
@@ -48,6 +68,10 @@ export class EventManager {
 
     }
 
+    /**
+     * Attaches event listeners to the canvas for pointer and keyboard events.
+     * This method sets up the necessary event handlers for user interactions with the grid.
+     */
     attachEvents() {
         this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this));
         this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
@@ -57,6 +81,11 @@ export class EventManager {
         document.addEventListener('keydown', this.handleKeydown.bind(this));
     }
 
+    /**
+     * Handles pointer down events on the canvas.
+     * Determines if the pointer is near a column or row edge for resizing, or if it's over a cell for dragging.
+     * @param e The pointer event to handle.
+     */
     handlePointerDown(e: PointerEvent) {
         if (this.gridResizer.isNearColumnEdge(e) || this.gridResizer.isNearRowEdge(e)) {
             this.mode = "resizing";
@@ -71,6 +100,12 @@ export class EventManager {
         this.mode = "idle";
     }
 
+    /**
+     * Handles pointer move events on the canvas.
+     * Changes the cursor style based on whether the pointer is near a column or row edge.
+     * If resizing or dragging, delegates to the appropriate handler.
+     * @param e The pointer event to handle.
+     */
     handlePointerMove(e: PointerEvent) {
         if (this.mode === "resizing") {
             this.gridResizer.onPointerMove(e);
@@ -95,7 +130,11 @@ export class EventManager {
 
 
 
-
+    /**
+     * Handles pointer up events on the canvas.
+     * Resets the mode to idle after resizing or dragging.
+     * @param e The pointer event to handle.
+     */
     handlePointerUp(e: PointerEvent) {
         if (this.mode === "resizing") {
             this.gridResizer.onPointerUp(e);
@@ -110,6 +149,11 @@ export class EventManager {
         }
     }
 
+    /**
+     * Handles click events on the canvas.
+     * Suppresses the click event if requested (e.g. after resizing).
+     * @param e The mouse event to handle.
+     */
     handleClick(e: MouseEvent) {
         // Suppress click if requested (e.g. after resizing)
         if (this.suppressNextClick) {
@@ -143,6 +187,10 @@ export class EventManager {
         }
     }
 
+    /**
+     * Handles double click events on the canvas.
+     * @param e The mouse event to handle.
+     */
     handleDoubleClick(e: MouseEvent) {
         if (this.mode !== "idle") return;
         if (this.cellSelector.isCell(e)) {
@@ -150,6 +198,10 @@ export class EventManager {
         }
     }
 
+    /**
+     * Handles keydown events on the canvas.
+     * @param e The keyboard event to handle.
+     */
     handleKeydown(e: KeyboardEvent) {
         if (typeof this.cellSelector.handleKeydown === "function") {
             this.cellSelector.handleKeydown(e);

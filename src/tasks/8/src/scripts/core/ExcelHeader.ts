@@ -17,6 +17,12 @@ export class ExcelHeader {
   gridMatrix: GridMatrix;
   operations: Operations;
 
+  /**
+   * Creates an instance of ExcelHeader.
+   * @param cellSelector The CellSelector instance for managing cell selection.
+   * @param gridMatrix The GridMatrix instance for managing grid data.
+   * @param operations The Operations instance for managing grid operations.
+   */
   constructor(
     cellSelector: CellSelector,
     gridMatrix: GridMatrix,
@@ -112,6 +118,10 @@ export class ExcelHeader {
     this.updateHeader();
   }
 
+  /**
+   * Handles input box changes to update the selected cell's data.
+   * This is called when the user types in the input box.
+   */
   private handleInputBoxInput() {
     const r = this.cellSelector.selectedRow;
     const c = this.cellSelector.selectedCol;
@@ -122,6 +132,9 @@ export class ExcelHeader {
     }
   }
 
+  /**
+   * Updates the header display with the current selection information.
+   */
   private updateHeader() {
     // Range?
     const sel = this.cellSelector.getRangeSelectionData();

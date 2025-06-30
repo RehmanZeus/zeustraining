@@ -1,12 +1,25 @@
 import { GridMatrix } from "./GridMatrix.js";
 
+/**
+ * GridDataLoader is responsible for loading JSON data into the grid matrix.
+ * It handles the conversion of JSON objects to grid cells, including custom headers.
+ */
 export class GridDataLoader {
     gridMatrix: GridMatrix;
 
+    /**
+     * Creates an instance of GridDataLoader.
+     * @param gridMatrix The GridMatrix instance where data will be loaded.
+     */
     constructor(gridMatrix: GridMatrix) {
         this.gridMatrix = gridMatrix;
     }
 
+    /**
+     * @param dataArray An array of JSON objects to load into the grid.
+     * Each object should have consistent keys that will become column headers.
+     * @returns 
+     */
     loadJSONData<T>(dataArray: T[]): void {
         if (!Array.isArray(dataArray) || dataArray.length === 0) {
             console.warn("No data to load.");
