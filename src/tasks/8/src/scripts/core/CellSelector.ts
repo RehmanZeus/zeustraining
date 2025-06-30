@@ -50,7 +50,7 @@ export class CellSelector {
     /** Indicates if the next click should be suppressed to avoid conflicts with drag */
     suppressNextClick = false;
 
-    
+
 
     /** The input element used for editing cell data */
     inputElement!: HTMLInputElement;
@@ -150,6 +150,7 @@ export class CellSelector {
             if (this.dragStarted) {
                 this.suppressNextClick = true;
             }
+            this.dragStarted = false; // <-- Add this!
             this.redrawGrid();
         }
     }
@@ -223,7 +224,7 @@ export class CellSelector {
      */
     handleKeydown(e: KeyboardEvent) {
         if (this.isEditing) return;
-        if (this.selectedRow === -1 || this.selectedCol === -1) return;
+        if ((this.selectedRow === -1 || this.selectedCol === -1) && (this.selectionStartRow == -1 && this.selectionStartCol == -1)) return;
 
         const shift = e.shiftKey;
 
@@ -255,9 +256,9 @@ export class CellSelector {
                 e.preventDefault();
                 console.log(this.selectedRow, this.selectedCol)
                 if (this.isEditing) {
-                    console.log("yolo",this.selectedRow, this.selectedCol)
-                    this.moveSelection(-1,0);
-                } else {    
+                    console.log("yolo", this.selectedRow, this.selectedCol)
+                    this.moveSelection(-1, 0);
+                } else {
                     console.log("fkkaf", this.selectedRow, this.selectedCol)
                     this.moveSelection(1, 0);
 
@@ -303,7 +304,7 @@ export class CellSelector {
         // If not currently in range mode, start anchor at current cell
         if (
             this.selectionStartRow <= 0 || this.selectionStartCol <= 0 ||
-            this.selectionEndRow <= 0 || this.selectionEndCol <= 0 || this.dragStarted
+            this.selectionEndRow <= 0 || this.selectionEndCol <= 0
         ) {
             this.anchorRow = this.selectedRow;
             this.anchorCol = this.selectedCol;
@@ -377,7 +378,7 @@ export class CellSelector {
      * @param colOffset The number of columns to move the selection (can be negative).
      */
     moveSelection(rowOffset: number, colOffset: number) {
-        console.log("Move selection",rowOffset, colOffset)
+        console.log("Move selection", rowOffset, colOffset)
         const newRow = Math.max(1, Math.min(this.gridMatrix.noOfRows - 1, this.selectedRow + rowOffset));
         const newCol = Math.max(1, Math.min(this.gridMatrix.noOfCols - 1, this.selectedCol + colOffset));
         console.log("move selection", newRow, newCol)
