@@ -50,6 +50,8 @@ export class CellSelector {
     /** Indicates if the next click should be suppressed to avoid conflicts with drag */
     suppressNextClick = false;
 
+
+
     /** The input element used for editing cell data */
     inputElement!: HTMLInputElement;
     /** Indicates if the input element is currently focused */
@@ -148,6 +150,7 @@ export class CellSelector {
             if (this.dragStarted) {
                 this.suppressNextClick = true;
             }
+            this.dragStarted = false; // <-- Add this!
             this.redrawGrid();
         }
     }
@@ -172,6 +175,7 @@ export class CellSelector {
             this.clearRangeSelection();
             this.selectCell(row, col);
         }
+        console.log(this.selectedRow, this.selectedCol)
     }
 
     /**
@@ -220,7 +224,7 @@ export class CellSelector {
      */
     handleKeydown(e: KeyboardEvent) {
         if (this.isEditing) return;
-        if (this.selectedRow === -1 || this.selectedCol === -1) return;
+        if ((this.selectedRow === -1 || this.selectedCol === -1) && (this.selectionStartRow == -1 && this.selectionStartCol == -1)) return;
 
         const shift = e.shiftKey;
 
@@ -250,7 +254,15 @@ export class CellSelector {
             case 'ArrowDown':
             case 'Enter':
                 e.preventDefault();
-                this.moveSelection(1, 0);
+                console.log(this.selectedRow, this.selectedCol)
+                if (this.isEditing) {
+                    console.log("yolo", this.selectedRow, this.selectedCol)
+                    this.moveSelection(-1, 0);
+                } else {
+                    console.log("fkkaf", this.selectedRow, this.selectedCol)
+                    this.moveSelection(1, 0);
+
+                }
                 break;
             case 'ArrowLeft':
                 e.preventDefault();
@@ -292,7 +304,7 @@ export class CellSelector {
         // If not currently in range mode, start anchor at current cell
         if (
             this.selectionStartRow <= 0 || this.selectionStartCol <= 0 ||
-            this.selectionEndRow <= 0 || this.selectionEndCol <= 0 || this.dragStarted
+            this.selectionEndRow <= 0 || this.selectionEndCol <= 0
         ) {
             this.anchorRow = this.selectedRow;
             this.anchorCol = this.selectedCol;
@@ -331,7 +343,6 @@ export class CellSelector {
                 break;
             case 'Tab':
                 e.preventDefault();
-                alert("TAAA")
                 this.finishEditing();
                 this.moveSelection(0, e.shiftKey ? -1 : 1);
                 break;
@@ -367,8 +378,10 @@ export class CellSelector {
      * @param colOffset The number of columns to move the selection (can be negative).
      */
     moveSelection(rowOffset: number, colOffset: number) {
+        console.log("Move selection", rowOffset, colOffset)
         const newRow = Math.max(1, Math.min(this.gridMatrix.noOfRows - 1, this.selectedRow + rowOffset));
         const newCol = Math.max(1, Math.min(this.gridMatrix.noOfCols - 1, this.selectedCol + colOffset));
+        console.log("move selection", newRow, newCol)
         this.selectCell(newRow, newCol);
     }
 
@@ -429,6 +442,7 @@ export class CellSelector {
         cell.data = this.inputElement.value;
         this.inputElement.style.display = 'none';
         this.isEditing = false;
+        console.log("Finish edit", this.selectedRow, this.selectedCol)
         this.redrawGrid();
         this.canvas.focus();
         if (this.onCellEditFinish) this.onCellEditFinish(this.inputElement.value);
@@ -506,7 +520,7 @@ export class CellSelector {
 
             // 1. Fill selection cells and headers background
             ctx.save();
-            ctx.globalAlpha = 0.2;
+            ctx.globalAlpha = 0.3;
             for (let row = minRow; row <= maxRow; row++) {
                 for (let col = minCol; col <= maxCol; col++) {
                     if (row === minRow && col === minCol) continue;

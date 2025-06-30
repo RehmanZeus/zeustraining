@@ -1,4 +1,5 @@
 import { DPR } from '../constants.js';
+import { GridMatrix } from './GridMatrix.js';
 
 /**
  * SetupExcelSheet implements "virtual scrolling" with a fixed-size canvas
@@ -18,6 +19,7 @@ export class SetupExcelSheet {
     canvas!: HTMLCanvasElement;
     ctx!: CanvasRenderingContext2D;
     container!: HTMLDivElement;
+    gridMatrix: GridMatrix | null = null;
     scrollArea!: HTMLDivElement;
 
     constructor(
@@ -105,6 +107,9 @@ export class SetupExcelSheet {
         return this.canvas;
     }
 
+    setGridMatrix(g: GridMatrix) {
+        this.gridMatrix = g;
+    }
     /**
      * Returns the 2D canvas rendering context (after init()).
      */
@@ -131,6 +136,15 @@ export class SetupExcelSheet {
     handleResizeOrZoom() {
         this.setCanvasResolution();
         this.rescaleContext();
-        // Redraw grid here if needed (call your redraw function)
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+
+        const viewport = this.gridMatrix?.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
+        this.gridMatrix?.drawGrid(this.ctx)
+
     }
 }

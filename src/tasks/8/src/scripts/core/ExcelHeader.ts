@@ -1,4 +1,5 @@
 import { CellSelector } from "./CellSelector.js";
+import { CommandManager } from "./commands/CommandManager.js";
 import { GridMatrix } from "./GridMatrix.js";
 import { Operations } from "./Operations.js";
 
@@ -17,14 +18,23 @@ export class ExcelHeader {
   gridMatrix: GridMatrix;
   operations: Operations;
 
+  commandManager: CommandManager;
+  /**
+   * Creates an instance of ExcelHeader.
+   * @param cellSelector The CellSelector instance for managing cell selection.
+   * @param gridMatrix The GridMatrix instance for managing grid data.
+   * @param operations The Operations instance for managing grid operations.
+   */
   constructor(
     cellSelector: CellSelector,
     gridMatrix: GridMatrix,
-    operations: Operations
+    operations: Operations,
+    commandManager: CommandManager
   ) {
     this.cellSelector = cellSelector;
     this.gridMatrix = gridMatrix;
     this.operations = operations;
+    this.commandManager = commandManager
 
     // Create header container
     this.container = document.createElement("div");
@@ -33,13 +43,13 @@ export class ExcelHeader {
     // Operations menu (Sum, Average, Count, Clear)
     this.operationsMenu = document.createElement("div");
     this.operationsMenu.className = "operations-menu";
-    ["Sum","Average","Count","Clear"].forEach((label) => {
+    ["Undo", "Redo", "Sum", "Average", "Count", "Clear"].forEach((label) => {
       const btn = document.createElement("button");
       btn.className = "btn";
       btn.textContent = label;
       btn.addEventListener("click", () => {
-        let value: number|undefined;
-        switch(label) {
+        let value: number | undefined;
+        switch (label) {
           case "Sum": value = this.operations.rangeSelectionSum(); break;
           case "Average":
             const sum = this.operations.rangeSelectionSum();
@@ -47,7 +57,7 @@ export class ExcelHeader {
             const count = data
               ? (data.endRow - data.startRow + 1) * (data.endCol - data.startCol + 1)
               : 0;
-            value = count>0 ? Math.floor(sum / count) : 0;
+            value = count > 0 ? Math.floor(sum / count) : 0;
             break;
           case "Count":
             const r = this.cellSelector.getRangeSelectionData();
@@ -55,11 +65,18 @@ export class ExcelHeader {
               ? (r.endRow - r.startRow + 1) * (r.endCol - r.startCol + 1)
               : 0;
             break;
+          case "Undo":
+            commandManager.undo();
+            break;
+          case "Redo":
+            commandManager.redo();
+            break;
           case "Clear":
             this.inputBox.value = "";
             this.cellSelector.clearSelectedCell();
             this.cellSelector.redrawGrid();
             return;
+
         }
         this.inputBox.value = (value ?? 0).toString();
       });
@@ -112,6 +129,10 @@ export class ExcelHeader {
     this.updateHeader();
   }
 
+  /**
+   * Handles input box changes to update the selected cell's data.
+   * This is called when the user types in the input box.
+   */
   private handleInputBoxInput() {
     const r = this.cellSelector.selectedRow;
     const c = this.cellSelector.selectedCol;
@@ -122,6 +143,9 @@ export class ExcelHeader {
     }
   }
 
+  /**
+   * Updates the header display with the current selection information.
+   */
   private updateHeader() {
     // Range?
     const sel = this.cellSelector.getRangeSelectionData();
@@ -134,12 +158,12 @@ export class ExcelHeader {
       const r = this.cellSelector.selectedRow;
       const c = this.cellSelector.selectedCol;
       this.refDisplay.textContent = `Cell: ${ref}`;
-      this.selectionInfo.textContent = `Row: ${r>0?r:"—"}, Col: ${c>0?c:"—"}`;
+      this.selectionInfo.textContent = `Row: ${r > 0 ? r : "—"}, Col: ${c > 0 ? c : "—"}`;
       this.inputBox.value = this.cellSelector.getSelectedCellData() || "";
     } else {
       this.refDisplay.textContent = "Range";
-      const rows = sel.endRow - sel.startRow + 1;
-      const cols = sel.endCol - sel.startCol + 1;
+      const rows = (Math.max(sel.startRow, sel.endRow) - Math.min(sel.startRow, sel.endRow)) + 1;
+      const cols = (Math.max(sel.endCol, sel.startCol) - Math.min(sel.startCol, sel.endCol)) + 1;
       this.selectionInfo.textContent = `${rows}R x ${cols}C`;
       this.inputBox.value = "";
     }

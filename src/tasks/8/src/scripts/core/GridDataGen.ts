@@ -6,13 +6,26 @@ interface JSONData {
     Salary: number;
 }
 
+/**
+ * Generates random grid data for the specified number of rows.
+ */
 export class GridDataGen {
     numberOfDataToGen: number;
 
+    /**
+     * @param n The number of rows of data to generate.
+     * The data will consist of random first names, last names, ages, and salaries.
+     */
     constructor(n: number) {
         this.numberOfDataToGen = n;
     }
 
+    /**
+     * 
+     * @returns An array of JSONData objects, each representing a row of data.
+     * Each object contains an id, first name, last name, age (as a string), and salary (as a number).
+     * The first name and last name are randomly generated with 3 to 8 characters.
+     */
     generateData(): JSONData[] {
         const lowAlphabets = "abcdefghijklmnopqrstuvwxyz";
         const upAlphabets = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
