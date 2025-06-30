@@ -2,6 +2,7 @@ import { CellSelector } from "./CellSelector.js";
 import { ColumnSelector } from "./ColumnSelector.js";
 import { RowSelector } from "./RowSelector.js";
 import { GridResizer } from "./GridResizer.js";
+import { GridMatrix } from "./GridMatrix.js";
 
 type Mode = "idle" | "dragging" | "resizing" | "editing";
 
@@ -13,20 +14,38 @@ export class EventManager {
     gridResizer: GridResizer;
     mode: Mode = "idle";
     suppressNextClick = false;
+    gridMatrix: GridMatrix;
 
     constructor(
         canvas: HTMLCanvasElement,
         cellSelector: CellSelector,
         columnSelector: ColumnSelector,
         rowSelector: RowSelector,
-        gridResizer: GridResizer
+        gridResizer: GridResizer,
+        gridMatrix: GridMatrix
     ) {
         this.canvas = canvas;
         this.cellSelector = cellSelector;
         this.columnSelector = columnSelector;
         this.rowSelector = rowSelector;
         this.gridResizer = gridResizer;
+        this.gridMatrix = gridMatrix;
         this.attachEvents();
+    }
+
+    getStartColumnIndex() {
+
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+
+        const {startCol} = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
+
+        return startCol;
+
     }
 
     attachEvents() {
@@ -62,13 +81,20 @@ export class EventManager {
             return;
         }
         if (this.gridResizer.isNearColumnEdge(e)) {
-            this.canvas.style.cursor = "col-resize";
+            this.canvas.style.cursor = "ew-resize";
         } else if (this.gridResizer.isNearRowEdge(e)) {
-            this.canvas.style.cursor = "row-resize";
+            this.canvas.style.cursor = "ns-resize";
         } else {
-            this.canvas.style.cursor = "default";
+            this.canvas.style.cursor = "cell";
         }
+
+        // if(this.columnSelector.isColumnHeader(e)){
+        //     this.canvas.style.cursor = "s-resize";
+        // }
     }
+
+
+
 
     handlePointerUp(e: PointerEvent) {
         if (this.mode === "resizing") {

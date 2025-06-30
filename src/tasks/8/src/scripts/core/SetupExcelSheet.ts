@@ -46,11 +46,13 @@ export class SetupExcelSheet {
         this.container = document.createElement('div');
         this.container.id = 'excel-container';
         this.container.style.width = this.canvasWidth + 'px';
-        this.container.style.height = this.canvasHeight + 'px';
+        this.container.style.top = "56px"; // Not "!important"
+        this.container.style.height = `calc(100vh - 56px)`; // Fill below the header
         this.container.style.overflow = 'auto';
         this.container.style.position = 'relative';
+        this.container.style.cursor = "cell";
         this.container.style.margin = '0';
-        this.container.style.padding = '0';
+        this.container.style.padding = '0'; // space for header
         this.container.style.boxSizing = 'border-box';
 
         // 2. Virtual scroll area (sets scrollbar size)
@@ -67,15 +69,12 @@ export class SetupExcelSheet {
 
         this.ctx = this.canvas.getContext('2d')!;
         this.rescaleContext();
-        // this.canvas.style.position = 'absolute';
-        this.canvas.style.top = '0';
-        this.canvas.style.left = '0';
+        this.canvas.style.position = 'absolute';
+        this.canvas.style.cursor = "cell";
         this.canvas.style.width = this.canvasWidth + 'px';
         this.canvas.style.height = this.canvasHeight + 'px';
         this.canvas.width = this.canvasWidth * DPR;
         this.canvas.height = this.canvasHeight * DPR;
-
-        this.ctx = this.canvas.getContext('2d')!;
         this.ctx.scale(DPR, DPR);
 
         // 4. Compose DOM

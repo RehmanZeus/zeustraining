@@ -1,57 +1,131 @@
+/* Reset & base */
+
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-html,
-body {
-    width: 100% !important;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    /* Prevent double scrollbars */
-    touch-action: none;
+html, body {
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  touch-action: none;
+  font-family: "Segoe UI", Arial, sans-serif;
 }
+
+input {
+  outline: none;
+}
+
+/* Excel header bar */
 
 .excel-header {
-
-    padding: 50px;
-    
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 56px;                /* matches header height */
+  padding: 8px 32px 8px 8px;
+  background: #fafafa;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  z-index: 999;
 }
+
+/* Operations buttons */
+
+.operations-menu {
+  display: flex;
+  gap: 6px;
+}
+
+.operations-menu .btn {
+  background: #fff;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.operations-menu .btn:hover {
+  background: #f0f0f0;
+}
+
+/* Cell reference & selection info */
+
+.cell-ref {
+  font-weight: bold;
+  color: #333;
+  white-space: nowrap;
+}
+
+.selection-info {
+  color: #666;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* Input box */
+
+.cell-input {
+  flex: 1;
+  padding: 4px 8px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+.cell-input:focus {
+  border-color: #107c41;
+  box-shadow: 0 0 0 2px rgba(16,124,65,0.2);
+}
+
+/* Container for grid beneath header */
 
 #excel-container {
-    /* Smooth scrolling */
-    scroll-behavior: smooth;
-    margin-top: -100;
-    /* Custom scrollbar styling (optional) */
-    scrollbar-width: thin;
-    scrollbar-color: #888 #f1f1f1;
+  position: absolute;
+  top: 56px;           /* push below header */
+  left: 0;
+  right: 0;
+  bottom: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+  cursor: cell;
+  scroll-behavior: smooth;
 }
 
-/* Webkit scrollbar styling (optional) */
+/* Webkit scrollbar styling */
+
 #excel-container::-webkit-scrollbar {
-    width: 12px;
-    height: 12px;
+  width: 12px;
+  height: 12px;
 }
 
 #excel-container::-webkit-scrollbar-track {
-    background: #f1f1f1;
+  background: #f1f1f1;
 }
 
 #excel-container::-webkit-scrollbar-thumb {
-    background: #888;
-    border-radius: 6px;
+  background: #888;
+  border-radius: 6px;
 }
 
 #excel-container::-webkit-scrollbar-thumb:hover {
-    background: #555;
+  background: #555;
 }
 
-/* Ensure canvas doesn't have any unwanted margins */
+/* Canvas reset */
+
 canvas {
-    display: block;
-    margin: 0;
-    padding: 0;
-    position: relative;
+  display: block;
+  margin: 0;
+  padding: 0;
+  position: relative;
 }

@@ -1,6 +1,7 @@
 import { DPR, MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
 import { CellSelector } from "./CellSelector.js";
 import { GridMatrix } from "./GridMatrix.js";
+import { GridCell } from "./GridCell.js";
 
 export class GridResizer {
     canvas: HTMLCanvasElement;
@@ -21,6 +22,12 @@ export class GridResizer {
     resizeThreshold = 5;
     redrawGrid: () => void = () => { };
 
+    // Track visible viewport
+    private viewportStartCol: number = 0;
+    private viewportEndCol: number = 0;
+    private viewportStartRow: number = 0;
+    private viewportEndRow: number = 0;
+
     constructor(canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix) {
         this.canvas = canvas;
         this.ctx = ctx;
@@ -35,61 +42,121 @@ export class GridResizer {
         this.redrawGrid = redrawFn;
     }
 
-    /** Returns true if pointer is near a column edge in the column header area (row 0) */
+    /**
+     * Set the visible viewport bounds. Call this before pointer events (from drawVisibleGrid).
+     */
+
+    setViewport(startCol: number, endCol: number, startRow: number, endRow: number) {
+        this.viewportStartCol = startCol;
+        this.viewportEndCol = endCol;
+        this.viewportStartRow = startRow;
+        this.viewportEndRow = endRow;
+
+    }
+
+    /**
+   * Returns true if pointer is near a column edge in the column header area (row 0)
+   * Handles virtual scrolling by using viewport bounds and scroll-adjusted positions
+   */
     isNearColumnEdge(e: PointerEvent): boolean {
-        const { x, y } = this.getMousePosition(e);
-        // Only allow resizing if pointer is within the header row (y range of row 0)
+        const rect = this.canvas.getBoundingClientRect();
+        const rawX = e.clientX - rect.left;
+        const rawY = e.clientY - rect.top;
+
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        // Y uses scrollTop only when below the sticky header
         const headerHeight = this.gridMatrix.rowHeights[0];
-        if (y > headerHeight) {
+        const y = rawY + (rawY > headerHeight ? container.scrollTop : 0);
+        if (y >= headerHeight) {
             this.resizingColIndex = -1;
             return false;
         }
-        let total = 0;
-        for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
-            total += this.gridMatrix.columnWidths[i];
-            if (Math.abs(x - total) < this.resizeThreshold) {
-                this.resizingColIndex = i;
+
+        // X always uses scrollLeft (columns still slide under the sticky header)
+        const x = rawX + container.scrollLeft;
+
+        // Compute hidden width of columns left of viewportStartCol
+        const hiddenOffset = this.gridMatrix.columnWidths
+            .slice(0, this.viewportStartCol)
+            .reduce((sum, w) => sum + w, 0);
+
+        // Walk visible columns
+        let cumX = hiddenOffset;
+        for (let col = this.viewportStartCol; col < this.viewportEndCol; col++) {
+            const w = this.gridMatrix.columnWidths[col];
+            const rightEdge = cumX + w;
+
+            if (Math.abs(x - rightEdge) < this.resizeThreshold) {
+                this.resizingColIndex = col;
                 return true;
             }
+            cumX = rightEdge;
+            if (cumX > x + this.resizeThreshold) break;
         }
+
         this.resizingColIndex = -1;
         return false;
     }
 
-    /** Returns true if pointer is near a row edge in the row header area (col 0) */
+
+    /**
+     * Returns true if pointer is near a row edge in the row header area (col 0)
+     * Uses canvas-relative pointer position for hit-testing (ignores scroll offset)
+     */
     isNearRowEdge(e: PointerEvent): boolean {
-        const { x, y } = this.getMousePosition(e);
-        // Only allow resizing if pointer is within the header column (x range of col 0)
+        const rect = this.canvas.getBoundingClientRect();
+        const rawX = e.clientX - rect.left;
+        const rawY = e.clientY - rect.top;
+            const container = document.getElementById('excel-container') as HTMLDivElement;
+
+
+        // X uses scrollLeft only when to the right of the sticky header
         const headerWidth = this.gridMatrix.columnWidths[0];
+        const x = rawX + (rawX > headerWidth ? container.scrollLeft : 0);
         if (x > headerWidth) {
             this.resizingRowIndex = -1;
             return false;
         }
-        let total = 0;
-        for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
-            total += this.gridMatrix.rowHeights[i];
-            if (Math.abs(y - total) < this.resizeThreshold) {
-                this.resizingRowIndex = i;
+
+        // Y always uses scrollTop (rows still slide under the sticky row header)
+        const y = rawY + container.scrollTop;
+
+        // Compute hidden height of rows above viewportStartRow
+        const hiddenOffset = this.gridMatrix.rowHeights
+            .slice(0, this.viewportStartRow)
+            .reduce((sum, h) => sum + h, 0);
+
+        // Walk visible rows
+        let cumY = hiddenOffset;
+        for (let row = this.viewportStartRow; row < this.viewportEndRow; row++) {
+            const h = this.gridMatrix.rowHeights[row];
+            const bottomEdge = cumY + h;
+
+            if (Math.abs(y - bottomEdge) < this.resizeThreshold) {
+                this.resizingRowIndex = row;
                 return true;
             }
+            cumY = bottomEdge;
+            if (cumY > y + this.resizeThreshold) break;
         }
+
         this.resizingRowIndex = -1;
         return false;
     }
 
     onPointerDown(e: PointerEvent) {
-        const { x, y } = this.getMousePosition(e);
+        const { x, y } = this.getMousePositionForEdgeDetection(e);
         if (this.isNearColumnEdge(e) && this.resizingColIndex > 0) {
             this.isResizingCol = true;
             this.startX = x;
             this.initialWidth = this.gridMatrix.columnWidths[this.resizingColIndex];
-            this.canvas.style.cursor = "col-resize";
+            this.canvas.style.cursor = "ew-resize";
             e.preventDefault();
         } else if (this.isNearRowEdge(e) && this.resizingRowIndex > 0) {
             this.isResizingRow = true;
             this.startY = y;
             this.initialHeight = this.gridMatrix.rowHeights[this.resizingRowIndex];
-            this.canvas.style.cursor = "row-resize";
+            this.canvas.style.cursor = "ns-resize";
             e.preventDefault();
         }
     }
@@ -100,11 +167,11 @@ export class GridResizer {
             return;
         }
         if (this.isNearColumnEdge(e) && this.resizingColIndex > 0) {
-            this.canvas.style.cursor = "col-resize";
+            this.canvas.style.cursor = "ew-resize";
         } else if (this.isNearRowEdge(e) && this.resizingRowIndex > 0) {
-            this.canvas.style.cursor = "row-resize";
+            this.canvas.style.cursor = "ns-resize";
         } else {
-            this.canvas.style.cursor = "default";
+            this.canvas.style.cursor = "cell";
         }
     }
 
@@ -113,37 +180,11 @@ export class GridResizer {
         this.isResizingRow = false;
         this.resizingColIndex = -1;
         this.resizingRowIndex = -1;
-        this.canvas.style.cursor = "default";
-    }
-
-    updateColumnLayout(colIndex: number) {
-        let x = this.gridMatrix.columnWidths.slice(0, colIndex).reduce((a, b) => a + b, 0);
-        let width = this.gridMatrix.columnWidths[colIndex];
-        for (let row = 0; row < this.gridMatrix.noOfRows; row++) {
-            let y = this.gridMatrix.rowHeights.slice(0, row).reduce((a, b) => a + b, 0);
-            const cell = this.gridMatrix.getCell(row, colIndex);
-            cell.x = x;
-            cell.y = y;
-            cell.width = width;
-            cell.height = this.gridMatrix.rowHeights[row];
-        }
-    }
-
-    updateRowLayout(rowIndex: number) {
-        let y = this.gridMatrix.rowHeights.slice(0, rowIndex).reduce((a, b) => a + b, 0);
-        let height = this.gridMatrix.rowHeights[rowIndex];
-        for (let col = 0; col < this.gridMatrix.noOfCols; col++) {
-            let x = this.gridMatrix.columnWidths.slice(0, col).reduce((a, b) => a + b, 0);
-            const cell = this.gridMatrix.getCell(rowIndex, col);
-            cell.x = x;
-            cell.y = y;
-            cell.width = this.gridMatrix.columnWidths[col];
-            cell.height = height;
-        }
+        this.canvas.style.cursor = "cell";
     }
 
     handleResize(e: PointerEvent) {
-        const { x, y } = this.getMousePosition(e);
+        const { x, y } = this.getMousePositionForEdgeDetection(e);
         let changed = false;
 
         if (this.isResizingCol && this.resizingColIndex >= 0) {
@@ -151,7 +192,6 @@ export class GridResizer {
             const newWidth = Math.max(MIN_GRIDCELL_WIDTH, this.initialWidth + delta);
             if (this.gridMatrix.columnWidths[this.resizingColIndex] !== newWidth) {
                 this.gridMatrix.columnWidths[this.resizingColIndex] = newWidth;
-                this.updateColumnLayout(this.resizingColIndex);
                 changed = true;
             }
         }
@@ -160,44 +200,32 @@ export class GridResizer {
             const newHeight = Math.max(MIN_GRIDCELL_HEIGHT, this.initialHeight + delta);
             if (this.gridMatrix.rowHeights[this.resizingRowIndex] !== newHeight) {
                 this.gridMatrix.rowHeights[this.resizingRowIndex] = newHeight;
-                this.updateRowLayout(this.resizingRowIndex);
                 changed = true;
             }
         }
         if (changed) {
-            const container = this.canvas.parentElement!;
-            this.updateGridLayoutViewport(
-                container.scrollLeft,
-                container.scrollTop,
-                container.clientWidth,
-                container.clientHeight
-            );
             this.redrawGrid();
         }
     }
 
-    updateGridLayoutViewport(scrollLeft: number, scrollTop: number, viewportWidth: number, viewportHeight: number) {
-        const { startRow, endRow, startCol, endCol } = this.gridMatrix.getViewportBounds(
-            scrollLeft, scrollTop, viewportWidth, viewportHeight
-        );
-        const rowStart = Math.max(0, startRow - 1);
-        const colStart = Math.max(0, startCol - 1);
-
-        let y = this.gridMatrix.rowHeights.slice(0, rowStart).reduce((a, b) => a + b, 0);
-        for (let row = rowStart; row < endRow; row++) {
-            let x = this.gridMatrix.columnWidths.slice(0, colStart).reduce((a, b) => a + b, 0);
-            for (let col = colStart; col < endCol; col++) {
-                const cell = this.gridMatrix.getCell(row, col);
-                cell.x = x;
-                cell.y = y;
-                cell.width = this.gridMatrix.columnWidths[col];
-                cell.height = this.gridMatrix.rowHeights[row];
-                x += this.gridMatrix.columnWidths[col];
-            }
-            y += this.gridMatrix.rowHeights[row];
-        }
+    /**
+     * Returns the pointer position relative to the canvas's visible area (not scrolled content).
+     * This is used for edge detection and resize dragging, so that scroll works correctly.
+     */
+    getMousePositionForEdgeDetection(e: PointerEvent) {
+        const rect = this.canvas.getBoundingClientRect();
+        // DO NOT add scroll offset here for edge detection!
+        return {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top
+        };
     }
 
+    /**
+     * Returns the pointer position relative to the grid content (including scroll).
+     * Use this ONLY if you actually need the scrolled content coordinates.
+     * (For most resizer logic, you want getMousePositionForEdgeDetection instead!)
+     */
     getMousePosition(e: PointerEvent) {
         const rect = this.canvas.getBoundingClientRect();
         const container = this.canvas.parentElement!;
