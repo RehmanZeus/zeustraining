@@ -200,12 +200,12 @@ export class RowSelector {
     }
 
     /**
-     * Draws the selection for the currently selected rows.
-     * @param ctx The canvas rendering context where the grid is drawn.
-     * @param scrollLeft The horizontal scroll position.
-     * @param scrollTop The vertical scroll position.
-     * @returns 
-     */
+  * Draws the selection for the currently selected rows.
+  * @param ctx The canvas rendering context where the grid is drawn.
+  * @param scrollLeft The horizontal scroll position.
+  * @param scrollTop The vertical scroll position.
+  * @returns 
+  */
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
         if (!this.selectedRows || this.selectedRows.length === 0) return;
 
@@ -245,10 +245,17 @@ export class RowSelector {
                 headerRect.y - currentScrollTop + headerRect.height - 4
             );
 
-            // Row header borders
+            // Row header borders (solid left, top, bottom only)
             ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 2;
-            ctx.strokeRect(0, headerRect.y - currentScrollTop, headerRect.width, headerRect.height);
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            // Top
+            ctx.moveTo(0, headerRect.y - currentScrollTop);
+            ctx.lineTo(headerRect.width, headerRect.y - currentScrollTop);
+            // Bottom
+            ctx.moveTo(0, headerRect.y - currentScrollTop + headerRect.height);
+            ctx.lineTo(headerRect.width, headerRect.y - currentScrollTop + headerRect.height);
+            ctx.stroke();
             ctx.restore();
 
             // 2. Draw visible data cell highlights (scroll in both directions)
@@ -258,9 +265,24 @@ export class RowSelector {
                 ctx.save();
                 ctx.fillStyle = this.selectionColor + "20";
                 ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
+
+                // Only draw top and bottom borders (no left/right)
+                const x = rect.x - currentScrollLeft;
+                const y = rect.y - currentScrollTop;
+                const w = rect.width;
+                const h = rect.height;
+
                 ctx.strokeStyle = this.selectionBorderColor;
                 ctx.lineWidth = 1;
-                ctx.strokeRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
+                ctx.beginPath();
+                // Top
+                ctx.moveTo(x, y);
+                ctx.lineTo(x + w, y);
+                // Bottom
+                ctx.moveTo(x, y + h);
+                ctx.lineTo(x + w, y + h);
+                ctx.stroke();
+
                 ctx.restore();
             }
 
@@ -293,21 +315,28 @@ export class RowSelector {
                 ctx.restore();
             }
 
-            // 4. Draw overall row selection border (optional visual enhancement)
+            // 4. Draw overall row selection border (top & bottom only, solid)
             ctx.save();
             ctx.strokeStyle = this.selectionBorderColor;
             ctx.lineWidth = 3;
-            ctx.setLineDash([5, 5]); // Dashed border for the full row
+            ctx.setLineDash([]); // Solid line
 
-            // Draw border from row header to right edge of visible area
             const leftX = 0;
             const rightX = Math.min(
                 this.gridMatrix.columnWidths.slice(0, viewport.endCol).reduce((a, b) => a + b, 0) - currentScrollLeft,
                 viewportWidth
             );
 
+            // Top border
             ctx.beginPath();
-            ctx.rect(leftX, headerRect.y - currentScrollTop, rightX - leftX, headerRect.height);
+            ctx.moveTo(leftX, headerRect.y - currentScrollTop);
+            ctx.lineTo(rightX, headerRect.y - currentScrollTop);
+            ctx.stroke();
+
+            // Bottom border
+            ctx.beginPath();
+            ctx.moveTo(leftX, headerRect.y - currentScrollTop + headerRect.height);
+            ctx.lineTo(rightX, headerRect.y - currentScrollTop + headerRect.height);
             ctx.stroke();
             ctx.restore();
         }
@@ -315,7 +344,6 @@ export class RowSelector {
         // 5. REDRAW CORNER CELL (0,0) to ensure it's always on top
         this.drawCornerCell(ctx);
     }
-
     // Add this new method to RowSelector
     private drawCornerCell(ctx: CanvasRenderingContext2D) {
         const cornerWidth = this.gridMatrix.columnWidths[0];

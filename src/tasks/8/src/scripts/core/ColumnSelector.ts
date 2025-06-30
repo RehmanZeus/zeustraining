@@ -262,18 +262,35 @@ export class ColumnSelector {
             ctx.restore();
 
             // 2. Data cells (scroll in both directions)
+            // 2. Data cells (scroll in both directions)
             for (let row = Math.max(1, viewport.startRow); row < viewport.endRow; row++) {
                 const rect = GridCell.getCellRect(row, selectedCol, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
 
                 ctx.save();
                 ctx.fillStyle = this.selectionColor + "20";
                 ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
+
+                // Only draw top, left, right borders
+                const x = rect.x - currentScrollLeft;
+                const y = rect.y - currentScrollTop;
+                const w = rect.width;
+                const h = rect.height;
+
                 ctx.strokeStyle = this.selectionBorderColor;
                 ctx.lineWidth = 1;
-                ctx.strokeRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
+                ctx.beginPath();
+
+                // Left
+                ctx.moveTo(x, y);
+                ctx.lineTo(x, y + h);
+                // Right
+                ctx.moveTo(x + w, y);
+                ctx.lineTo(x + w, y + h);
+                // (No bottom)
+                ctx.stroke();
+
                 ctx.restore();
             }
-
             // 3. Row headers (sticky at left, scroll vertically)
             for (let row = Math.max(1, viewport.startRow); row < viewport.endRow; row++) {
                 const rowHeaderRect = GridCell.getCellRect(row, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
@@ -292,6 +309,15 @@ export class ColumnSelector {
                     rowHeaderRect.width - 8,
                     rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 4
                 );
+
+                // Draw bottom border
+                ctx.beginPath();
+                ctx.moveTo(0, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 1);
+                ctx.lineTo(rowHeaderRect.width, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 1);
+                ctx.strokeStyle = "#f5f5f5";
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
                 ctx.restore();
             }
         }

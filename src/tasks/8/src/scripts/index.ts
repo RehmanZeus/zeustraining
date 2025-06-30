@@ -132,7 +132,7 @@ window.onload = () => {
     // --- Attach all pointer/click events to EventAttacher! ---
     new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer, gridMatrix);
 
-    new ExcelHeader(cellSelector, gridMatrix, operations);
+    new ExcelHeader(cellSelector, gridMatrix, operations, commandManager);
 
     /**
      * Handles the keydown event for the document.
