@@ -331,7 +331,6 @@ export class CellSelector {
                 break;
             case 'Tab':
                 e.preventDefault();
-                alert("TAAA")
                 this.finishEditing();
                 this.moveSelection(0, e.shiftKey ? -1 : 1);
                 break;

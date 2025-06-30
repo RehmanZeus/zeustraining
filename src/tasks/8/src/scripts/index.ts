@@ -1,5 +1,6 @@
 import { CellSelector } from "./core/CellSelector.js";
 import { ColumnSelector } from "./core/ColumnSelector.js";
+import { CommandManager } from "./core/commands/CommandManager.js";
 import { EventManager } from "./core/EventManager.js";
 import { ExcelHeader } from "./core/ExcelHeader.js";
 import { GridDataGen } from "./core/GridDataGen.js";
@@ -13,10 +14,11 @@ import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 const NUM_ROWS = 10000, NUM_COLS = 1000, CELL_W = 70, CELL_H = 25;
 
 window.onload = () => {
-    console.log(window.innerHeight,window.innerWidth)
+    console.log(window.innerHeight, window.innerWidth)
     const setup = new SetupExcelSheet(CELL_W, CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
     const canvas = setup.init();
     const ctx = setup.getContext();
+    const commandManager = new CommandManager();
 
     const container = document.getElementById('excel-container') as HTMLDivElement;
     const gridMatrix = new GridMatrix(ctx, NUM_ROWS, NUM_COLS);
@@ -30,16 +32,22 @@ window.onload = () => {
     const sampleData = dataGen.generateData();
     gridDataLoader.loadJSONData(sampleData);
 
+    setup.setGridMatrix(gridMatrix);
+
     const rowSelector = new RowSelector(ctx, gridMatrix, cellSelector);
     rowSelector.setCanvas(canvas);
+    rowSelector.setCommandManager(commandManager);
 
     const colSelector = new ColumnSelector(ctx, gridMatrix, cellSelector);
     colSelector.setCanvas(canvas);
+    colSelector.setCommandManager(commandManager);
 
     const sumBtn = document.getElementById("calc-sum");
     const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
     sumBtn?.addEventListener("click", operations.sumRows.bind(operations));
     gridMatrix.setCellSelector(cellSelector);
+
+
     function drawVisibleGrid() {
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
@@ -112,5 +120,14 @@ window.onload = () => {
     new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer, gridMatrix);
 
     new ExcelHeader(cellSelector, gridMatrix, operations);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'z') {
+            commandManager.undo();
+        }
+        if (e.ctrlKey && e.key === 'y') {
+            commandManager.redo();
+        }
+    });
 
 };
