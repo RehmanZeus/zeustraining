@@ -361,7 +361,7 @@ export class CellSelector {
     * @param row The row index of the cell to select.
     * @param col The column index of the cell to select.
     */
-    selectCell(row: number, col: number) {
+    selectCell(row: number, col: number, smooth = false) {
         if (this.isEditing) {
             this.finishEditing();
         }
@@ -376,38 +376,50 @@ export class CellSelector {
         // Get cell's rect
         const cellRect = GridCell.getCellRect(row, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
 
-        // Visible area
+        // Sticky header/col dimensions
+        const stickyHeaderHeight = this.gridMatrix.rowHeights[0]; // usually first row
+        const stickyColWidth = this.gridMatrix.columnWidths[0];   // usually first col
+
+        // Visible area (excluding sticky header/col)
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
         const viewportWidth = container.clientWidth;
         const viewportHeight = container.clientHeight;
 
-        // Cell position relative to viewport
-        const cellLeft = cellRect.x;
-        const cellRight = cellRect.x + cellRect.width;
-        const cellTop = cellRect.y;
-        const cellBottom = cellRect.y + cellRect.height;
+        // The visible area starts after sticky header/col
+        const visibleLeft = scrollLeft + stickyColWidth;
+        const visibleTop = scrollTop + stickyHeaderHeight;
+        const visibleRight = scrollLeft + viewportWidth;
+        const visibleBottom = scrollTop + viewportHeight;
 
         let newScrollLeft = scrollLeft;
         let newScrollTop = scrollTop;
 
-        // Horizontal scroll
-        if (cellLeft < scrollLeft) {
-            newScrollLeft = cellLeft;
-        } else if (cellRight > scrollLeft + viewportWidth) {
-            newScrollLeft = cellRight - viewportWidth;
+        // Horizontal scroll (exclude sticky col)
+        if (cellRect.x < visibleLeft) {
+            newScrollLeft = cellRect.x - stickyColWidth;
+        } else if (cellRect.x + cellRect.width > visibleRight) {
+            newScrollLeft = cellRect.x + cellRect.width - viewportWidth;
         }
 
-        // Vertical scroll
-        if (cellTop < scrollTop) {
-            newScrollTop = cellTop;
-        } else if (cellBottom > scrollTop + viewportHeight) {
-            newScrollTop = cellBottom - viewportHeight;
+        // Vertical scroll (exclude sticky header)
+        if (cellRect.y < visibleTop) {
+            newScrollTop = cellRect.y - stickyHeaderHeight;
+        } else if (cellRect.y + cellRect.height > visibleBottom) {
+            newScrollTop = cellRect.y + cellRect.height - viewportHeight;
         }
+
+        // Clamp to 0 (don't scroll negative)
+        newScrollLeft = Math.max(newScrollLeft, 0);
+        newScrollTop = Math.max(newScrollTop, 0);
 
         // Apply new scroll positions if needed
         if (newScrollLeft !== scrollLeft || newScrollTop !== scrollTop) {
-            container.scrollTo({ left: newScrollLeft, top: newScrollTop, behavior: 'smooth' });
+            container.scrollTo({
+                left: newScrollLeft,
+                top: newScrollTop,
+                behavior: smooth ? 'smooth' : 'auto'
+            });
         }
 
         this.redrawGrid();
