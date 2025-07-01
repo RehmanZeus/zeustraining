@@ -14,6 +14,10 @@ export class RowSelector {
     rowHeaderText = "#fff";
     canvas: HTMLCanvasElement | null = null;
 
+    // Drag state
+    private dragStartRow: number | null = null;
+    private isDragging: boolean = false;
+
     constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
         this.cellSelector = cellSelector;
@@ -24,8 +28,9 @@ export class RowSelector {
         this.canvas = canvas;
     }
 
+
     /** Returns true if the mouse event is on a row header cell (excluding col 0, row 0) */
-    isRowHeader(e: MouseEvent): boolean {
+    isRowHeader(e: MouseEvent | PointerEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
         const x = e.clientX - rect.left;
@@ -50,52 +55,39 @@ export class RowSelector {
         );
     }
 
-    /** Handles a click on the row header area */
-    onClick(e: MouseEvent) {
-        if (!this.canvas) return;
-        const { x, y } = this.getMousePosition(e, this.canvas);
+    /** Handles selection on the row header area (pointerdown only) */
+    onPointerDown = (e: PointerEvent) => {
+        if (!this.isRowHeader(e)) return;
+        // Only left click
+        if (e.button !== 0) return;
 
-        let totalY = 0;
-        let rowIndex = -1;
-        for (let row = 0; row < this.gridMatrix.rowHeights.length; row++) {
-            totalY += this.gridMatrix.rowHeights[row];
-            if (y < totalY) {
-                rowIndex = row;
-                break;
-            }
-        }
+        const rowIndex = this.getRowFromMouseEvent(e);
+        if (rowIndex < 1) return;
 
-        const col0Width = this.gridMatrix.columnWidths[0];
-
-        if (
-            rowIndex === -1 ||
-            x >= col0Width ||
-            rowIndex >= this.gridMatrix.noOfRows ||
-            rowIndex === 0
-        ) {
-            this.clearSelection();
-            return;
-        }
-
-        // Support Ctrl+Click for multi-selection
         if (e.ctrlKey || e.metaKey) {
+            // Ctrl/Cmd+Click: toggle row selection
             const idx = this.selectedRows.indexOf(rowIndex);
             if (idx === -1) {
                 this.selectedRows.push(rowIndex);
+                this.selectedRow = rowIndex;
             } else {
                 this.selectedRows.splice(idx, 1);
+                // Update selectedRow to last or -1
+                this.selectedRow = this.selectedRows.length ? this.selectedRows[this.selectedRows.length - 1] : -1;
             }
-            this.selectedRow = rowIndex;
             this.cellSelector.clearRangeSelection();
             this.cellSelector.selectedRow = -1;
             this.cellSelector.selectedCol = -1;
             this.cellSelector.isEditing = false;
             this.cellSelector.inputElement.style.display = 'none';
             this.redrawGrid();
+            // Do NOT begin drag-selection on ctrlKey
             return;
         }
 
-        // Single row selection (no Ctrl)
+        // Begin drag-selection
+        this.isDragging = true;
+        this.dragStartRow = rowIndex;
         this.selectedRows = [rowIndex];
         this.selectedRow = rowIndex;
         this.cellSelector.clearRangeSelection();
@@ -104,6 +96,47 @@ export class RowSelector {
         this.cellSelector.isEditing = false;
         this.cellSelector.inputElement.style.display = 'none';
         this.redrawGrid();
+
+        window.addEventListener("pointermove", this.onPointerMove);
+        window.addEventListener("pointerup", this.onPointerUp);
+    };
+
+    onPointerMove = (e: PointerEvent) => {
+        if (!this.isDragging || this.dragStartRow === null) return;
+        const rowIndex = this.getRowFromMouseEvent(e);
+        if (rowIndex < 1 || rowIndex === this.selectedRow) return;
+
+        // Drag selection: select contiguous range
+        const [start, end] = [this.dragStartRow, rowIndex].sort((a, b) => a - b);
+        this.selectedRows = [];
+        for (let row = start; row <= end; row++) {
+            this.selectedRows.push(row);
+        }
+        this.selectedRow = rowIndex;
+        this.redrawGrid();
+    };
+
+    onPointerUp = (_e: PointerEvent) => {
+        if (this.isDragging) {
+            this.isDragging = false;
+            this.dragStartRow = null;
+            window.removeEventListener("pointermove", this.onPointerMove);
+            window.removeEventListener("pointerup", this.onPointerUp);
+        }
+    };
+
+    getRowFromMouseEvent(e: MouseEvent | PointerEvent): number {
+        if (!this.canvas) return -1;
+        const rect = this.canvas.getBoundingClientRect();
+        const y = e.clientY - rect.top;
+        let totalY = 0;
+        for (let row = 0; row < this.gridMatrix.rowHeights.length; row++) {
+            totalY += this.gridMatrix.rowHeights[row];
+            if (y < totalY) {
+                return row;
+            }
+        }
+        return -1;
     }
 
     /** Select a row by index and redraw */
@@ -150,14 +183,14 @@ export class RowSelector {
         }
         this.redrawGrid();
     }
+
     /**
-   * Draws the selection for the currently selected rows.
-   * @param ctx The canvas rendering context where the grid is drawn.
-   * @param scrollLeft The horizontal scroll position.
-   * @param scrollTop The vertical scroll position.
-   * @returns 
-   */
+     * Draws the selection for the currently selected rows.
+     * - For contiguous drag selection: draws only the top border on the first row and the bottom border on the last row.
+     * - For ctrl+pointerdown (multi-selection with gaps): does not draw top/bottom borders, just fill.
+     */
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
+
         if (!this.selectedRows || this.selectedRows.length === 0) return;
 
         const container = document.getElementById('excel-container') as HTMLDivElement;
@@ -168,7 +201,20 @@ export class RowSelector {
         const viewportHeight = container.clientHeight;
         const viewport = this.gridMatrix.getViewportBounds(currentScrollLeft, currentScrollTop, viewportWidth, viewportHeight);
 
-        for (const selectedRow of this.selectedRows) {
+        // Sort rows for easier logic
+        const sortedRows = [...this.selectedRows].sort((a, b) => a - b);
+
+        // Check if selection is contiguous
+        let isContiguous = true;
+        for (let i = 1; i < sortedRows.length; i++) {
+            if (sortedRows[i] !== sortedRows[i - 1] + 1) {
+                isContiguous = false;
+                break;
+            }
+        }
+
+        for (let idx = 0; idx < sortedRows.length; idx++) {
+            const selectedRow = sortedRows[idx];
             // Get row position
             const headerRect = GridCell.getCellRect(selectedRow, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
 
@@ -201,11 +247,15 @@ export class RowSelector {
             ctx.lineWidth = 1;
             ctx.beginPath();
             // Top
-            ctx.moveTo(0, headerRect.y - currentScrollTop);
-            ctx.lineTo(headerRect.width, headerRect.y - currentScrollTop);
+            if (isContiguous && idx === 0) {
+                ctx.moveTo(0, headerRect.y - currentScrollTop);
+                ctx.lineTo(headerRect.width, headerRect.y - currentScrollTop);
+            }
             // Bottom
-            ctx.moveTo(0, headerRect.y - currentScrollTop + headerRect.height);
-            ctx.lineTo(headerRect.width, headerRect.y - currentScrollTop + headerRect.height);
+            if (isContiguous && idx === sortedRows.length - 1) {
+                ctx.moveTo(0, headerRect.y - currentScrollTop + headerRect.height);
+                ctx.lineTo(headerRect.width, headerRect.y - currentScrollTop + headerRect.height);
+            }
             ctx.stroke();
             ctx.restore();
 
@@ -217,22 +267,28 @@ export class RowSelector {
                 ctx.fillStyle = this.selectionColor + "20";
                 ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
 
-                // Only draw top and bottom borders (no left/right)
-                const x = rect.x - currentScrollLeft;
-                const y = rect.y - currentScrollTop;
-                const w = rect.width;
-                const h = rect.height;
+                // Only draw top and bottom borders for contiguous drag
+                if (isContiguous) {
+                    const x = rect.x - currentScrollLeft;
+                    const y = rect.y - currentScrollTop;
+                    const w = rect.width;
+                    const h = rect.height;
 
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 1;
-                ctx.beginPath();
-                // Top
-                ctx.moveTo(x, y);
-                ctx.lineTo(x + w, y);
-                // Bottom
-                ctx.moveTo(x, y + h);
-                ctx.lineTo(x + w, y + h);
-                ctx.stroke();
+                    ctx.strokeStyle = this.selectionBorderColor;
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    // Top border for first row
+                    if (idx === 0) {
+                        ctx.moveTo(x, y);
+                        ctx.lineTo(x + w, y);
+                    }
+                    // Bottom border for last row
+                    if (idx === sortedRows.length - 1) {
+                        ctx.moveTo(x, y + h);
+                        ctx.lineTo(x + w, y + h);
+                    }
+                    ctx.stroke();
+                }
 
                 ctx.restore();
             }
@@ -265,36 +321,12 @@ export class RowSelector {
                 ctx.stroke();
                 ctx.restore();
             }
-
-            // 4. Draw overall row selection border (top & bottom only, solid)
-            ctx.save();
-            ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 3;
-            ctx.setLineDash([]); // Solid line
-
-            const leftX = 0;
-            const rightX = Math.min(
-                this.gridMatrix.columnWidths.slice(0, viewport.endCol).reduce((a, b) => a + b, 0) - currentScrollLeft,
-                viewportWidth
-            );
-
-            // Top border
-            ctx.beginPath();
-            ctx.moveTo(leftX, headerRect.y - currentScrollTop);
-            ctx.lineTo(rightX, headerRect.y - currentScrollTop);
-            ctx.stroke();
-
-            // Bottom border
-            ctx.beginPath();
-            ctx.moveTo(leftX, headerRect.y - currentScrollTop + headerRect.height);
-            ctx.lineTo(rightX, headerRect.y - currentScrollTop + headerRect.height);
-            ctx.stroke();
-            ctx.restore();
         }
 
         // 5. REDRAW CORNER CELL (0,0) to ensure it's always on top
         this.drawCornerCell(ctx);
     }
+
     // Add this new method to RowSelector
     private drawCornerCell(ctx: CanvasRenderingContext2D) {
         const cornerWidth = this.gridMatrix.columnWidths[0];
@@ -315,6 +347,8 @@ export class RowSelector {
 
     /** Redraws the entire grid with row selection highlight */
     redrawGrid() {
+        if (this.canvas?.style.cursor === 'ns-resize') return;
+
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;

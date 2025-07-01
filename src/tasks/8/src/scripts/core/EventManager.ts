@@ -4,7 +4,7 @@ import { RowSelector } from "./RowSelector.js";
 import { GridResizer } from "./GridResizer.js";
 import { GridMatrix } from "./GridMatrix.js";
 
-type Mode = "idle" | "dragging" | "resizing" | "editing";
+type Mode = "idle" | "dragging" | "resizing" | "editing" | "column-drag" | "row-drag";
 
 /**
  * The EventManager class handles user interactions with the grid.
@@ -62,7 +62,7 @@ export class EventManager {
         const viewportWidth = container.clientWidth;
         const viewportHeight = container.clientHeight;
 
-        const {startCol} = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
+        const { startCol } = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
 
         return startCol;
 
@@ -78,7 +78,7 @@ export class EventManager {
         window.addEventListener('pointerup', this.handlePointerUp.bind(this));
         window.addEventListener('click', this.handleClick.bind(this));
         window.addEventListener('dblclick', this.handleDoubleClick.bind(this));
-        window.addEventListener('keydown', this.handleKeydown.bind(this));
+        document.addEventListener('keydown', this.handleKeydown.bind(this));
     }
 
     /**
@@ -87,6 +87,7 @@ export class EventManager {
      * @param e The pointer event to handle.
      */
     handlePointerDown(e: PointerEvent) {
+        console.log(this.mode, "POINTER DOWN")
         if (this.gridResizer.isNearColumnEdge(e) || this.gridResizer.isNearRowEdge(e)) {
             this.mode = "resizing";
             this.gridResizer.onPointerDown(e);
@@ -95,6 +96,16 @@ export class EventManager {
         if (this.cellSelector.isCell(e)) {
             this.mode = "dragging";
             this.cellSelector.onPointerDown(e);
+            return;
+        }
+        if (this.columnSelector.isColumnHeader(e)) {
+            this.mode = "column-drag";
+            this.columnSelector.onPointerDown(e);
+            return;
+        }
+        if (this.rowSelector.isRowHeader(e)) {
+            this.mode = "row-drag";
+            this.rowSelector.onPointerDown(e);
             return;
         }
         this.mode = "idle";
@@ -107,6 +118,8 @@ export class EventManager {
      * @param e The pointer event to handle.
      */
     handlePointerMove(e: PointerEvent) {
+        console.log(this.mode, "POINTER MOVE")
+
         if (this.mode === "resizing") {
             this.gridResizer.onPointerMove(e);
             return;
@@ -123,7 +136,20 @@ export class EventManager {
             this.canvas.style.cursor = "cell";
         }
 
-     
+        if (this.mode === "column-drag") {
+
+            this.columnSelector.onPointerMove(e);
+            return;
+        }
+        if (this.mode === "row-drag") {
+
+            this.rowSelector.onPointerMove(e);
+            return;
+        }
+
+        // if(this.columnSelector.isColumnHeader(e)){
+        //     this.canvas.style.cursor = "s-resize";
+        // }
     }
 
 
@@ -134,6 +160,8 @@ export class EventManager {
      * @param e The pointer event to handle.
      */
     handlePointerUp(e: PointerEvent) {
+        console.log(this.mode, "POINTER UP")
+
         if (this.mode === "resizing") {
             this.gridResizer.onPointerUp(e);
             this.mode = "idle";
@@ -144,6 +172,18 @@ export class EventManager {
             this.cellSelector.onPointerUp(e);
             this.mode = "idle";
             return;
+        }
+
+        if (this.mode === "row-drag") {
+            this.rowSelector.onPointerUp(e);
+            this.mode = "idle";
+            return;
+        }
+
+        if (this.mode === "column-drag") {
+            this.columnSelector.onPointerUp(e);
+            this.mode = "idle";
+            return
         }
     }
 
@@ -165,7 +205,6 @@ export class EventManager {
             // Clear other selections
             this.rowSelector.clearSelection();
             this.cellSelector.clearEditing();
-            this.columnSelector.onClick(e);
             return;
         }
 
@@ -173,7 +212,6 @@ export class EventManager {
         if (typeof this.rowSelector.isRowHeader === "function" && this.rowSelector.isRowHeader(e)) {
             this.columnSelector.clearSelection();
             this.cellSelector.clearEditing();
-            this.rowSelector.onClick(e);
             return;
         }
 

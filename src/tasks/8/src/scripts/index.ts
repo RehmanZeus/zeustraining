@@ -80,6 +80,8 @@ window.onload = () => {
         drawCornerCell(ctx);
     }
 
+    
+
     /**
      * Draws the top-left corner cell of the grid, which is used for selection.
      * @param ctx The canvas rendering context to draw the corner cell.

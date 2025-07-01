@@ -329,7 +329,6 @@ export class GridMatrix {
 
             // Draw thick green right border if selected
             if (selectedRow === row && !this.cellSelector?.isDragging) {
-                console.log(this.cellSelector?.dragStarted, this.cellSelector?.isDragging)
                 ctx.save();
                 ctx.strokeStyle = "#107c41"; // Excel green, change as needed
                 ctx.lineWidth = 3;
