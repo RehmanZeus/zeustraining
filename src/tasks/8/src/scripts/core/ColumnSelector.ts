@@ -1,8 +1,6 @@
 import { GridMatrix } from "./GridMatrix.js";
 import { CellSelector } from "./CellSelector.js";
 import { GridCell } from "./GridCell.js";
-import { CommandManager } from "./commands/CommandManager.js";
-import { SelectColumnCommand } from "./commands/SelectColumnCommand.js";
 
 /**
  * ColumnSelector manages column selection in the grid,
@@ -32,7 +30,6 @@ export class ColumnSelector {
     /** Canvas element for drawing */
     canvas: HTMLCanvasElement | null = null;
 
-    commandManager?: CommandManager;
     /**
      * Constructor for ColumnSelector.
      * @param ctx Canvas rendering context to draw on
@@ -53,10 +50,6 @@ export class ColumnSelector {
         this.canvas = canvas;
     }
 
-
-    setCommandManager(cmdManager: CommandManager) {
-        this.commandManager = cmdManager;
-    }
 
     /**
      * Checks if the mouse event occurred on a column header.
@@ -107,32 +100,15 @@ export class ColumnSelector {
             return;
         }
 
-        // --- Gather old/new state ---
-        const oldSelectedCols = [...this.selectedCols];
-        let newSelectedCols: number[];
-
         // Support Ctrl+Click for multi-selection
         if (e.ctrlKey || e.metaKey) {
-            newSelectedCols = [...this.selectedCols];
-            const idx = newSelectedCols.indexOf(colIndex);
+            const idx = this.selectedCols.indexOf(colIndex);
             if (idx === -1) {
-                newSelectedCols.push(colIndex);
+                this.selectedCols.push(colIndex);
             } else {
-                newSelectedCols.splice(idx, 1);
+                this.selectedCols.splice(idx, 1);
             }
-        } else {
-            newSelectedCols = [colIndex];
-        }
-
-        // --- Use the CommandManager ---
-        if (this.commandManager) {
-            this.commandManager.executeCommand(
-                new SelectColumnCommand(this, oldSelectedCols, newSelectedCols)
-            );
-        } else {
-            // fallback: just apply directly as before
-            this.selectedCols = newSelectedCols;
-            this.selectedCol = newSelectedCols.length ? newSelectedCols[newSelectedCols.length - 1] : -1;
+            this.selectedCol = colIndex;
             if (this.cellSelector) {
                 this.cellSelector.clearRangeSelection();
                 this.cellSelector.selectedRow = -1;
@@ -141,8 +117,22 @@ export class ColumnSelector {
                 this.cellSelector.inputElement.style.display = 'none';
             }
             this.redrawGrid();
+            return;
         }
+
+        // Single column selection (no Ctrl)
+        this.selectedCols = [colIndex];
+        this.selectedCol = colIndex;
+        if (this.cellSelector) {
+            this.cellSelector.clearRangeSelection();
+            this.cellSelector.selectedRow = -1;
+            this.cellSelector.selectedCol = -1;
+            this.cellSelector.isEditing = false;
+            this.cellSelector.inputElement.style.display = 'none';
+        }
+        this.redrawGrid();
     }
+
     /**
      * @param col The column index to select (1-based).
      *            Note: 0 is reserved for row headers, so valid columns start from 1.
@@ -216,12 +206,12 @@ export class ColumnSelector {
     }
 
     /**
-     * Draws the selection rectangle for the currently selected columns.
-     * @param ctx Canvas rendering context to draw the selection
-     * @param scrollLeft Horizontal scroll position
-     * @param scrollTop Vertical scroll position
-     * @returns void
-     */
+        * Draws the selection rectangle for the currently selected columns.
+        * @param ctx Canvas rendering context to draw the selection
+        * @param scrollLeft Horizontal scroll position
+        * @param scrollTop Vertical scroll position
+        * @returns void
+        */
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
         if (!this.selectedCols || this.selectedCols.length === 0) return;
 
@@ -322,6 +312,7 @@ export class ColumnSelector {
             }
         }
     }
+
 
     /**
      * Redraws the grid and its selections.

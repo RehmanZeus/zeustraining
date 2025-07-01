@@ -1,4 +1,5 @@
 import { DPR, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { ExcelHeader } from "./ExcelHeader.js";
 import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
 
@@ -61,6 +62,8 @@ export class CellSelector {
     /** The function to redraw the grid, set by the parent component */
     redrawGrid: () => void = () => { };
 
+    header?: ExcelHeader;
+
     onCellEdit?: (value: string) => void;
     onCellEditFinish?: (value: string) => void;
 
@@ -86,6 +89,10 @@ export class CellSelector {
         const { x, y } = this.getMousePosition(e);
         const { row, col } = this.getCellFromPosition(x, y);
         return row > 0 && col > 0 && row < this.gridMatrix.noOfRows && col < this.gridMatrix.noOfCols;
+    }
+
+    setExcelHeader(h: ExcelHeader){
+        this.header = h;
     }
 
 
@@ -212,8 +219,13 @@ export class CellSelector {
         // Input element event listeners
         this.inputElement.addEventListener('blur', this.finishEditing.bind(this));
         this.inputElement.addEventListener('keydown', this.handleInputKeydown.bind(this));
-        this.inputElement.addEventListener('input', () => {
-            if (this.onCellEdit) this.onCellEdit(this.inputElement.value);
+        // In CellSelector constructor or initialization
+        this.inputElement.addEventListener("input", () => {
+            if (this.header && !this.header.ignoreCellInput) {
+                this.header.ignoreHeaderInput = true;
+                this.header.inputBox.value = this.inputElement.value;
+                this.header.ignoreHeaderInput = false;
+            }
         });
     }
 
@@ -232,7 +244,8 @@ export class CellSelector {
             // --- Shift+Arrow: expand/shrink selection range ---
             let dRow = 0, dCol = 0;
             switch (e.key) {
-                case 'ArrowUp': dRow = -1; break;
+                
+                case 'ArrowUp': dRow = -1;  break;
                 case 'ArrowDown': dRow = 1; break;
                 case 'ArrowLeft': dCol = -1; break;
                 case 'ArrowRight': dCol = 1; break;
@@ -523,7 +536,7 @@ export class CellSelector {
             ctx.globalAlpha = 0.3;
             for (let row = minRow; row <= maxRow; row++) {
                 for (let col = minCol; col <= maxCol; col++) {
-                    if (row === minRow && col === minCol) continue;
+                    if (row === this.anchorRow && col === this.anchorCol) continue;
                     const { x, y, width, height } = GridCell.getCellRect(
                         row, col,
                         this.gridMatrix.rowHeights,

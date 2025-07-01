@@ -73,12 +73,12 @@ export class EventManager {
      * This method sets up the necessary event handlers for user interactions with the grid.
      */
     attachEvents() {
-        this.canvas.addEventListener('pointerdown', this.handlePointerDown.bind(this));
-        this.canvas.addEventListener('pointermove', this.handlePointerMove.bind(this));
-        this.canvas.addEventListener('pointerup', this.handlePointerUp.bind(this));
-        this.canvas.addEventListener('click', this.handleClick.bind(this));
-        this.canvas.addEventListener('dblclick', this.handleDoubleClick.bind(this));
-        document.addEventListener('keydown', this.handleKeydown.bind(this));
+        window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
+        window.addEventListener('pointermove', this.handlePointerMove.bind(this));
+        window.addEventListener('pointerup', this.handlePointerUp.bind(this));
+        window.addEventListener('click', this.handleClick.bind(this));
+        window.addEventListener('dblclick', this.handleDoubleClick.bind(this));
+        window.addEventListener('keydown', this.handleKeydown.bind(this));
     }
 
     /**
@@ -123,9 +123,7 @@ export class EventManager {
             this.canvas.style.cursor = "cell";
         }
 
-        // if(this.columnSelector.isColumnHeader(e)){
-        //     this.canvas.style.cursor = "s-resize";
-        // }
+     
     }
 
 

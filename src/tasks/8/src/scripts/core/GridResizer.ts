@@ -1,10 +1,13 @@
-import {  MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
 import { CellSelector } from "./CellSelector.js";
+import { CommandManager } from "./commands/CommandManager.js";
+import { ResizeColumnCommand } from "./commands/ResizeColumnCommand.js";
+import { ResizeRowCommand } from "./commands/ResizeRowCommand.js";
 import { GridMatrix } from "./GridMatrix.js";
 
 export class GridResizer {
 
-    
+
     canvas: HTMLCanvasElement;
     ctx: CanvasRenderingContext2D;
     gridMatrix: GridMatrix;
@@ -21,6 +24,13 @@ export class GridResizer {
     initialHeight = 0;
 
     resizeThreshold = 5;
+    commandManager?: CommandManager;
+
+    lastResizeRowOldHeight: number | null = null;
+
+    lastResizeColOldWidth: number | null = null;
+
+
     redrawGrid: () => void = () => { };
 
     // Track visible viewport
@@ -47,6 +57,10 @@ export class GridResizer {
      */
     setCellSelector(cellSelector: CellSelector) {
         this.cellSelector = cellSelector;
+    }
+
+    setCommandManager(cmdManager: CommandManager) {
+        this.commandManager = cmdManager;
     }
 
     /**
@@ -107,6 +121,7 @@ export class GridResizer {
             const rightEdge = cumX + w;
 
             if (Math.abs(x - rightEdge) < this.resizeThreshold) {
+                if (col == 0) return false;
                 this.resizingColIndex = col;
                 return true;
             }
@@ -127,7 +142,7 @@ export class GridResizer {
         const rect = this.canvas.getBoundingClientRect();
         const rawX = e.clientX - rect.left;
         const rawY = e.clientY - rect.top;
-            const container = document.getElementById('excel-container') as HTMLDivElement;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
 
 
         // X uses scrollLeft only when to the right of the sticky header
@@ -153,6 +168,7 @@ export class GridResizer {
             const bottomEdge = cumY + h;
 
             if (Math.abs(y - bottomEdge) < this.resizeThreshold) {
+                if (row === 0) return false;
                 this.resizingRowIndex = row;
                 return true;
             }
@@ -175,12 +191,14 @@ export class GridResizer {
             this.isResizingCol = true;
             this.startX = x;
             this.initialWidth = this.gridMatrix.columnWidths[this.resizingColIndex];
+            this.lastResizeColOldWidth = this.initialWidth; // store old width here
             this.canvas.style.cursor = "ew-resize";
             e.preventDefault();
         } else if (this.isNearRowEdge(e) && this.resizingRowIndex > 0) {
             this.isResizingRow = true;
             this.startY = y;
             this.initialHeight = this.gridMatrix.rowHeights[this.resizingRowIndex];
+            this.lastResizeRowOldHeight = this.initialHeight; // store old height here
             this.canvas.style.cursor = "ns-resize";
             e.preventDefault();
         }
@@ -210,11 +228,29 @@ export class GridResizer {
      * @param e Takes a pointer event and resets the resizing state.
      */
     onPointerUp(e: PointerEvent) {
+        if (this.isResizingCol && this.resizingColIndex >= 0 && this.commandManager) {
+            const newWidth = this.gridMatrix.columnWidths[this.resizingColIndex];
+            if (this.lastResizeColOldWidth !== null && newWidth !== this.lastResizeColOldWidth) {
+                this.commandManager.executeCommand(
+                    new ResizeColumnCommand(this.gridMatrix, this.resizingColIndex, this.lastResizeColOldWidth, newWidth, this)
+                );
+            }
+        }
+        if (this.isResizingRow && this.resizingRowIndex >= 0 && this.commandManager) {
+            const newHeight = this.gridMatrix.rowHeights[this.resizingRowIndex];
+            if (this.lastResizeRowOldHeight !== null && newHeight !== this.lastResizeRowOldHeight) {
+                this.commandManager.executeCommand(
+                    new ResizeRowCommand(this.gridMatrix, this.resizingRowIndex, this.lastResizeRowOldHeight, newHeight, this)
+                );
+            }
+        }
         this.isResizingCol = false;
         this.isResizingRow = false;
         this.resizingColIndex = -1;
         this.resizingRowIndex = -1;
         this.canvas.style.cursor = "cell";
+        this.lastResizeColOldWidth = null;
+        this.lastResizeRowOldHeight = null;
     }
 
     /**

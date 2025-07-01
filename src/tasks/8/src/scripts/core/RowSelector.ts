@@ -1,6 +1,4 @@
 import { CellSelector } from "./CellSelector.js";
-import { CommandManager } from "./commands/CommandManager.js";
-import { SelectRowCommand } from "./commands/SelectRowCommand.js";
 import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
 
@@ -15,41 +13,18 @@ export class RowSelector {
     rowHeaderBg = "#107c41";
     rowHeaderText = "#fff";
     canvas: HTMLCanvasElement | null = null;
-    commandManager?: CommandManager;
 
-    /**
-     * Creates an instance of the RowSelector.
-     * @param ctx The canvas rendering context where the grid is drawn.
-     * @param gridMatrix The GridMatrix instance for managing grid data.
-     * @param cellSelector The CellSelector instance for managing cell selection.
-     */
     constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
         this.cellSelector = cellSelector;
         this.gridMatrix = gridMatrix;
     }
 
-    /**
-     * Sets the canvas element for the RowSelector.
-     * @param canvas The HTML canvas element where the grid is rendered.
-     */
     setCanvas(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
     }
 
-    /**
-     * Sets the CommandManager instance for executing commands.
-     * @param cmdManager The CommandManager instance to use for command execution.
-     */
-    setCommandManager(cmdManager: CommandManager) {
-        this.commandManager = cmdManager;
-    }
-
-    /**
-     * Checks if the mouse event is on a row header cell (excluding col 0, row 0).
-     * @param e The mouse event to check.
-     * @returns True if the mouse event is on a row header cell, false otherwise.
-     */
+    /** Returns true if the mouse event is on a row header cell (excluding col 0, row 0) */
     isRowHeader(e: MouseEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
@@ -75,11 +50,7 @@ export class RowSelector {
         );
     }
 
-    /**
-     * Handles click events on the canvas to select rows.
-     * @param e The mouse event to handle.
-     * @returns 
-     */
+    /** Handles a click on the row header area */
     onClick(e: MouseEvent) {
         if (!this.canvas) return;
         const { x, y } = this.getMousePosition(e, this.canvas);
@@ -106,27 +77,15 @@ export class RowSelector {
             return;
         }
 
-        const oldSelectedRows = [...this.selectedRows];
-
-        let newSelectedRows: number[];
+        // Support Ctrl+Click for multi-selection
         if (e.ctrlKey || e.metaKey) {
-            // Calculate newSelectedRows based on current selection
-            if (this.selectedRows.includes(rowIndex)) {
-                newSelectedRows = this.selectedRows.filter(r => r !== rowIndex);
+            const idx = this.selectedRows.indexOf(rowIndex);
+            if (idx === -1) {
+                this.selectedRows.push(rowIndex);
             } else {
-                newSelectedRows = [...this.selectedRows, rowIndex];
+                this.selectedRows.splice(idx, 1);
             }
-        } else {
-            newSelectedRows = [rowIndex];
-        }
-
-        if (this.commandManager) {
-            this.commandManager.executeCommand(
-                new SelectRowCommand(this, oldSelectedRows, newSelectedRows)
-            );
-        } else {
-            this.selectedRows = newSelectedRows;
-            this.selectedRow = newSelectedRows.length ? newSelectedRows[newSelectedRows.length - 1] : -1;
+            this.selectedRow = rowIndex;
             this.cellSelector.clearRangeSelection();
             this.cellSelector.selectedRow = -1;
             this.cellSelector.selectedCol = -1;
@@ -135,12 +94,19 @@ export class RowSelector {
             this.redrawGrid();
             return;
         }
+
+        // Single row selection (no Ctrl)
+        this.selectedRows = [rowIndex];
+        this.selectedRow = rowIndex;
+        this.cellSelector.clearRangeSelection();
+        this.cellSelector.selectedRow = -1;
+        this.cellSelector.selectedCol = -1;
+        this.cellSelector.isEditing = false;
+        this.cellSelector.inputElement.style.display = 'none';
+        this.redrawGrid();
     }
 
-    /**
-     * Selects a specific row by index.
-     * @param row The row index to select (1-based).
-     */
+    /** Select a row by index and redraw */
     selectRow(row: number) {
         if (row < 1 || row >= this.gridMatrix.noOfRows) return;
         this.selectedRow = row;
@@ -153,19 +119,12 @@ export class RowSelector {
         this.redrawGrid();
     }
 
-    /**
-     * Clears the current row selection.
-     */
     clearSelection() {
         this.selectedRow = -1;
         this.selectedRows = [];
         this.redrawGrid();
     }
 
-    /**
-     * Gets the data for the currently selected row.
-     * @returns An array of cell data for the selected row, or undefined if no row is selected.
-     */
     getSelectedRowData(): string[] | undefined {
         if (this.selectedRow < 1) return undefined;
         const data: string[] = [];
@@ -176,10 +135,6 @@ export class RowSelector {
         return data;
     }
 
-    /**
-     * Sets the data for the currently selected row.
-     * @param data An array of cell data to set in the selected row.
-     */
     setSelectedRowData(data: string[]) {
         if (this.selectedRow < 1) return;
         for (let col = 1; col < this.gridMatrix.noOfCols && col - 1 < data.length; col++) {
@@ -188,9 +143,6 @@ export class RowSelector {
         this.redrawGrid();
     }
 
-    /**
-     * Clears the currently selected row.
-     */
     clearSelectedRow() {
         if (this.selectedRow < 1) return;
         for (let col = 1; col < this.gridMatrix.noOfCols; col++) {
@@ -198,14 +150,13 @@ export class RowSelector {
         }
         this.redrawGrid();
     }
-
     /**
-  * Draws the selection for the currently selected rows.
-  * @param ctx The canvas rendering context where the grid is drawn.
-  * @param scrollLeft The horizontal scroll position.
-  * @param scrollTop The vertical scroll position.
-  * @returns 
-  */
+   * Draws the selection for the currently selected rows.
+   * @param ctx The canvas rendering context where the grid is drawn.
+   * @param scrollLeft The horizontal scroll position.
+   * @param scrollTop The vertical scroll position.
+   * @returns 
+   */
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
         if (!this.selectedRows || this.selectedRows.length === 0) return;
 
@@ -362,10 +313,7 @@ export class RowSelector {
         ctx.restore();
     }
 
-    /**
-     * Redraws the grid and selections based on the current scroll position.
-     * This method clears the canvas, redraws the grid, and applies any selections.
-     */
+    /** Redraws the entire grid with row selection highlight */
     redrawGrid() {
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const scrollLeft = container.scrollLeft;
@@ -389,13 +337,6 @@ export class RowSelector {
         }
     }
 
-    /**
-     * Gets the mouse position relative to the canvas.
-     * @param e The mouse event to get the position from.
-     * This method calculates the mouse position relative to the canvas, accounting for any scrolling.
-     * @param canvas The canvas element being interacted with.
-     * @returns The mouse position relative to the canvas.
-     */
     getMousePosition(e: MouseEvent, canvas: HTMLCanvasElement) {
         const rect = canvas.getBoundingClientRect();
         const container = document.getElementById('excel-container') as HTMLDivElement;
