@@ -150,6 +150,46 @@ export class GridMatrix {
     }
 
 
+
+    /**
+     * Ensures the row header is wide enough for its largest label.
+     * Call this before drawing the grid, or whenever the row header text can change.
+     */
+    updateRowHeaderWidth(ctx: CanvasRenderingContext2D) {
+        ctx.save();
+        ctx.font = "14px Arial";
+        let maxWidth = 0;
+
+        // Check all header cells in the first column (row headers)
+        for (let row = 1; row < this.noOfRows; ++row) {
+            const cell = this.getCell(row, 0);
+            let label = cell.data ? cell.data.toString() : row.toString();
+            const metrics = ctx.measureText(label);
+            maxWidth = Math.max(maxWidth, metrics.width);
+        }
+
+        // Optionally check the corner cell (0,0)
+        const cornerCell = this.getCell(0, 0);
+        if (cornerCell.data) {
+            maxWidth = Math.max(maxWidth, ctx.measureText(cornerCell.data.toString()).width);
+        }
+
+        ctx.restore();
+
+        // Add padding and minimum width
+        const padding = 20;
+        const minWidth = 40;
+        let width = Math.ceil(maxWidth + padding);
+        width = Math.max(width, minWidth);
+
+        // Optional: Smoother growth for very large numbers
+        // if (width > 100) width = 100 + Math.log(width - 99) * 40;
+
+        // Set the width for the row header column (col 0)
+        this.columnWidths[0] = width;
+    }
+
+
     /**
      * Draws the grid on the specified canvas context.
      * @param ctx CanvasRenderingContext2D - The context to draw on.
@@ -162,6 +202,7 @@ export class GridMatrix {
         viewport?: { startRow: number, endRow: number, startCol: number, endCol: number },
         scrollLeft: number = 0, scrollTop: number = 0
     ) {
+        this.updateRowHeaderWidth(ctx);
         ctx.save();
 
         const startRow = viewport?.startRow ?? 0;
@@ -287,7 +328,7 @@ export class GridMatrix {
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
             // Draw thick green right border if selected
-            if (selectedRow === row) {
+            if (selectedRow === row && !this.cellSelector?.isDragging) {
                 ctx.save();
                 ctx.strokeStyle = "#107c41"; // Excel green, change as needed
                 ctx.lineWidth = 3;

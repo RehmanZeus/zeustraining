@@ -11,7 +11,7 @@ import { Operations } from "./core/Operations.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 
-const NUM_ROWS = 10000, NUM_COLS = 1000, CELL_W = 70, CELL_H = 25;
+const NUM_ROWS = 1000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
 
 window.onload = () => {
     console.log(window.innerHeight, window.innerWidth)
@@ -36,16 +36,15 @@ window.onload = () => {
 
     const rowSelector = new RowSelector(ctx, gridMatrix, cellSelector);
     rowSelector.setCanvas(canvas);
-    rowSelector.setCommandManager(commandManager);
 
     const colSelector = new ColumnSelector(ctx, gridMatrix, cellSelector);
     colSelector.setCanvas(canvas);
-    colSelector.setCommandManager(commandManager);
 
-    const sumBtn = document.getElementById("calc-sum");
+   
     const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
-    sumBtn?.addEventListener("click", operations.sumRows.bind(operations));
     gridMatrix.setCellSelector(cellSelector);
+
+    resizer.setCommandManager(commandManager);
 
 
     /**
@@ -80,6 +79,8 @@ window.onload = () => {
         // 3. ALWAYS draw corner cell last to ensure it's on top
         drawCornerCell(ctx);
     }
+
+    
 
     /**
      * Draws the top-left corner cell of the grid, which is used for selection.

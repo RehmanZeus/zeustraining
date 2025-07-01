@@ -175,7 +175,7 @@ export class CellSelector {
             this.clearRangeSelection();
             this.selectCell(row, col);
         }
-        console.log(this.selectedRow, this.selectedCol)
+
     }
 
     /**
@@ -206,6 +206,7 @@ export class CellSelector {
         this.inputElement.style.backgroundColor = 'white';
         this.inputElement.style.zIndex = '1000';
         this.inputElement.style.display = 'none';
+        this.inputElement.style.textAlign = 'left';
 
         document.body.appendChild(this.inputElement);
 
@@ -356,10 +357,10 @@ export class CellSelector {
     }
 
     /**
-     * Selects a cell in the grid.
-     * @param row The row index of the cell to select.
-     * @param col The column index of the cell to select.
-     */
+    * Selects a cell in the grid and scrolls to it if needed.
+    * @param row The row index of the cell to select.
+    * @param col The column index of the cell to select.
+    */
     selectCell(row: number, col: number) {
         if (this.isEditing) {
             this.finishEditing();
@@ -369,9 +370,48 @@ export class CellSelector {
         this.anchorRow = null;
         this.anchorCol = null;
         this.clearRangeSelection();
+
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+
+        // Get cell's rect
+        const cellRect = GridCell.getCellRect(row, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+
+        // Visible area
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+
+        // Cell position relative to viewport
+        const cellLeft = cellRect.x;
+        const cellRight = cellRect.x + cellRect.width;
+        const cellTop = cellRect.y;
+        const cellBottom = cellRect.y + cellRect.height;
+
+        let newScrollLeft = scrollLeft;
+        let newScrollTop = scrollTop;
+
+        // Horizontal scroll
+        if (cellLeft < scrollLeft) {
+            newScrollLeft = cellLeft;
+        } else if (cellRight > scrollLeft + viewportWidth) {
+            newScrollLeft = cellRight - viewportWidth;
+        }
+
+        // Vertical scroll
+        if (cellTop < scrollTop) {
+            newScrollTop = cellTop;
+        } else if (cellBottom > scrollTop + viewportHeight) {
+            newScrollTop = cellBottom - viewportHeight;
+        }
+
+        // Apply new scroll positions if needed
+        if (newScrollLeft !== scrollLeft || newScrollTop !== scrollTop) {
+            container.scrollTo({ left: newScrollLeft, top: newScrollTop, behavior: 'smooth' });
+        }
+
         this.redrawGrid();
     }
-
     /**
      * Moves the selection by the given row and column offsets.
      * @param rowOffset The number of rows to move the selection (can be negative).
@@ -417,7 +457,7 @@ export class CellSelector {
         this.inputElement.style.margin = '0';
         this.inputElement.style.padding = '0 4px';
         this.inputElement.style.display = 'block';
-        this.inputElement.style.textAlign = "center";
+        this.inputElement.style.textAlign = "left";
         this.inputElement.style.fontSize = '14px';
         this.inputElement.style.fontFamily = 'Arial';
         this.inputElement.style.lineHeight = height + 'px';
@@ -523,7 +563,7 @@ export class CellSelector {
             ctx.globalAlpha = 0.3;
             for (let row = minRow; row <= maxRow; row++) {
                 for (let col = minCol; col <= maxCol; col++) {
-                    if (row === minRow && col === minCol) continue;
+                    if (row === this.anchorRow && col === this.anchorCol) continue;
                     const { x, y, width, height } = GridCell.getCellRect(
                         row, col,
                         this.gridMatrix.rowHeights,
