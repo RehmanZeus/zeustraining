@@ -147,9 +147,6 @@ export class EventManager {
             return;
         }
 
-        // if(this.columnSelector.isColumnHeader(e)){
-        //     this.canvas.style.cursor = "s-resize";
-        // }
     }
 
 

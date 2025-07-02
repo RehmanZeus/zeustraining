@@ -1,4 +1,6 @@
 import { DPR, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { CellEditCommand } from "./commands/CellEditCommand.js";
+import { CommandManager } from "./commands/CommandManager.js";
 import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
 
@@ -58,6 +60,10 @@ export class CellSelector {
     isEditing = false;
     /** The color used for the selection border */
     selectionBorderColor = '#137e43';
+
+    commandManager?: CommandManager;
+
+
     /** The function to redraw the grid, set by the parent component */
     redrawGrid: () => void = () => { };
 
@@ -86,6 +92,11 @@ export class CellSelector {
         const { x, y } = this.getMousePosition(e);
         const { row, col } = this.getCellFromPosition(x, y);
         return row > 0 && col > 0 && row < this.gridMatrix.noOfRows && col < this.gridMatrix.noOfCols;
+    }
+
+
+    setCommangManager(cm: CommandManager) {
+        this.commandManager = cm;
     }
 
 
@@ -361,10 +372,8 @@ export class CellSelector {
     * @param row The row index of the cell to select.
     * @param col The column index of the cell to select.
     */
-    selectCell(row: number, col: number) {
-        if (this.isEditing) {
-            this.finishEditing();
-        }
+    selectCell(row: number, col: number, smooth = false) {
+        if (this.isEditing) this.finishEditing();
         this.selectedRow = row;
         this.selectedCol = col;
         this.anchorRow = null;
@@ -372,46 +381,50 @@ export class CellSelector {
         this.clearRangeSelection();
 
         const container = document.getElementById('excel-container') as HTMLDivElement;
-
-        // Get cell's rect
         const cellRect = GridCell.getCellRect(row, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
-
-        // Visible area
+        const stickyHeaderHeight = this.gridMatrix.rowHeights[0];
+        const stickyColWidth = this.gridMatrix.columnWidths[0];
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
         const viewportWidth = container.clientWidth;
         const viewportHeight = container.clientHeight;
-
-        // Cell position relative to viewport
-        const cellLeft = cellRect.x;
-        const cellRight = cellRect.x + cellRect.width;
-        const cellTop = cellRect.y;
-        const cellBottom = cellRect.y + cellRect.height;
+        const visibleLeft = scrollLeft + stickyColWidth;
+        const visibleTop = scrollTop + stickyHeaderHeight;
+        const visibleRight = scrollLeft + viewportWidth;
+        const visibleBottom = scrollTop + viewportHeight;
 
         let newScrollLeft = scrollLeft;
         let newScrollTop = scrollTop;
 
-        // Horizontal scroll
-        if (cellLeft < scrollLeft) {
-            newScrollLeft = cellLeft;
-        } else if (cellRight > scrollLeft + viewportWidth) {
-            newScrollLeft = cellRight - viewportWidth;
+        if (cellRect.x < visibleLeft) {
+            newScrollLeft = cellRect.x - stickyColWidth;
+        } else if (cellRect.x + cellRect.width > visibleRight) {
+            newScrollLeft = cellRect.x + cellRect.width - viewportWidth;
         }
-
-        // Vertical scroll
-        if (cellTop < scrollTop) {
-            newScrollTop = cellTop;
-        } else if (cellBottom > scrollTop + viewportHeight) {
-            newScrollTop = cellBottom - viewportHeight;
+        if (cellRect.y < visibleTop) {
+            newScrollTop = cellRect.y - stickyHeaderHeight;
+        } else if (cellRect.y + cellRect.height > visibleBottom) {
+            newScrollTop = cellRect.y + cellRect.height - viewportHeight;
         }
+        newScrollLeft = Math.max(newScrollLeft, 0);
+        newScrollTop = Math.max(newScrollTop, 0);
 
-        // Apply new scroll positions if needed
         if (newScrollLeft !== scrollLeft || newScrollTop !== scrollTop) {
-            container.scrollTo({ left: newScrollLeft, top: newScrollTop, behavior: 'smooth' });
+            container.scrollTo({
+                left: newScrollLeft,
+                top: newScrollTop,
+                behavior: smooth ? 'smooth' : 'auto'
+            });
+            // Wait for scroll to be applied, then redraw!
+            requestAnimationFrame(() => {
+                this.redrawGrid();
+            });
+        } else {
+            this.redrawGrid();
         }
-
-        this.redrawGrid();
     }
+
+
     /**
      * Moves the selection by the given row and column offsets.
      * @param rowOffset The number of rows to move the selection (can be negative).
@@ -479,7 +492,9 @@ export class CellSelector {
     finishEditing() {
         if (!this.isEditing) return;
         const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
-        cell.data = this.inputElement.value;
+        this.commandManager?.executeCommand(
+            new CellEditCommand(this.gridMatrix, this, cell.data ? cell.data : "", this.inputElement.value, this.selectedRow, this.selectedCol)
+        )
         this.inputElement.style.display = 'none';
         this.isEditing = false;
         console.log("Finish edit", this.selectedRow, this.selectedCol)
