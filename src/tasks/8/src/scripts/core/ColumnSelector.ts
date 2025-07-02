@@ -76,8 +76,7 @@ export class ColumnSelector {
         }
         this.redrawGrid();
 
-        window.addEventListener("pointermove", this.onPointerMove);
-        window.addEventListener("pointerup", this.onPointerUp);
+       
     };
 
     onPointerMove = (e: PointerEvent) => {
@@ -98,9 +97,7 @@ export class ColumnSelector {
     onPointerUp = (_e: PointerEvent) => {
         if (this.isDragging) {
             this.isDragging = false;
-            this.dragStartCol = null;
-            window.removeEventListener("pointermove", this.onPointerMove);
-            window.removeEventListener("pointerup", this.onPointerUp);
+        
         }
     };
 

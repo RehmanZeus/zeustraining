@@ -4,12 +4,12 @@ import { RowSelector } from "./RowSelector.js";
 import { GridResizer } from "./GridResizer.js";
 import { GridMatrix } from "./GridMatrix.js";
 
-type Mode = "idle" | "dragging" | "resizing" | "editing" | "column-drag" | "row-drag";
-
 /**
  * The EventManager class handles user interactions with the grid.
  * It manages pointer events for cell selection, column and row resizing, and keyboard events for editing.
  * It coordinates between the CellSelector, ColumnSelector, RowSelector, and GridResizer to ensure smooth interactions.
+ * 
+ * This refactored version eliminates the "mode" property and delegates pointer events to the currently active handler.
  */
 export class EventManager {
     canvas: HTMLCanvasElement;
@@ -17,19 +17,17 @@ export class EventManager {
     columnSelector: ColumnSelector;
     rowSelector: RowSelector;
     gridResizer: GridResizer;
-    mode: Mode = "idle";
-    suppressNextClick = false;
     gridMatrix: GridMatrix;
 
-    /**
-     * Creates an instance of the EventManager.
-     * @param canvas The HTML canvas element where the grid is rendered.
-     * @param cellSelector The CellSelector instance for managing cell selection.
-     * @param columnSelector The ColumnSelector instance for managing column selection.
-     * @param rowSelector The RowSelector instance for managing row selection.
-     * @param gridResizer The GridResizer instance for managing grid resizing.
-     * @param gridMatrix The GridMatrix instance for managing grid data.
-     */
+    // Pointer handler object, set on pointerdown, cleared on pointerup
+    private activePointerHandler: {
+        onPointerDown?: (e: PointerEvent) => void;
+        onPointerMove?: (e: PointerEvent) => void;
+        onPointerUp?: (e: PointerEvent) => void;
+    } | null = null;
+
+    suppressNextClick = false;
+
     constructor(
         canvas: HTMLCanvasElement,
         cellSelector: CellSelector,
@@ -47,31 +45,16 @@ export class EventManager {
         this.attachEvents();
     }
 
-    /**
-     * Gets the index of the first visible column in the viewport.
-     * @returns The index of the first visible column in the viewport.
-     * This is determined by the current scroll position and viewport size.
-     */
-
     getStartColumnIndex() {
-
         const container = document.getElementById('excel-container') as HTMLDivElement;
-
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
         const viewportWidth = container.clientWidth;
         const viewportHeight = container.clientHeight;
-
         const { startCol } = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
-
         return startCol;
-
     }
 
-    /**
-     * Attaches event listeners to the canvas for pointer and keyboard events.
-     * This method sets up the necessary event handlers for user interactions with the grid.
-     */
     attachEvents() {
         window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
         window.addEventListener('pointermove', this.handlePointerMove.bind(this));
@@ -81,53 +64,29 @@ export class EventManager {
         document.addEventListener('keydown', this.handleKeydown.bind(this));
     }
 
-    /**
-     * Handles pointer down events on the canvas.
-     * Determines if the pointer is near a column or row edge for resizing, or if it's over a cell for dragging.
-     * @param e The pointer event to handle.
-     */
     handlePointerDown(e: PointerEvent) {
-        console.log(this.mode, "POINTER DOWN")
+        // Reset any old handler on fresh pointerdown
+        this.activePointerHandler = null;
+        // Assign the correct handler and delegate
         if (this.gridResizer.isNearColumnEdge(e) || this.gridResizer.isNearRowEdge(e)) {
-            this.mode = "resizing";
-            this.gridResizer.onPointerDown(e);
-            return;
+            this.activePointerHandler = this.gridResizer;
+        } else if (this.cellSelector.isCell(e)) {
+            this.activePointerHandler = this.cellSelector;
+        } else if (this.columnSelector.isColumnHeader(e)) {
+            this.activePointerHandler = this.columnSelector;
+        } else if (this.rowSelector.isRowHeader(e)) {
+            this.activePointerHandler = this.rowSelector;
         }
-        if (this.cellSelector.isCell(e)) {
-            this.mode = "dragging";
-            this.cellSelector.onPointerDown(e);
-            return;
-        }
-        if (this.columnSelector.isColumnHeader(e)) {
-            this.mode = "column-drag";
-            this.columnSelector.onPointerDown(e);
-            return;
-        }
-        if (this.rowSelector.isRowHeader(e)) {
-            this.mode = "row-drag";
-            this.rowSelector.onPointerDown(e);
-            return;
-        }
-        this.mode = "idle";
+        this.activePointerHandler?.onPointerDown?.(e);
     }
 
-    /**
-     * Handles pointer move events on the canvas.
-     * Changes the cursor style based on whether the pointer is near a column or row edge.
-     * If resizing or dragging, delegates to the appropriate handler.
-     * @param e The pointer event to handle.
-     */
     handlePointerMove(e: PointerEvent) {
-        console.log(this.mode, "POINTER MOVE")
-
-        if (this.mode === "resizing") {
-            this.gridResizer.onPointerMove(e);
+        // Let the active handler manage move if present
+        if (this.activePointerHandler?.onPointerMove) {
+            this.activePointerHandler.onPointerMove(e);
             return;
         }
-        if (this.mode === "dragging") {
-            this.cellSelector.onPointerMove(e);
-            return;
-        }
+        // Otherwise, update cursor for resize
         if (this.gridResizer.isNearColumnEdge(e)) {
             this.canvas.style.cursor = "ew-resize";
         } else if (this.gridResizer.isNearRowEdge(e)) {
@@ -135,83 +94,42 @@ export class EventManager {
         } else {
             this.canvas.style.cursor = "cell";
         }
-
-        if (this.mode === "column-drag") {
-
-            this.columnSelector.onPointerMove(e);
-            return;
-        }
-        if (this.mode === "row-drag") {
-
-            this.rowSelector.onPointerMove(e);
-            return;
-        }
-
     }
 
-
-
-    /**
-     * Handles pointer up events on the canvas.
-     * Resets the mode to idle after resizing or dragging.
-     * @param e The pointer event to handle.
-     */
     handlePointerUp(e: PointerEvent) {
-        console.log(this.mode, "POINTER UP")
-
-        if (this.mode === "resizing") {
-            this.gridResizer.onPointerUp(e);
-            this.mode = "idle";
-            this.suppressNextClick = true; // suppress next click after resizing
-            return;
+        // Let the active handler manage up if present
+        if (this.activePointerHandler?.onPointerUp) {
+            this.activePointerHandler.onPointerUp(e);
         }
-        if (this.mode === "dragging") {
-            this.cellSelector.onPointerUp(e);
-            this.mode = "idle";
-            return;
+        // Special case: suppress click after resizing
+        if (this.activePointerHandler === this.gridResizer &&
+            (this.gridResizer.isResizingCol || this.gridResizer.isResizingRow)
+        ) {
+            this.suppressNextClick = true;
         }
-
-        if (this.mode === "row-drag") {
-            this.rowSelector.onPointerUp(e);
-            this.mode = "idle";
-            return;
-        }
-
-        if (this.mode === "column-drag") {
-            this.columnSelector.onPointerUp(e);
-            this.mode = "idle";
-            return
-        }
+        this.activePointerHandler = null;
+        // Always reset cursor
+        this.canvas.style.cursor = "cell";
     }
 
-    /**
-     * Handles click events on the canvas.
-     * Suppresses the click event if requested (e.g. after resizing).
-     * @param e The mouse event to handle.
-     */
     handleClick(e: MouseEvent) {
         // Suppress click if requested (e.g. after resizing)
         if (this.suppressNextClick) {
             this.suppressNextClick = false;
             return;
         }
-        if (this.mode !== "idle") return;
-
         // Column header
         if (typeof this.columnSelector.isColumnHeader === "function" && this.columnSelector.isColumnHeader(e)) {
-            // Clear other selections
             this.rowSelector.clearSelection();
             this.cellSelector.clearEditing();
             return;
         }
-
         // Row header
         if (typeof this.rowSelector.isRowHeader === "function" && this.rowSelector.isRowHeader(e)) {
             this.columnSelector.clearSelection();
             this.cellSelector.clearEditing();
             return;
         }
-
         // Data cell
         if (this.cellSelector.isCell(e)) {
             this.columnSelector.clearSelection();
@@ -220,21 +138,12 @@ export class EventManager {
         }
     }
 
-    /**
-     * Handles double click events on the canvas.
-     * @param e The mouse event to handle.
-     */
     handleDoubleClick(e: MouseEvent) {
-        if (this.mode !== "idle") return;
         if (this.cellSelector.isCell(e)) {
             this.cellSelector.onDoubleClick(e);
         }
     }
 
-    /**
-     * Handles keydown events on the canvas.
-     * @param e The keyboard event to handle.
-     */
     handleKeydown(e: KeyboardEvent) {
         if (typeof this.cellSelector.handleKeydown === "function") {
             this.cellSelector.handleKeydown(e);
