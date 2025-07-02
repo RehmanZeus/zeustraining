@@ -493,11 +493,10 @@ export class CellSelector {
         if (!this.isEditing) return;
         const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
         this.commandManager?.executeCommand(
-            new CellEditCommand(this.gridMatrix, this, cell.data ? cell.data : "", this.inputElement.value, this.selectedRow, this.selectedCol)
+            new CellEditCommand(cell, this, cell.data ? cell.data : "", this.inputElement.value)
         )
         this.inputElement.style.display = 'none';
         this.isEditing = false;
-        console.log("Finish edit", this.selectedRow, this.selectedCol)
         this.redrawGrid();
         this.canvas.focus();
         if (this.onCellEditFinish) this.onCellEditFinish(this.inputElement.value);
