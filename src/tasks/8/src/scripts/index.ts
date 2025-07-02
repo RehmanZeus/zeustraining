@@ -45,6 +45,7 @@ window.onload = () => {
     gridMatrix.setCellSelector(cellSelector);
 
     resizer.setCommandManager(commandManager);
+    cellSelector.setCommangManager(commandManager);
 
 
     /**
