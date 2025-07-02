@@ -33,8 +33,9 @@ export class RowSelector {
     isRowHeader(e: MouseEvent | PointerEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
+        const container = document.getElementById('excel-container') as HTMLDivElement;
         const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const y = e.clientY - rect.top + container.scrollTop; // <-- FIXED
 
         let totalY = 0;
         let rowIndex = -1;
@@ -54,6 +55,7 @@ export class RowSelector {
             rowIndex > 0 // skip header row
         );
     }
+
 
     /** Handles selection on the row header area (pointerdown only) */
     onPointerDown = (e: PointerEvent) => {
@@ -128,7 +130,8 @@ export class RowSelector {
     getRowFromMouseEvent(e: MouseEvent | PointerEvent): number {
         if (!this.canvas) return -1;
         const rect = this.canvas.getBoundingClientRect();
-        const y = e.clientY - rect.top;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const y = e.clientY - rect.top + container.scrollTop; // <-- FIXED!
         let totalY = 0;
         for (let row = 0; row < this.gridMatrix.rowHeights.length; row++) {
             totalY += this.gridMatrix.rowHeights[row];

@@ -26,7 +26,6 @@ export class EventManager {
         onPointerUp?: (e: PointerEvent) => void;
     } | null = null;
 
-    suppressNextClick = false;
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -101,12 +100,7 @@ export class EventManager {
         if (this.activePointerHandler?.onPointerUp) {
             this.activePointerHandler.onPointerUp(e);
         }
-        // Special case: suppress click after resizing
-        if (this.activePointerHandler === this.gridResizer &&
-            (this.gridResizer.isResizingCol || this.gridResizer.isResizingRow)
-        ) {
-            this.suppressNextClick = true;
-        }
+      
         this.activePointerHandler = null;
         // Always reset cursor
         this.canvas.style.cursor = "cell";
@@ -114,10 +108,7 @@ export class EventManager {
 
     handleClick(e: MouseEvent) {
         // Suppress click if requested (e.g. after resizing)
-        if (this.suppressNextClick) {
-            this.suppressNextClick = false;
-            return;
-        }
+     
         // Column header
         if (typeof this.columnSelector.isColumnHeader === "function" && this.columnSelector.isColumnHeader(e)) {
             this.rowSelector.clearSelection();

@@ -28,7 +28,7 @@ export class ColumnSelector {
         this.canvas = canvas;
     }
 
-  
+
 
     onPointerDown = (e: PointerEvent) => {
         if (!this.isColumnHeader(e)) return;
@@ -76,7 +76,7 @@ export class ColumnSelector {
         }
         this.redrawGrid();
 
-       
+
     };
 
     onPointerMove = (e: PointerEvent) => {
@@ -97,14 +97,15 @@ export class ColumnSelector {
     onPointerUp = (_e: PointerEvent) => {
         if (this.isDragging) {
             this.isDragging = false;
-        
+
         }
     };
 
     isColumnHeader(e: MouseEvent | PointerEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const x = e.clientX - rect.left + container.scrollLeft; // <-- scroll aware!
         const y = e.clientY - rect.top;
         let totalX = 0;
         let colIndex = -1;
@@ -122,7 +123,8 @@ export class ColumnSelector {
     getColFromMouseEvent(e: MouseEvent | PointerEvent): number {
         if (!this.canvas) return -1;
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const x = e.clientX - rect.left + container.scrollLeft; // <-- scroll aware!
         let totalX = 0;
         for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
             totalX += this.gridMatrix.columnWidths[col];
