@@ -574,7 +574,7 @@ export class CellSelector {
 
             // 1. Fill selection cells and headers background
             ctx.save();
-            ctx.globalAlpha = 0.3;
+            ctx.globalAlpha = 0.4;
             for (let row = minRow; row <= maxRow; row++) {
                 for (let col = minCol; col <= maxCol; col++) {
                     if (row === this.anchorRow && col === this.anchorCol) continue;
@@ -700,7 +700,7 @@ export class CellSelector {
         }
         // Otherwise, draw single cell highlight if available and not dragging
         if (this.selectedRow > 0 && this.selectedCol > 0) {
-            const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+           
             const header = this.gridMatrix.getCell(0, this.selectedCol);
             const row = this.gridMatrix.getCell(this.selectedRow, 0);
 

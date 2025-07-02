@@ -17,6 +17,8 @@ export class CommandManager {
         cmd.execute();
         this.undoStack.push(cmd);
         this.redoStack = [];
+        console.log("EXec Undo", this.undoStack);
+        console.log("Exec Redo", this.redoStack);
     }
 
     /**
@@ -29,6 +31,9 @@ export class CommandManager {
             cmd.undo();
             this.redoStack.push(cmd);
         }
+
+        console.log("UndoFn Undo", this.undoStack);
+        console.log("UndoFn Redo", this.redoStack);
     }
 
     /**
@@ -41,5 +46,8 @@ export class CommandManager {
             cmd.redo();
             this.undoStack.push(cmd);
         }
+
+        console.log("RedoFn Undo", this.undoStack);
+        console.log("RedoFn Redo", this.redoStack);
     }
 }
