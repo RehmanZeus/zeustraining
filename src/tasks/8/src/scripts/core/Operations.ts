@@ -3,7 +3,7 @@ import { GridMatrix } from "./GridMatrix";
 import { RowSelector } from "./RowSelector";
 import { CellSelector } from "./CellSelector";
 
-export class Operations{
+export class Operations {
 
     rows: RowSelector;
     cols: ColumnSelector
@@ -20,18 +20,15 @@ export class Operations{
     }
 
 
-    sumRows(){
-        const selectedRowData = this.cols.getSelectedColData();
-        if(!selectedRowData) return 0;
-        let sum = 0;
-        for(let x = 0; x < selectedRowData.length; ++x){
-            if(x === 0) continue;
-            sum += parseInt(selectedRowData[x]);
-        }
-    }
 
-    rangeSelectionSum(): number {
-        const selectedRange = this.cellSelector.getRangeSelectionData();
+
+    rangeSelectionSum(selectedRange: {
+        startRow: number;
+        endRow: number;
+        startCol: number;
+        endCol: number;
+    } | undefined): number {
+
         if (!selectedRange) return 0;
 
         let sum = 0;
@@ -45,4 +42,51 @@ export class Operations{
         }
         return sum;
     }
+
+
+    columnSelectionSum(selectedCols: number[]): number {
+        let sum = 0;
+        for (let col = 0; col < selectedCols.length; ++col) {
+            for (let row = 1; row <= this.gridMatrix.rowHeights.length; ++row) {
+                const cell = this.gridMatrix.getCell(row, selectedCols[col]);
+                if (cell && cell.data) {
+                    sum += parseFloat(cell.data) || 0;
+                }
+            }
+        }
+
+        sum = Math.floor(sum);
+        return sum;
+
+    }
+
+    rowSelectionSum(selectedRows: number[]): number {
+        let sum = 0;
+        for (let row = 0; row < selectedRows.length; ++row) {
+            for (let col = 1; col < this.gridMatrix.columnWidths.length; ++col) {
+                const cell = this.gridMatrix.getCell(selectedRows[row], col);
+                if (cell && cell.data) {
+                    sum += parseFloat(cell.data) || 0;
+                }
+            }
+        }
+
+        sum = Math.floor(sum);
+        return sum;
+    }
+
+    globalSum() {
+        const isCellSelection = this.cellSelector.getRangeSelectionData();
+        const isColumnSelection = this.cols.selectedCols;
+        const isRowSelection = this.rows.selectedRows;
+
+
+        if (isCellSelection) return this.rangeSelectionSum(isCellSelection);
+        if (isColumnSelection.length > 0) return this.columnSelectionSum(isColumnSelection);
+        if (isRowSelection.length > 0) return this.rowSelectionSum(isRowSelection);
+
+        return 0;
+    }
+
+    
 }

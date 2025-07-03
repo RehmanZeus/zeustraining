@@ -1,4 +1,5 @@
 import { DPR, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { Calculations } from "./Calculations.js";
 import { CellEditCommand } from "./commands/CellEditCommand.js";
 import { CommandManager } from "./commands/CommandManager.js";
 import { GridCell } from "./GridCell.js";
@@ -63,6 +64,7 @@ export class CellSelector {
 
     commandManager?: CommandManager;
 
+    calculations?: Calculations;
 
     /** The function to redraw the grid, set by the parent component */
     redrawGrid: () => void = () => { };
@@ -99,6 +101,10 @@ export class CellSelector {
         this.commandManager = cm;
     }
 
+
+    setCalculations(c: Calculations){
+        this.calculations = c;
+    }
 
     /**
      * Handles the pointer down event to initiate cell selection.   
@@ -373,6 +379,7 @@ export class CellSelector {
     * @param col The column index of the cell to select.
     */
     selectCell(row: number, col: number, smooth = false) {
+
         if (this.isEditing) this.finishEditing();
         this.selectedRow = row;
         this.selectedCol = col;
@@ -700,7 +707,7 @@ export class CellSelector {
         }
         // Otherwise, draw single cell highlight if available and not dragging
         if (this.selectedRow > 0 && this.selectedCol > 0) {
-           
+
             const header = this.gridMatrix.getCell(0, this.selectedCol);
             const row = this.gridMatrix.getCell(this.selectedRow, 0);
 
@@ -877,5 +884,21 @@ export class CellSelector {
         if (this.selectedRow <= 0 || this.selectedCol <= 0) return '';
         const colHeader = GridCell.generateHeader(this.selectedCol - 1);
         return `${colHeader}${this.selectedRow}`;
+    }
+
+
+    getSelectedCell(): {
+        cell: GridCell,
+        cellBounds: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        }
+    } | null {
+        if (this.selectedRow <= 0 || this.selectedCol <= 0) return null;
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        const cellBounds = GridCell.getCellRect(this.selectedRow, this.selectedCol, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+        return {cell, cellBounds};
     }
 }

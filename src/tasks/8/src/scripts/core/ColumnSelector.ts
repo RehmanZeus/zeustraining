@@ -15,7 +15,7 @@ export class ColumnSelector {
     canvas: HTMLCanvasElement | null = null;
 
 
-    
+
     // Drag state
     private dragStartCol: number | null = null;
     private isDragging: boolean = false;
@@ -38,6 +38,7 @@ export class ColumnSelector {
     }
 
     onPointerDown = (e: PointerEvent) => {
+        this.dragStartCol = null;
         if (!this.isColumnHeader(e)) return;
         if (e.button !== 0) return;
 
@@ -137,7 +138,7 @@ export class ColumnSelector {
     onPointerUp = (_e: PointerEvent) => {
         if (this.isDragging) {
             this.isDragging = false;
-            this.dragStartCol = null;
+
             this.clearAutoScroll();
             window.removeEventListener('pointermove', this.onPointerMove);
             window.removeEventListener('pointerup', this.onPointerUp);
@@ -321,6 +322,35 @@ export class ColumnSelector {
         this.ctx.restore();
     }
 
+    handleKeydown(e: KeyboardEvent) {
+        if (!this.cellSelector || this.cellSelector.isEditing) return;
+        if (this.cellSelector.selectedRow > 0 && this.cellSelector.selectedCol > 0) return;
+        if (!this.selectedCols.length) return;
+
+        // Only respond to typing (not ctrl/alt/meta or function keys)
+        if (e.key.length !== 1 || e.ctrlKey || e.altKey || e.metaKey || e.altKey) return;
+
+        let editCol = -1;
+
+        console.log(this.dragStartCol)
+        if (this.dragStartCol !== null) {
+            // Drag selection: edit the cell in the column where drag started
+            editCol = this.dragStartCol
+        } else if (this.selectedCols.length > 1) {
+            // Ctrl+click selection: edit the cell in the last selected column
+            editCol = this.selectedCols[this.selectedCols.length - 1];
+        } else {
+            // Single column: edit that column
+            editCol = this.selectedCol;
+        }
+
+        if (editCol > 0) {
+            this.cellSelector.selectCell(1, editCol);
+            this.cellSelector.startEditing(e.key);
+            e.preventDefault();
+        }
+    }
+
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
         if (!this.selectedCols || this.selectedCols.length === 0) return;
 
@@ -395,7 +425,6 @@ export class ColumnSelector {
                     ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
 
                 }
-
 
                 if (isContiguous) {
                     const x = rect.x - currentScrollLeft;

@@ -100,7 +100,7 @@ export class EventManager {
         if (this.activePointerHandler?.onPointerUp) {
             this.activePointerHandler.onPointerUp(e);
         }
-      
+
         this.activePointerHandler = null;
         // Always reset cursor
         this.canvas.style.cursor = "cell";
@@ -108,7 +108,7 @@ export class EventManager {
 
     handleClick(e: MouseEvent) {
         // Suppress click if requested (e.g. after resizing)
-     
+
         // Column header
         if (typeof this.columnSelector.isColumnHeader === "function" && this.columnSelector.isColumnHeader(e)) {
             this.rowSelector.clearSelection();
@@ -138,6 +138,9 @@ export class EventManager {
     handleKeydown(e: KeyboardEvent) {
         if (typeof this.cellSelector.handleKeydown === "function") {
             this.cellSelector.handleKeydown(e);
+        }
+        if (typeof this.columnSelector.handleKeydown === "function") {
+            this.columnSelector.handleKeydown(e);
         }
     }
 }
