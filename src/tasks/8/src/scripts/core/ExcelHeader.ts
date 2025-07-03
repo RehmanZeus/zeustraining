@@ -96,18 +96,18 @@ export class ExcelHeader {
         let value: number | undefined;
         switch (label) {
           case "Sum":
-           
+
             value = this.operations.globalSum();
 
             break;
           case "Average":
-            // const sum = this.operations.globalSum();
-            // const data = this.cellSelector.getRangeSelectionData();
-            // const count = data
-            //   ? (data.endRow - data.startRow + 1) * (data.endCol - data.startCol + 1)
-            //   : 0;
-            // value = count > 0 ? Math.floor(sum / count) : 0;
-            this.calculation.avgCalcHandler();
+            const sum = this.operations.globalSum();
+            const data = this.cellSelector.getRangeSelectionData();
+            const count = data
+              ? (data.endRow - data.startRow + 1) * (data.endCol - data.startCol + 1)
+              : 0;
+            value = count > 0 ? Math.floor(sum / count) : 0;
+            // this.calculation.avgCalcHandler();
             break;
           case "Count":
             const r = this.cellSelector.getRangeSelectionData();

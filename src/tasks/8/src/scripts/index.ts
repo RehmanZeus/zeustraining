@@ -138,7 +138,6 @@ window.onload = () => {
 
     new ExcelHeader(cellSelector, gridMatrix, operations, commandManager, calcs);
 
-    cellSelector.setCalculations(calcs);
     /**
      * Handles the keydown event for the document.
      * This function listens for Ctrl+Z and Ctrl+Y key combinations to trigger undo and redo commands.
