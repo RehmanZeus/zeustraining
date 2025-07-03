@@ -1,3 +1,4 @@
+import { Calculations } from "./core/Calculations.js";
 import { CellSelector } from "./core/CellSelector.js";
 import { ColumnSelector } from "./core/ColumnSelector.js";
 import { CommandManager } from "./core/commands/CommandManager.js";
@@ -130,11 +131,12 @@ window.onload = () => {
         drawVisibleGrid();
     });
 
+    const calcs = new Calculations(cellSelector, colSelector, rowSelector, gridMatrix, ctx, commandManager)
 
     // --- Attach all pointer/click events to EventAttacher! ---
     new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer, gridMatrix);
 
-    new ExcelHeader(cellSelector, gridMatrix, operations, commandManager);
+    new ExcelHeader(cellSelector, gridMatrix, operations, commandManager, calcs);
 
     /**
      * Handles the keydown event for the document.

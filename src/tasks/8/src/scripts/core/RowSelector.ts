@@ -18,6 +18,11 @@ export class RowSelector {
     private dragStartRow: number | null = null;
     private isDragging: boolean = false;
 
+    // Combination selection state
+    private pointerDownRow: number | null = null;
+    private dragStarted: boolean = false;
+    private initialSelectedRows: number[] = [];
+
     constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
         this.cellSelector = cellSelector;
@@ -29,12 +34,13 @@ export class RowSelector {
     }
 
 
-    /** Returns true if the mouse event is on a row header cell (excluding col 0, row 0) */
+
     isRowHeader(e: MouseEvent | PointerEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
+        const container = document.getElementById('excel-container') as HTMLDivElement;
         const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const y = e.clientY - rect.top + container.scrollTop;
 
         let totalY = 0;
         let rowIndex = -1;
@@ -55,6 +61,7 @@ export class RowSelector {
         );
     }
 
+
     /** Handles selection on the row header area (pointerdown only) */
     onPointerDown = (e: PointerEvent) => {
         if (!this.isRowHeader(e)) return;
@@ -64,15 +71,17 @@ export class RowSelector {
         const rowIndex = this.getRowFromMouseEvent(e);
         if (rowIndex < 1) return;
 
+        this.dragStarted = false;
+        this.pointerDownRow = rowIndex;
+
+        // Ctrl/Cmd+Click: toggle row selection, but do not drag unless ctrl+drag
         if (e.ctrlKey || e.metaKey) {
-            // Ctrl/Cmd+Click: toggle row selection
             const idx = this.selectedRows.indexOf(rowIndex);
             if (idx === -1) {
                 this.selectedRows.push(rowIndex);
                 this.selectedRow = rowIndex;
             } else {
                 this.selectedRows.splice(idx, 1);
-                // Update selectedRow to last or -1
                 this.selectedRow = this.selectedRows.length ? this.selectedRows[this.selectedRows.length - 1] : -1;
             }
             this.cellSelector.clearRangeSelection();
@@ -81,21 +90,16 @@ export class RowSelector {
             this.cellSelector.isEditing = false;
             this.cellSelector.inputElement.style.display = 'none';
             this.redrawGrid();
-            // Do NOT begin drag-selection on ctrlKey
-            return;
         }
 
-        // Begin drag-selection
+        // Always allow drag setup (ctrl or not)
         this.isDragging = true;
         this.dragStartRow = rowIndex;
-        this.selectedRows = [rowIndex];
-        this.selectedRow = rowIndex;
-        this.cellSelector.clearRangeSelection();
-        this.cellSelector.selectedRow = -1;
-        this.cellSelector.selectedCol = -1;
-        this.cellSelector.isEditing = false;
-        this.cellSelector.inputElement.style.display = 'none';
-        this.redrawGrid();
+        if (e.ctrlKey || e.metaKey) {
+            this.initialSelectedRows = [...this.selectedRows];
+        } else {
+            this.initialSelectedRows = [rowIndex];
+        }
 
         window.addEventListener("pointermove", this.onPointerMove);
         window.addEventListener("pointerup", this.onPointerUp);
@@ -103,32 +107,57 @@ export class RowSelector {
 
     onPointerMove = (e: PointerEvent) => {
         if (!this.isDragging || this.dragStartRow === null) return;
+        this.dragStarted = true;
         const rowIndex = this.getRowFromMouseEvent(e);
         if (rowIndex < 1 || rowIndex === this.selectedRow) return;
 
         // Drag selection: select contiguous range
         const [start, end] = [this.dragStartRow, rowIndex].sort((a, b) => a - b);
-        this.selectedRows = [];
+        let dragRows: number[] = [];
         for (let row = start; row <= end; row++) {
-            this.selectedRows.push(row);
+            dragRows.push(row);
+        }
+        if ((e.ctrlKey || e.metaKey)) {
+            // Union with any previous ctrl+click selection
+            const allRows = Array.from(new Set([...this.initialSelectedRows, ...dragRows]));
+            this.selectedRows = allRows.sort((a, b) => a - b);
+        } else {
+            // Replace selection with contiguous drag range
+            this.selectedRows = dragRows;
         }
         this.selectedRow = rowIndex;
         this.redrawGrid();
     };
 
-    onPointerUp = (_e: PointerEvent) => {
+    onPointerUp = (e: PointerEvent) => {
         if (this.isDragging) {
             this.isDragging = false;
             this.dragStartRow = null;
+            this.initialSelectedRows = [];
             window.removeEventListener("pointermove", this.onPointerMove);
             window.removeEventListener("pointerup", this.onPointerUp);
+
+            // If simple click (no drag), select only that row (unless ctrl/cmd)
+            if (!this.dragStarted && this.pointerDownRow !== null && !(e.ctrlKey || e.metaKey)) {
+                this.selectedRows = [this.pointerDownRow];
+                this.selectedRow = this.pointerDownRow;
+                this.cellSelector.clearRangeSelection();
+                this.cellSelector.selectedRow = -1;
+                this.cellSelector.selectedCol = -1;
+                this.cellSelector.isEditing = false;
+                this.cellSelector.inputElement.style.display = 'none';
+                this.redrawGrid();
+            }
+            this.pointerDownRow = null;
+            this.dragStarted = false;
         }
     };
 
     getRowFromMouseEvent(e: MouseEvent | PointerEvent): number {
         if (!this.canvas) return -1;
         const rect = this.canvas.getBoundingClientRect();
-        const y = e.clientY - rect.top;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const y = e.clientY - rect.top + container.scrollTop;
         let totalY = 0;
         for (let row = 0; row < this.gridMatrix.rowHeights.length; row++) {
             totalY += this.gridMatrix.rowHeights[row];

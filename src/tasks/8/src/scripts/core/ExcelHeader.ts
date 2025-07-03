@@ -1,3 +1,4 @@
+import { Calculations } from "./Calculations.js";
 import { CellSelector } from "./CellSelector.js";
 import { CommandManager } from "./commands/CommandManager.js";
 import { GridCell } from "./GridCell.js";
@@ -48,6 +49,8 @@ export class ExcelHeader {
    */
   commandManager: CommandManager;
 
+  calculation: Calculations
+
   /**
    * Flags to ignore input events from the header input box and cell editor.
    * This prevents feedback loops when both are trying to update the same cell data.
@@ -69,12 +72,14 @@ export class ExcelHeader {
     cellSelector: CellSelector,
     gridMatrix: GridMatrix,
     operations: Operations,
-    commandManager: CommandManager
+    commandManager: CommandManager,
+    calc: Calculations
   ) {
     this.cellSelector = cellSelector;
     this.gridMatrix = gridMatrix;
     this.operations = operations;
     this.commandManager = commandManager;
+    this.calculation = calc
 
     // Create header container
     this.container = document.createElement("div");
@@ -90,14 +95,19 @@ export class ExcelHeader {
       btn.addEventListener("click", () => {
         let value: number | undefined;
         switch (label) {
-          case "Sum": value = this.operations.rangeSelectionSum(); break;
+          case "Sum":
+
+            value = this.operations.globalSum();
+
+            break;
           case "Average":
-            const sum = this.operations.rangeSelectionSum();
+            const sum = this.operations.globalSum();
             const data = this.cellSelector.getRangeSelectionData();
             const count = data
               ? (data.endRow - data.startRow + 1) * (data.endCol - data.startCol + 1)
               : 0;
             value = count > 0 ? Math.floor(sum / count) : 0;
+            // this.calculation.avgCalcHandler();
             break;
           case "Count":
             const r = this.cellSelector.getRangeSelectionData();

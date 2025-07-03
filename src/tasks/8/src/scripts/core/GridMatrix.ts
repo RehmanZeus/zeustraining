@@ -92,6 +92,84 @@ export class GridMatrix {
         }
     }
 
+    /**
+     * Evaluates the display value for a cell.
+     * If the cell data starts with "=", it's parsed as a formula.
+     * Otherwise, returns the cell's data.
+     * @param cell The GridCell to evaluate.
+     */
+    evaluateCell(cell: GridCell): number | string | undefined {
+        if (!cell.data || typeof cell.data !== "string" || !cell.data.startsWith("=")) return cell.data;
+        try {
+            return this.evaluateFormula(cell.data);
+        } catch (e) {
+            return "#ERROR";
+        }
+    }
+
+    /**
+     * Evaluates a formula string, e.g. "=AVERAGE(A1:A10)"
+     * Currently supports SUM and AVERAGE with a single range argument.
+     * @param formulaString The formula string (must start with "=").
+     */
+    evaluateFormula(formulaString: string): number | string {
+        // Remove leading '='
+        const expr = formulaString.slice(1).trim();
+        console.log(formulaString)
+        // Match function name and argument
+        const match = expr.match(/^(\w+)\(([^)]+)\)$/);
+        if (!match) return "#FORMULA!";
+        const fn = match[1].toUpperCase();
+        const arg = match[2];
+        console.log(fn,"ARGS", arg)
+        if (fn === "SUM" || fn === "AVERAGE") {
+            const cells = this.getCellsForRange(arg);
+            const nums = cells
+                .map(cell => parseFloat(cell.data ?? ""))
+                .filter(n => !isNaN(n));
+            if (fn === "SUM") return nums.reduce((a, b) => a + b, 0);
+            if (fn === "AVERAGE") return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+        }
+        return "#N/A";
+    }
+
+    /**
+     * Parses a range notation like "A1:B10" and returns all GridCell objects in that range.
+     * @param rangeStr The range string in A1:B10 notation.
+     */
+    getCellsForRange(rangeStr: string): GridCell[] {
+        const match = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i);
+        console.log(match);
+        if (!match) return [];
+        const [, colA, rowA, colB, rowB] = match;
+        const rowStart = Math.min(parseInt(rowA, 10), parseInt(rowB, 10));
+        const rowEnd = Math.max(parseInt(rowA, 10), parseInt(rowB, 10));
+        const colStart = Math.min(this.colLetterToIndex(colA), this.colLetterToIndex(colB));
+        const colEnd = Math.max(this.colLetterToIndex(colA), this.colLetterToIndex(colB));
+        const cells: GridCell[] = [];
+        for (let row = rowStart; row <= rowEnd; row++) {
+            for (let col = colStart; col <= colEnd; col++) {
+                if (row >= 1 && col >= 1 && row < this.noOfRows && col < this.noOfCols) {
+                    cells.push(this.getCell(row, col));
+                }
+            }
+        }
+        return cells;
+    }
+
+    /**
+     * Converts a column letter (like "A" or "AB") to a 1-based column index.
+     * @param col The column letters.
+     */
+    colLetterToIndex(col: string): number {
+        let idx = 0;
+        col = col.toUpperCase();
+        for (let i = 0; i < col.length; i++) {
+            idx = idx * 26 + (col.charCodeAt(i) - 64);
+        }
+        return idx;
+    }
+
 
     /**
      * Gets the vertical offset position of a specific row.
@@ -252,8 +330,21 @@ export class GridMatrix {
                 const height = this.rowHeights[row];
 
                 const cell = this.getCell(row, col);
-                if (cell.data) {
+               
+
+                const displayValue = this.evaluateCell(cell);
+              
+                if (displayValue !== undefined && displayValue !== "") {
+                    ctx.fillText(
+                        typeof displayValue === "number"
+                            ? displayValue.toLocaleString(undefined, { maximumFractionDigits: 6 })
+                            : displayValue,
+                        x + width / 2,
+                        y + height / 2
+                    );
+                } else if (cell.data) {
                     ctx.fillText(cell.data, x + width / 2, y + height / 2);
+
                 }
             }
         }

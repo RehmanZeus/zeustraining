@@ -878,4 +878,19 @@ export class CellSelector {
         const colHeader = GridCell.generateHeader(this.selectedCol - 1);
         return `${colHeader}${this.selectedRow}`;
     }
+
+    getSelectedCell(): {
+        cell: GridCell,
+        cellBounds: {
+            x: number;
+            y: number;
+            width: number;
+            height: number;
+        }
+    } | null {
+        if (this.selectedRow <= 0 || this.selectedCol <= 0) return null;
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        const cellBounds = GridCell.getCellRect(this.selectedRow, this.selectedCol, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+        return { cell, cellBounds };
+    }
 }

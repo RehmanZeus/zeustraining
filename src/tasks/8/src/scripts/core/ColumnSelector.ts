@@ -14,9 +14,21 @@ export class ColumnSelector {
     columnHeaderText = "#fff";
     canvas: HTMLCanvasElement | null = null;
 
+    private initialSelectedCols: number[] = [];
+
+
+
     // Drag state
     private dragStartCol: number | null = null;
     private isDragging: boolean = false;
+    private dragStarted = false;
+    private pointerDownCol: number | null = null;
+    // Autoscroll state
+    private autoscrollInterval: number | null = null;
+    private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
+    private AUTOSCROLL_BASE_SPEED = 40;     // px per interval at edge
+    private AUTOSCROLL_MAX_SPEED = 180;     // px per interval at far edge
+    private AUTOSCROLL_INTERVAL_MS = 16;    // ms
 
     constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
@@ -28,25 +40,25 @@ export class ColumnSelector {
         this.canvas = canvas;
     }
 
-  
 
     onPointerDown = (e: PointerEvent) => {
         if (!this.isColumnHeader(e)) return;
-        // Only left click
         if (e.button !== 0) return;
 
         const colIndex = this.getColFromMouseEvent(e);
         if (colIndex < 0) return;
 
+        this.dragStarted = false;
+        this.pointerDownCol = colIndex;
+
+        // Ctrl/Cmd+Click: toggle multi-select, but do not drag
         if (e.ctrlKey || e.metaKey) {
-            // Ctrl/Cmd+Click: toggle column selection
             const idx = this.selectedCols.indexOf(colIndex);
             if (idx === -1) {
                 this.selectedCols.push(colIndex);
                 this.selectedCol = colIndex;
             } else {
                 this.selectedCols.splice(idx, 1);
-                // Update selectedCol to last or -1
                 this.selectedCol = this.selectedCols.length ? this.selectedCols[this.selectedCols.length - 1] : -1;
             }
             if (this.cellSelector) {
@@ -57,54 +69,173 @@ export class ColumnSelector {
                 this.cellSelector.inputElement.style.display = 'none';
             }
             this.redrawGrid();
-            // Do NOT begin drag-selection on ctrlKey
-            return;
+            // prepare for possible ctrl+drag
         }
 
-        // Begin drag-selection
+        // Always prepare for drag (ctrl or not)
         this.isDragging = true;
         this.dragStartCol = colIndex;
-        this.selectedCols = [colIndex];
-        this.selectedCol = colIndex;
+        this.initialSelectedCols = (e.ctrlKey || e.metaKey) ? [...this.selectedCols] : [colIndex];
 
-        if (this.cellSelector) {
-            this.cellSelector.clearRangeSelection();
-            this.cellSelector.selectedRow = -1;
-            this.cellSelector.selectedCol = -1;
-            this.cellSelector.isEditing = false;
-            this.cellSelector.inputElement.style.display = 'none';
-        }
-        this.redrawGrid();
-
-       
+        window.addEventListener('pointermove', this.onPointerMove);
+        window.addEventListener('pointerup', this.onPointerUp);
     };
 
     onPointerMove = (e: PointerEvent) => {
         if (!this.isDragging || this.dragStartCol === null) return;
-        const colIndex = this.getColFromMouseEvent(e);
+        this.dragStarted = true;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const rect = container.getBoundingClientRect();
+        const pointerX = e.clientX;
+
+        this.checkAutoScroll(e);
+
+        let colIndex: number = -1;
+
+        if (pointerX < rect.left) {
+            const scrollLeft = container.scrollLeft;
+            let totalX = 0;
+            for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
+                totalX += this.gridMatrix.columnWidths[col];
+                if (totalX > scrollLeft) {
+                    colIndex = col;
+                    break;
+                }
+            }
+            if (colIndex === -1) colIndex = 1;
+        } else if (pointerX > rect.right) {
+            const scrollLeft = container.scrollLeft;
+            const viewportWidth = container.clientWidth;
+            let totalX = 0;
+            for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
+                totalX += this.gridMatrix.columnWidths[col];
+                if (totalX > scrollLeft + viewportWidth) {
+                    colIndex = col;
+                    break;
+                }
+            }
+            if (colIndex === -1) colIndex = this.gridMatrix.noOfCols - 1;
+        } else {
+            colIndex = this.getColFromMouseEvent(e);
+        }
+
         if (colIndex < 0 || colIndex === this.selectedCol) return;
 
-        // Drag selection: select contiguous range
         const [start, end] = [this.dragStartCol, colIndex].sort((a, b) => a - b);
-        this.selectedCols = [];
-        for (let col = start; col <= end; col++) {
-            this.selectedCols.push(col);
+        let dragCols: number[] = [];
+        for (let col = start; col <= end; col++) dragCols.push(col);
+
+        if (e.ctrlKey || e.metaKey) {
+            const allCols = Array.from(new Set([...this.initialSelectedCols, ...dragCols]));
+            this.selectedCols = allCols.sort((a, b) => a - b);
+        } else {
+            this.selectedCols = dragCols;
         }
         this.selectedCol = colIndex;
         this.redrawGrid();
     };
 
-    onPointerUp = (_e: PointerEvent) => {
+    onPointerUp = (e: PointerEvent) => {
         if (this.isDragging) {
             this.isDragging = false;
-        
+            this.dragStartCol = null;
+            this.initialSelectedCols = [];
+            this.clearAutoScroll();
+            window.removeEventListener('pointermove', this.onPointerMove);
+            window.removeEventListener('pointerup', this.onPointerUp);
+
+            // If simple click (no drag), select only that column (unless ctrl/cmd)
+            if (!this.dragStarted && this.pointerDownCol !== null && !(e.ctrlKey || e.metaKey)) {
+                this.selectedCols = [this.pointerDownCol];
+                this.selectedCol = this.pointerDownCol;
+                if (this.cellSelector) {
+                    this.cellSelector.clearRangeSelection();
+                    this.cellSelector.selectedRow = -1;
+                    this.cellSelector.selectedCol = -1;
+                    this.cellSelector.isEditing = false;
+                    this.cellSelector.inputElement.style.display = 'none';
+                }
+                this.redrawGrid();
+            }
+            this.pointerDownCol = null;
+            this.dragStarted = false;
         }
     };
+
+
+    // --- AUTOSCROLL LOGIC with acceleration ---
+    private checkAutoScroll(e: PointerEvent) {
+        if (!this.canvas) return;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const rect = container.getBoundingClientRect();
+        const pointerX = e.clientX;
+
+        const leftEdge = rect.left + this.AUTOSCROLL_EDGE_THRESHOLD;
+        const rightEdge = rect.right - this.AUTOSCROLL_EDGE_THRESHOLD;
+
+        let scrollDir = 0;
+        let accelSpeed = this.AUTOSCROLL_BASE_SPEED;
+
+        if (pointerX < leftEdge) {
+            scrollDir = -1;
+            accelSpeed = this.autoscrollSpeed(pointerX - rect.left);
+        } else if (pointerX > rightEdge) {
+            scrollDir = 1;
+            accelSpeed = this.autoscrollSpeed(rect.right - pointerX);
+        }
+
+        if (scrollDir !== 0) {
+            if (this.autoscrollInterval === null) {
+                this.autoscrollInterval = window.setInterval(() => {
+                    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+                    // update speed on every tick for smooth acceleration
+                    let speed = accelSpeed;
+                    if (scrollDir === -1) {
+                        speed = this.autoscrollSpeed(parseInt(pointerX - rect.left + ""));
+                    } else {
+                        speed = this.autoscrollSpeed(parseInt(rect.right - pointerX + ""));
+                    }
+
+                    if (
+                        (scrollDir === -1 && container.scrollLeft > 0) ||
+                        (scrollDir === 1 && container.scrollLeft < maxScrollLeft)
+                    ) {
+                        container.scrollLeft = Math.max(0, Math.min(maxScrollLeft, container.scrollLeft + scrollDir * speed));
+                        // Simulate a move event at the current mouse position to update selection/clamp
+                        const fakeEvent = new PointerEvent('pointermove', {
+                            clientX: pointerX,
+                            clientY: e.clientY,
+                            bubbles: true
+                        });
+                        this.onPointerMove(fakeEvent);
+                    }
+                }, this.AUTOSCROLL_INTERVAL_MS);
+            }
+        } else {
+            this.clearAutoScroll();
+        }
+    }
+
+    // Acceleration: further from edge = faster scroll, up to max speed
+    private autoscrollSpeed(distanceFromEdge: number): number {
+        let d = Math.max(0, this.AUTOSCROLL_EDGE_THRESHOLD - distanceFromEdge);
+        let speed = this.AUTOSCROLL_BASE_SPEED + d * 5;
+        return Math.min(this.AUTOSCROLL_MAX_SPEED, Math.max(this.AUTOSCROLL_BASE_SPEED, speed));
+    }
+
+    private clearAutoScroll() {
+        if (this.autoscrollInterval !== null) {
+            clearInterval(this.autoscrollInterval);
+            this.autoscrollInterval = null;
+        }
+    }
+    // --- END AUTOSCROLL LOGIC ---
 
     isColumnHeader(e: MouseEvent | PointerEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const x = e.clientX - rect.left + container.scrollLeft;
         const y = e.clientY - rect.top;
         let totalX = 0;
         let colIndex = -1;
@@ -122,7 +253,8 @@ export class ColumnSelector {
     getColFromMouseEvent(e: MouseEvent | PointerEvent): number {
         if (!this.canvas) return -1;
         const rect = this.canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const x = e.clientX - rect.left + container.scrollLeft;
         let totalX = 0;
         for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
             totalX += this.gridMatrix.columnWidths[col];
@@ -182,6 +314,61 @@ export class ColumnSelector {
         this.redrawGrid();
     }
 
+    drawSelectionForColumnHeaderInput(row: number, col: number, scrollLeft: number, scrollTop: number) {
+        const { x, y, width, height } = GridCell.getCellRect(row, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+        const drawX = x - scrollLeft;
+        const drawY = y - scrollTop;
+
+        const padding = 3; // Adjust for more/less padding
+
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(255,255,255,0.125)';
+        // Optional: shrink fill rect too, or keep full area
+        this.ctx.fillRect(drawX, drawY, width, height);
+
+        // Draw inside border with padding, 1px sharp
+        this.ctx.strokeStyle = this.selectionBorderColor;
+        this.ctx.lineWidth = 1;
+        // +0.5 for pixel-perfect, +padding for inset
+        this.ctx.strokeRect(
+            drawX + padding + 0.5,
+            drawY + padding + 0.5,
+            width - 2 * padding - 1,
+            height - 2 * padding - 1
+        );
+
+        this.ctx.restore();
+    }
+
+    handleKeydown(e: KeyboardEvent) {
+        if (!this.cellSelector || this.cellSelector.isEditing) return;
+        if (this.cellSelector.selectedRow > 0 && this.cellSelector.selectedCol > 0) return;
+        if (!this.selectedCols.length) return;
+
+        // Only respond to typing (not ctrl/alt/meta or function keys)
+        if (e.key.length !== 1 || e.ctrlKey || e.altKey || e.metaKey || e.altKey) return;
+
+        let editCol = -1;
+
+        console.log(this.dragStartCol)
+        if (this.dragStartCol !== null) {
+            // Drag selection: edit the cell in the column where drag started
+            editCol = this.dragStartCol
+        } else if (this.selectedCols.length > 1) {
+            // Ctrl+click selection: edit the cell in the last selected column
+            editCol = this.selectedCols[this.selectedCols.length - 1];
+        } else {
+            // Single column: edit that column
+            editCol = this.selectedCol;
+        }
+
+        if (editCol > 0) {
+            this.cellSelector.selectCell(1, editCol);
+            this.cellSelector.startEditing(e.key);
+            e.preventDefault();
+        }
+    }
+
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
         if (!this.selectedCols || this.selectedCols.length === 0) return;
 
@@ -193,10 +380,8 @@ export class ColumnSelector {
         const viewportHeight = container.clientHeight;
         const viewport = this.gridMatrix.getViewportBounds(currentScrollLeft, currentScrollTop, viewportWidth, viewportHeight);
 
-        // Sort columns for easier logic
         const sortedCols = [...this.selectedCols].sort((a, b) => a - b);
 
-        // Check if selection is contiguous
         let isContiguous = true;
         for (let i = 1; i < sortedCols.length; i++) {
             if (sortedCols[i] !== sortedCols[i - 1] + 1) {
@@ -215,9 +400,10 @@ export class ColumnSelector {
             ctx.fillStyle = this.columnHeaderBg;
             ctx.fillRect(headerRect.x - currentScrollLeft, 0, headerRect.width, headerRect.height);
 
-            ctx.font = "14px Arial";
+            ctx.font = "bold 14px Arial";
             ctx.fillStyle = this.columnHeaderText;
             ctx.textAlign = "center";
+
             ctx.textBaseline = "middle";
             ctx.fillText(
                 headerCell.data || "",
@@ -225,17 +411,14 @@ export class ColumnSelector {
                 headerRect.height / 2
             );
 
-            // Draw border only for contiguous drag selection
             if (isContiguous) {
                 ctx.strokeStyle = this.selectionBorderColor;
                 ctx.lineWidth = 2;
                 ctx.beginPath();
-                // Only left border for first column
                 if (idx === 0) {
                     ctx.moveTo(headerRect.x - currentScrollLeft, 0);
                     ctx.lineTo(headerRect.x - currentScrollLeft, headerRect.height);
                 }
-                // Only right border for last column
                 if (idx === sortedCols.length - 1) {
                     ctx.moveTo(headerRect.x - currentScrollLeft + headerRect.width, 0);
                     ctx.lineTo(headerRect.x - currentScrollLeft + headerRect.width, headerRect.height);
@@ -245,15 +428,21 @@ export class ColumnSelector {
 
             ctx.restore();
 
-            // 2. Data cells (scroll in both directions)
             for (let row = Math.max(1, viewport.startRow); row < viewport.endRow; row++) {
                 const rect = GridCell.getCellRect(row, selectedCol, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
 
                 ctx.save();
                 ctx.fillStyle = this.selectionColor + "20";
-                ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
 
-                // Only draw left/right borders for contiguous drag
+                if ((selectedCol === this.selectedCols[this.selectedCols.length - 1]) && row === 1 && this.selectedCols.length > 1 && !isContiguous) {
+                    const container = document.getElementById('excel-container') as HTMLDivElement;
+
+                    this.drawSelectionForColumnHeaderInput(row, selectedCol, container.scrollLeft, container.scrollTop);
+                } else if (!(this.selectedCols.length === 1 && row === 1) && !(row === 1 && isContiguous && selectedCol === this.selectedCols[0])) {
+                    ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
+
+                }
+
                 if (isContiguous) {
                     const x = rect.x - currentScrollLeft;
                     const y = rect.y - currentScrollTop;
@@ -264,26 +453,23 @@ export class ColumnSelector {
                     ctx.lineWidth = 1;
                     ctx.beginPath();
 
-                    // Left
                     if (idx === 0) {
                         ctx.moveTo(x, y);
                         ctx.lineTo(x, y + h);
                     }
-                    // Right
                     if (idx === sortedCols.length - 1) {
                         ctx.moveTo(x + w, y);
                         ctx.lineTo(x + w, y + h);
                     }
                     ctx.stroke();
                 }
-
                 ctx.restore();
             }
 
-            // 3. Row headers (sticky at left, scroll vertically)
             for (let row = Math.max(1, viewport.startRow); row < viewport.endRow; row++) {
                 const rowHeaderRect = GridCell.getCellRect(row, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
                 const rowHeaderCell = this.gridMatrix.getCell(row, 0);
+
 
                 ctx.save();
                 ctx.fillStyle = "#caead8";
@@ -299,7 +485,6 @@ export class ColumnSelector {
                     rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 4
                 );
 
-                // Draw bottom border
                 ctx.beginPath();
                 ctx.moveTo(0, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 1);
                 ctx.lineTo(rowHeaderRect.width, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 1);
@@ -323,13 +508,10 @@ export class ColumnSelector {
 
         this.ctx.clearRect(0, 0, this.ctx.canvas.width, this.ctx.canvas.height);
 
-        // Draw grid first
         this.gridMatrix.drawGrid(this.ctx, viewport, scrollLeft, scrollTop);
 
-        // Draw column selection with current scroll values
         this.drawSelection(this.ctx, scrollLeft, scrollTop);
 
-        // Also draw other selections if they exist
         if (this.cellSelector) {
             this.cellSelector.drawSelection(this.ctx, scrollLeft, scrollTop);
         }

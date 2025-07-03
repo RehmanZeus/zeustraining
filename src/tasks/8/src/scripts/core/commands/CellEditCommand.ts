@@ -27,6 +27,7 @@ export class CellEditCommand implements Command{
     execute(): void {
         
         this.cell.data = this.newCellData;
+        console.log(this.cell.data , this.newCellData)
         this.cellSelector.redrawGrid();
     }
 
