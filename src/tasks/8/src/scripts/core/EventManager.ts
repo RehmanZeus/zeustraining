@@ -114,11 +114,7 @@ export class EventManager {
             return;
         }
         // Row header
-        if (typeof this.rowSelector.isRowHeader === "function" && this.rowSelector.isRowHeader(e)) {
-            this.columnSelector.clearSelection();
-            this.cellSelector.clearEditing();
-            return;
-        }
+       
         // Data cell
         if (this.cellSelector.isCell(e)) {
             this.columnSelector.clearSelection();

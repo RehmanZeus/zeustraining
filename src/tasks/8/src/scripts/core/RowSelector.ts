@@ -2,27 +2,53 @@ import { CellSelector } from "./CellSelector.js";
 import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
 
+
+/**
+ * RowSelector class manages row selection in a grid.
+ * It allows users to select rows by clicking on row headers, supports drag selection,
+ */
 export class RowSelector {
+
+    /** Canvas context for rendering */
     ctx: CanvasRenderingContext2D;
+    /** Reference to the grid matrix for cell data */
     gridMatrix: GridMatrix;
+    /** Currently selected row index */
     selectedRow = -1;
+    /** Array of selected row indices */
     selectedRows: number[] = [];
+    /** Cell selector instance for managing cell selection and editing */
     cellSelector: CellSelector;
+    /** Colors for selection and row header */
     selectionColor = "#0f9d58";
+    /** Border color for selection */
     selectionBorderColor = "#137e43";
+    /** Background color for row headers */
     rowHeaderBg = "#107c41";
+    /** Text color for row headers */
     rowHeaderText = "#fff";
+    /** HTML canvas element for rendering */
     canvas: HTMLCanvasElement | null = null;
 
-    // Drag state
+    /** Drag state */
     private dragStartRow: number | null = null;
+    /** Whether the user is currently dragging */
     private isDragging: boolean = false;
 
-    // Combination selection state
+    /** Combination selection state */
     private pointerDownRow: number | null = null;
+    /** Whether a drag operation has started */
     private dragStarted: boolean = false;
+    /** Initial selected rows before drag operation */
     private initialSelectedRows: number[] = [];
 
+
+    /**
+     * Creates an instance of RowSelector.
+     * @param ctx CanvasRenderingContext2D for drawing
+     * @param gridMatrix GridMatrix instance for managing grid data
+     * @param cellSelector CellSelector instance for managing cell selection
+     */
     constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
         this.cellSelector = cellSelector;
@@ -35,6 +61,11 @@ export class RowSelector {
 
 
 
+    /**
+     * Checks if the pointer is over a row header.
+     * @param e PointerEvent to check if the pointer is over a row header
+     * @returns True if the pointer is over a row header, false otherwise
+     */
     isRowHeader(e: MouseEvent | PointerEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
@@ -63,7 +94,7 @@ export class RowSelector {
 
 
     /** Handles selection on the row header area (pointerdown only) */
-    onPointerDown = (e: PointerEvent) => {
+    onPointerDown = (e: MouseEvent | PointerEvent) => {
         if (!this.isRowHeader(e)) return;
         // Only left click
         if (e.button !== 0) return;
@@ -105,6 +136,11 @@ export class RowSelector {
         window.addEventListener("pointerup", this.onPointerUp);
     };
 
+    /**
+     * Handles pointer move events for row selection.
+     * @param e PointerEvent to handle pointer move events for row selection
+     * @returns 
+     */
     onPointerMove = (e: PointerEvent) => {
         if (!this.isDragging || this.dragStartRow === null) return;
         this.dragStarted = true;
@@ -153,6 +189,11 @@ export class RowSelector {
         }
     };
 
+    /**
+     * Gets the row index from a mouse event.
+     * @param e MouseEvent or PointerEvent to get the row index from
+     * @returns The row index or -1 if not found
+     */
     getRowFromMouseEvent(e: MouseEvent | PointerEvent): number {
         if (!this.canvas) return -1;
         const rect = this.canvas.getBoundingClientRect();
@@ -211,6 +252,41 @@ export class RowSelector {
             this.gridMatrix.getCell(this.selectedRow, col).data = "";
         }
         this.redrawGrid();
+    }
+
+    
+    
+    /**
+     * Draws the selection rectangle for the column header input.
+     * @param row The row index of the header
+     * @param col The column index of the header
+     * @param scrollLeft The current horizontal scroll position
+     * @param scrollTop The current vertical scroll position
+     */
+    drawSelectionForRowHeaderInput(row: number, col: number, scrollLeft: number, scrollTop: number) {
+        const { x, y, width, height } = GridCell.getCellRect(row, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+        const drawX = x - scrollLeft;
+        const drawY = y - scrollTop;
+
+        const padding = 3; // Adjust for more/less padding
+
+        this.ctx.save();
+        this.ctx.fillStyle = 'rgba(255,255,255,0.125)';
+        // Optional: shrink fill rect too, or keep full area
+        this.ctx.fillRect(drawX, drawY, width, height);
+
+        // Draw inside border with padding, 1px sharp
+        this.ctx.strokeStyle = this.selectionBorderColor;
+        this.ctx.lineWidth = 1;
+        // +0.5 for pixel-perfect, +padding for inset
+        this.ctx.strokeRect(
+            drawX + padding + 0.5,
+            drawY + padding + 0.5,
+            width - 2 * padding - 1,
+            height - 2 * padding - 1
+        );
+
+        this.ctx.restore();
     }
 
     /**
@@ -295,6 +371,16 @@ export class RowSelector {
                 ctx.save();
                 ctx.fillStyle = this.selectionColor + "20";
                 ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
+
+                
+                if ((selectedRow === this.selectedRows[this.selectedRows.length - 1]) && col === 1 && this.selectedRows.length > 1 && !isContiguous) {
+                    const container = document.getElementById('excel-container') as HTMLDivElement;
+
+                    this.drawSelectionForRowHeaderInput(selectedRow, col, container.scrollLeft, container.scrollTop);
+                } else if (!(this.selectedRows.length === 1 && col === 1) && !(col === 1 && isContiguous && selectedRow === this.selectedRows[0])) {
+                    ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
+
+                }
 
                 // Only draw top and bottom borders for contiguous drag
                 if (isContiguous) {
@@ -407,5 +493,40 @@ export class RowSelector {
             x: e.clientX - rect.left,
             y: e.clientY - rect.top + container.scrollTop
         };
+    }
+
+
+    /**
+   * Handles keydown events for editing cells.
+   * @param e KeyboardEvent to handle keydown events for editing cells
+   * @returns 
+   */
+    handleKeydown(e: KeyboardEvent) {
+        if (!this.cellSelector || this.cellSelector.isEditing) return;
+        if (this.cellSelector.selectedRow > 0 && this.cellSelector.selectedCol > 0) return;
+        if (!this.selectedRows.length) return;
+
+        // Only respond to typing (not ctrl/alt/meta or function keys)
+        if (e.key.length !== 1 || e.ctrlKey || e.altKey || e.metaKey || e.altKey) return;
+
+        let editrow = -1;
+
+        console.log(this.dragStartRow)
+        if (this.dragStartRow !== null) {
+            // Drag selection: edit the cell in the column where drag started
+            editrow = this.dragStartRow
+        } else if (this.selectedRows.length > 1) {
+            // Ctrl+click selection: edit the cell in the last selected column
+            editrow = this.selectedRows[this.selectedRows.length - 1];
+        } else {
+            // Single column: edit that column
+            editrow = this.selectedRow;
+        }
+
+        if (editrow > 0) {
+            this.cellSelector.selectCell(1, editrow);
+            this.cellSelector.startEditing(e.key);
+            e.preventDefault();
+        }
     }
 }
