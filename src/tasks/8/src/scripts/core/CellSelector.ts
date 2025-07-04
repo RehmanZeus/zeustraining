@@ -1,8 +1,9 @@
-import { DPR, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { ColumnSelector } from "./ColumnSelector.js";
 import { CellEditCommand } from "./commands/CellEditCommand.js";
 import { CommandManager } from "./commands/CommandManager.js";
 import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
+import { RowSelector } from "./RowSelector.js";
 
 /**
  * CellSelector handles cell selection, highlighting, and input functionality
@@ -63,6 +64,19 @@ export class CellSelector {
 
     commandManager?: CommandManager;
 
+    colSelector?: ColumnSelector;
+
+    rowSelector?: RowSelector;
+
+    // --- AUTOSCROLL state ---
+    private autoscrollInterval: number | null = null;
+    private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
+    private AUTOSCROLL_BASE_SPEED = 40;     // px per interval at edge
+    private AUTOSCROLL_MAX_SPEED = 180;     // px per interval at far edge
+    private AUTOSCROLL_INTERVAL_MS = 16;    // ms
+
+    private lastPointerEvent: PointerEvent | null = null;
+
 
     /** The function to redraw the grid, set by the parent component */
     redrawGrid: () => void = () => { };
@@ -91,6 +105,8 @@ export class CellSelector {
     isCell(e: MouseEvent | PointerEvent): boolean {
         const { x, y } = this.getMousePosition(e);
         const { row, col } = this.getCellFromPosition(x, y);
+        if(this.colSelector && this.colSelector.isColumnHeader(e)) return false;
+        if(this.rowSelector && this.rowSelector.isRowHeader(e)) return false;
         return row > 0 && col > 0 && row < this.gridMatrix.noOfRows && col < this.gridMatrix.noOfCols;
     }
 
@@ -110,6 +126,9 @@ export class CellSelector {
         this.pointerDownPosition = { x: e.clientX, y: e.clientY };
         this.dragStarted = false;
 
+        // --- Autoscroll support ---
+        this.lastPointerEvent = e;
+
         const { x, y } = this.getMousePosition(e);
         const { row, col } = this.getCellFromPosition(x, y);
         if (row > 0 && col > 0) {
@@ -121,7 +140,18 @@ export class CellSelector {
             // don't clear selection yet
             this.anchorRow = row;
             this.anchorCol = col;
+
+            window.addEventListener('pointermove', this.onPointerMove);
+            window.addEventListener('pointerup', this.onPointerUp);
         }
+    }
+
+    setColumnSelector(c: ColumnSelector){
+        this.colSelector = c;
+    }
+
+    setRowSelector(r: RowSelector){
+        this.rowSelector = r;
     }
 
     /**
@@ -129,7 +159,7 @@ export class CellSelector {
      * @param e The mouse or pointer event to get the position from.
      * @returns void
      */
-    onPointerMove(e: PointerEvent) {
+    onPointerMove = (e: PointerEvent) => {
         if (!this.isDragging) return;
         if (!this.dragStarted) {
             const dx = Math.abs(e.clientX - this.pointerDownPosition.x);
@@ -140,6 +170,11 @@ export class CellSelector {
                 this.selectedCol = -1;
             }
         }
+
+        // --- Autoscroll support ---
+        this.lastPointerEvent = e;
+        this.checkAutoScroll(e);
+
         const { x, y } = this.getMousePosition(e);
         const { row, col } = this.getCellFromPosition(x, y);
         if (row > 0 && col > 0) {
@@ -149,22 +184,124 @@ export class CellSelector {
         }
     }
 
-
     /**
      * Handles the pointer up event to finalize cell selection.
      * @param e The mouse or pointer event to get the position from.
      * @returns void
      */
-    onPointerUp(e: PointerEvent) {
+    onPointerUp = (e: PointerEvent) => {
         if (this.isDragging) {
             this.isDragging = false;
             if (this.dragStarted) {
                 this.suppressNextClick = true;
             }
-            this.dragStarted = false; // <-- Add this!
+            this.dragStarted = false;
+            this.clearAutoScroll();
+            window.removeEventListener('pointermove', this.onPointerMove);
+            window.removeEventListener('pointerup', this.onPointerUp);
             this.redrawGrid();
         }
     }
+
+    // --- AUTOSCROLL LOGIC with acceleration (same as ColumnSelector) ---
+    private checkAutoScroll(e: PointerEvent) {
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const rect = container.getBoundingClientRect();
+        const pointerX = e.clientX;
+        const pointerY = e.clientY;
+
+        const leftEdge = rect.left + this.AUTOSCROLL_EDGE_THRESHOLD;
+        const rightEdge = rect.right - this.AUTOSCROLL_EDGE_THRESHOLD;
+        const topEdge = rect.top + this.AUTOSCROLL_EDGE_THRESHOLD;
+        const bottomEdge = rect.bottom - this.AUTOSCROLL_EDGE_THRESHOLD;
+
+        let scrollDirX = 0, scrollDirY = 0;
+        let accelSpeedX = this.AUTOSCROLL_BASE_SPEED, accelSpeedY = this.AUTOSCROLL_BASE_SPEED;
+
+        if (pointerX < leftEdge) {
+            scrollDirX = -1;
+            accelSpeedX = this.autoscrollSpeed(pointerX - rect.left);
+        } else if (pointerX > rightEdge) {
+            scrollDirX = 1;
+            accelSpeedX = this.autoscrollSpeed(rect.right - pointerX);
+        }
+
+        if (pointerY < topEdge) {
+            scrollDirY = -1;
+            accelSpeedY = this.autoscrollSpeed(pointerY - rect.top);
+        } else if (pointerY > bottomEdge) {
+            scrollDirY = 1;
+            accelSpeedY = this.autoscrollSpeed(rect.bottom - pointerY);
+        }
+
+        if (scrollDirX !== 0 || scrollDirY !== 0) {
+            if (this.autoscrollInterval === null) {
+                this.autoscrollInterval = window.setInterval(() => {
+                    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+                    const maxScrollTop = container.scrollHeight - container.clientHeight;
+
+                    // update speed on every tick for smooth acceleration
+                    let speedX = accelSpeedX;
+                    let speedY = accelSpeedY;
+                    let pointer = this.lastPointerEvent;
+
+                    // use last known pointer position if available
+                    let px = pointer ? pointer.clientX : rect.left;
+                    let py = pointer ? pointer.clientY : rect.top;
+
+                    if (scrollDirX === -1) {
+                        speedX = this.autoscrollSpeed(px - rect.left);
+                    } else if (scrollDirX === 1) {
+                        speedX = this.autoscrollSpeed(rect.right - px);
+                    }
+                    if (scrollDirY === -1) {
+                        speedY = this.autoscrollSpeed(py - rect.top);
+                    } else if (scrollDirY === 1) {
+                        speedY = this.autoscrollSpeed(rect.bottom - py);
+                    }
+
+                    if (
+                        (scrollDirX === -1 && container.scrollLeft > 0) ||
+                        (scrollDirX === 1 && container.scrollLeft < maxScrollLeft)
+                    ) {
+                        container.scrollLeft = Math.max(0, Math.min(maxScrollLeft, container.scrollLeft + scrollDirX * speedX));
+                    }
+                    if (
+                        (scrollDirY === -1 && container.scrollTop > 0) ||
+                        (scrollDirY === 1 && container.scrollTop < maxScrollTop)
+                    ) {
+                        container.scrollTop = Math.max(0, Math.min(maxScrollTop, container.scrollTop + scrollDirY * speedY));
+                    }
+
+                    // Simulate a move event at the current mouse position to update selection
+                    if (pointer) {
+                        const fakeEvent = new PointerEvent('pointermove', {
+                            clientX: px,
+                            clientY: py,
+                            bubbles: true
+                        });
+                        this.onPointerMove(fakeEvent);
+                    }
+                }, this.AUTOSCROLL_INTERVAL_MS);
+            }
+        } else {
+            this.clearAutoScroll();
+        }
+    }
+
+    private autoscrollSpeed(distanceFromEdge: number): number {
+        let d = Math.max(0, this.AUTOSCROLL_EDGE_THRESHOLD - distanceFromEdge);
+        let speed = this.AUTOSCROLL_BASE_SPEED + d * 5;
+        return Math.min(this.AUTOSCROLL_MAX_SPEED, Math.max(this.AUTOSCROLL_BASE_SPEED, speed));
+    }
+
+    private clearAutoScroll() {
+        if (this.autoscrollInterval !== null) {
+            clearInterval(this.autoscrollInterval);
+            this.autoscrollInterval = null;
+        }
+    }
+
 
     /**
      * Handles the click event to select a cell.
@@ -301,6 +438,7 @@ export class CellSelector {
                 break;
             default:
                 if (e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+                    e.preventDefault();
                     this.startEditing(e.key);
                 }
                 break;
