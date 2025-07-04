@@ -551,7 +551,7 @@ export class CellSelector {
             container.scrollTo({
                 left: newScrollLeft,
                 top: newScrollTop,
-                behavior: smooth ? 'smooth' : 'auto'
+                behavior: 'smooth'
             });
             // Wait for scroll to be applied, then redraw!
             requestAnimationFrame(() => {
