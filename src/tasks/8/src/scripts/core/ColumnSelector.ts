@@ -2,18 +2,35 @@ import { GridMatrix } from "./GridMatrix.js";
 import { CellSelector } from "./CellSelector.js";
 import { GridCell } from "./GridCell.js";
 
+
+/**
+ * ColumnSelector class handles column selection in a grid-like structure.
+ * It allows for single and multi-column selection, drag-to-select functionality,
+ */
 export class ColumnSelector {
+    /** Canvas context for rendering */
     ctx: CanvasRenderingContext2D;
+    /** The grid matrix containing cell data and dimensions */
     gridMatrix: GridMatrix;
+    /** Currently selected column index, -1 means no selection */
     selectedCol = -1;
+    /** CellSelector instance for managing cell selection */
     cellSelector?: CellSelector;
+    /** Array of selected column indices */
     selectedCols: number[] = [];
+    /** Colors for selection and column header */
     selectionColor = "#0f9d58";
+    /** Border color for selected columns */
     selectionBorderColor = "#137e43";
+    /** Background color for column headers */
     columnHeaderBg = "#107c41";
+    /** Text color for column headers */
     columnHeaderText = "#fff";
+    /** HTML canvas element for rendering */
     canvas: HTMLCanvasElement | null = null;
 
+    /** Initial selected columns when starting a drag operation */
+    // This is used to remember the initial selection state when ctrl/dragging
     private initialSelectedCols: number[] = [];
 
 
@@ -30,18 +47,35 @@ export class ColumnSelector {
     private AUTOSCROLL_MAX_SPEED = 180;     // px per interval at far edge
     private AUTOSCROLL_INTERVAL_MS = 16;    // ms
 
+    /**
+     * ColumnSelector constructor
+     * @param ctx CanvasRenderingContext2D for rendering
+     * @param gridMatrix The grid matrix containing cell data and dimensions
+     * @param cellSelector CellSelector instance for managing cell selection
+     */
     constructor(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix, cellSelector: CellSelector) {
         this.ctx = ctx;
         this.gridMatrix = gridMatrix;
         this.cellSelector = cellSelector;
     }
 
+    /**
+     * Sets the HTML canvas element for rendering.
+     * @param canvas The HTMLCanvasElement to use for rendering
+     */
     setCanvas(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
     }
 
 
+    /**
+     * Initializes event listeners for column selection.
+     * Should be called after setting the canvas.
+     */
     onPointerDown = (e: PointerEvent) => {
+
+        console.log('PointerDown', e, this.isColumnHeader(e));
+        this.dragStartCol = null;
         if (!this.isColumnHeader(e)) return;
         if (e.button !== 0) return;
 
@@ -81,6 +115,11 @@ export class ColumnSelector {
         window.addEventListener('pointerup', this.onPointerUp);
     };
 
+    /**
+     * Handles pointer move events for dragging column selection.
+     * Updates the selected columns based on drag position.
+     * @param e PointerEvent from the mouse movement
+     */
     onPointerMove = (e: PointerEvent) => {
         if (!this.isDragging || this.dragStartCol === null) return;
         this.dragStarted = true;
@@ -135,10 +174,14 @@ export class ColumnSelector {
         this.redrawGrid();
     };
 
+    /**
+     * Handles pointer up events to finalize column selection.
+     * Cleans up drag state and event listeners.
+     * @param e PointerEvent from the mouse release
+     */
     onPointerUp = (e: PointerEvent) => {
         if (this.isDragging) {
             this.isDragging = false;
-            this.dragStartCol = null;
             this.initialSelectedCols = [];
             this.clearAutoScroll();
             window.removeEventListener('pointermove', this.onPointerMove);
@@ -163,7 +206,11 @@ export class ColumnSelector {
     };
 
 
-    // --- AUTOSCROLL LOGIC with acceleration ---
+    // --- AUTOSCROLL LOGIC ---
+    /**
+     * Checks if the pointer is near the edge of the container to trigger autoscroll.
+     * @param e PointerEvent from the mouse movement
+     * */
     private checkAutoScroll(e: PointerEvent) {
         if (!this.canvas) return;
         const container = document.getElementById('excel-container') as HTMLDivElement;
@@ -231,16 +278,25 @@ export class ColumnSelector {
     }
     // --- END AUTOSCROLL LOGIC ---
 
+    /**
+     * Checks if the mouse event is over a column header.
+     * @param e MouseEvent or PointerEvent to check
+     * @returns true if the event is over a column header, false otherwise
+     */
     isColumnHeader(e: MouseEvent | PointerEvent): boolean {
         if (!this.canvas) return false;
         const rect = this.canvas.getBoundingClientRect();
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const x = e.clientX - rect.left + container.scrollLeft;
         const y = e.clientY - rect.top;
+        // console.log(`Mouse X Pos: ${e.clientX}\nMouse Y Pos: ${e.clientY}\nContainer Scrolled Left distance: ${container.scrollLeft}`);
+        // console.log(`Cell X: ${x}\nCell Y: ${y}`);
+        // console.log(`Rectangle Bounds: ${rect.left} ${rect.top}`)
         let totalX = 0;
         let colIndex = -1;
         for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
             totalX += this.gridMatrix.columnWidths[col];
+            // console.log(`Value X: ${x} || Value totalX = ${totalX} is X < totalX = ${x < totalX}`);
             if (x < totalX) {
                 colIndex = col;
                 break;
@@ -250,6 +306,11 @@ export class ColumnSelector {
         return (colIndex !== -1 && y >= 0 && y < row0Height && colIndex < this.gridMatrix.noOfCols);
     }
 
+    /**
+     * Gets the column index from a mouse event.
+     * @param e MouseEvent or PointerEvent to get the column index from
+     * @returns The column index, or -1 if not over a column header
+     */
     getColFromMouseEvent(e: MouseEvent | PointerEvent): number {
         if (!this.canvas) return -1;
         const rect = this.canvas.getBoundingClientRect();
@@ -265,8 +326,11 @@ export class ColumnSelector {
         return -1;
     }
 
-    // The rest of your methods (selectCol, clearSelection, getSelectedColData, etc.) remain unchanged...
 
+    /**
+     * Selects a column by index.
+     * @param col The column index to select (1-based)
+     */
     selectCol(col: number) {
         if (col < 1 || col >= this.gridMatrix.noOfCols) return;
         this.selectedCol = col;
@@ -281,12 +345,20 @@ export class ColumnSelector {
         this.redrawGrid();
     }
 
+    /**
+     * Clears the current column selection.
+     * Resets the selected column index and clears the selected columns array.
+     */
     clearSelection() {
         this.selectedCol = -1;
         this.selectedCols = [];
         this.redrawGrid();
     }
 
+    /**
+     * Gets the data from the selected column.
+     * @returns An array of data from the selected column, or undefined if no column is selected.
+     */
     getSelectedColData(): string[] | undefined {
         if (this.selectedCol < 1) return undefined;
         const col = this.selectedCol;
@@ -298,6 +370,10 @@ export class ColumnSelector {
         return data;
     }
 
+    /**
+     * Sets the data for the selected column.
+     * @param data An array of strings to set as the column data.
+     */
     setSelectedColData(data: string[]) {
         if (this.selectedCol < 1) return;
         for (let row = 1; row < this.gridMatrix.noOfRows && row - 1 < data.length; row++) {
@@ -306,6 +382,10 @@ export class ColumnSelector {
         this.redrawGrid();
     }
 
+    /**
+     * Clears the data in the selected column.
+     * Resets all cells in the selected column to empty strings.
+     */
     clearSelectedCol() {
         if (this.selectedCol < 1) return;
         for (let row = 1; row < this.gridMatrix.noOfRows; row++) {
@@ -314,6 +394,13 @@ export class ColumnSelector {
         this.redrawGrid();
     }
 
+    /**
+     * Draws the selection rectangle for the column header input.
+     * @param row The row index of the header
+     * @param col The column index of the header
+     * @param scrollLeft The current horizontal scroll position
+     * @param scrollTop The current vertical scroll position
+     */
     drawSelectionForColumnHeaderInput(row: number, col: number, scrollLeft: number, scrollTop: number) {
         const { x, y, width, height } = GridCell.getCellRect(row, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
         const drawX = x - scrollLeft;
@@ -340,6 +427,11 @@ export class ColumnSelector {
         this.ctx.restore();
     }
 
+    /**
+     * Handles keydown events for editing cells.
+     * @param e KeyboardEvent to handle keydown events for editing cells
+     * @returns 
+     */
     handleKeydown(e: KeyboardEvent) {
         if (!this.cellSelector || this.cellSelector.isEditing) return;
         if (this.cellSelector.selectedRow > 0 && this.cellSelector.selectedCol > 0) return;
@@ -369,6 +461,13 @@ export class ColumnSelector {
         }
     }
 
+    /**
+     * Draws the selection rectangle for the column header input.
+     * @param ctx CanvasRenderingContext2D to draw the selection
+     * @param scrollLeft The current horizontal scroll position
+     * @param scrollTop The current vertical scroll position
+     * @returns 
+     */
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
         if (!this.selectedCols || this.selectedCols.length === 0) return;
 
@@ -497,6 +596,10 @@ export class ColumnSelector {
         }
     }
 
+    /**
+     * Redraws the grid and selection.
+     * Clears the canvas and redraws the grid based on the current scroll position and viewport.
+     */
     redrawGrid() {
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const scrollLeft = container.scrollLeft;
@@ -517,6 +620,13 @@ export class ColumnSelector {
         }
     }
 
+
+    /**
+     * Gets the mouse position relative to the canvas.
+     * @param e MouseEvent to get the mouse position from
+     * @param canvas The canvas element to get the position relative to
+     * @returns The mouse position relative to the canvas
+     */
     getMousePosition(e: MouseEvent, canvas: HTMLCanvasElement) {
         const rect = canvas.getBoundingClientRect();
         const container = document.getElementById('excel-container') as HTMLDivElement;

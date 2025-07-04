@@ -41,6 +41,8 @@ window.onload = () => {
     const colSelector = new ColumnSelector(ctx, gridMatrix, cellSelector);
     colSelector.setCanvas(canvas);
 
+    cellSelector.setColumnSelector(colSelector);
+    cellSelector.setRowSelector(rowSelector);
    
     const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
     gridMatrix.setCellSelector(cellSelector);

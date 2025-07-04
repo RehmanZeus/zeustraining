@@ -62,23 +62,21 @@ export class EventManager {
         window.addEventListener('dblclick', this.handleDoubleClick.bind(this));
         document.addEventListener('keydown', this.handleKeydown.bind(this));
     }
-
     handlePointerDown(e: PointerEvent) {
-        // Reset any old handler on fresh pointerdown
         this.activePointerHandler = null;
-        // Assign the correct handler and delegate
+        console.log(`Pointer down at ${e.clientX}, ${e.clientY}, isColumnHeader: ${this.columnSelector.isColumnHeader(e)}, isRowHeader: ${this.rowSelector.isRowHeader(e)}, isCell: ${this.cellSelector.isCell(e)}`);
         if (this.gridResizer.isNearColumnEdge(e) || this.gridResizer.isNearRowEdge(e)) {
             this.activePointerHandler = this.gridResizer;
-        } else if (this.cellSelector.isCell(e)) {
-            this.activePointerHandler = this.cellSelector;
         } else if (this.columnSelector.isColumnHeader(e)) {
             this.activePointerHandler = this.columnSelector;
+            
         } else if (this.rowSelector.isRowHeader(e)) {
             this.activePointerHandler = this.rowSelector;
+        } else if (this.cellSelector.isCell(e)) {
+            this.activePointerHandler = this.cellSelector;
         }
         this.activePointerHandler?.onPointerDown?.(e);
     }
-
     handlePointerMove(e: PointerEvent) {
         // Let the active handler manage move if present
         if (this.activePointerHandler?.onPointerMove) {

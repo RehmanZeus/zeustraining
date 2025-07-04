@@ -1,8 +1,9 @@
-import { DPR, MIN_GRIDCELL_WIDTH } from "../constants.js";
+import { ColumnSelector } from "./ColumnSelector.js";
 import { CellEditCommand } from "./commands/CellEditCommand.js";
 import { CommandManager } from "./commands/CommandManager.js";
 import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
+import { RowSelector } from "./RowSelector.js";
 
 /**
  * CellSelector handles cell selection, highlighting, and input functionality
@@ -63,6 +64,10 @@ export class CellSelector {
 
     commandManager?: CommandManager;
 
+    colSelector?: ColumnSelector;
+
+    rowSelector?: RowSelector;
+
     // --- AUTOSCROLL state ---
     private autoscrollInterval: number | null = null;
     private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
@@ -100,6 +105,8 @@ export class CellSelector {
     isCell(e: MouseEvent | PointerEvent): boolean {
         const { x, y } = this.getMousePosition(e);
         const { row, col } = this.getCellFromPosition(x, y);
+        if(this.colSelector && this.colSelector.isColumnHeader(e)) return false;
+        if(this.rowSelector && this.rowSelector.isRowHeader(e)) return false;
         return row > 0 && col > 0 && row < this.gridMatrix.noOfRows && col < this.gridMatrix.noOfCols;
     }
 
@@ -137,6 +144,14 @@ export class CellSelector {
             window.addEventListener('pointermove', this.onPointerMove);
             window.addEventListener('pointerup', this.onPointerUp);
         }
+    }
+
+    setColumnSelector(c: ColumnSelector){
+        this.colSelector = c;
+    }
+
+    setRowSelector(r: RowSelector){
+        this.rowSelector = r;
     }
 
     /**
