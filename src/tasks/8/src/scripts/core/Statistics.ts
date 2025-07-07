@@ -26,6 +26,7 @@ export class Statistics {
         this.bar.style.fontSize = "14px";
         this.bar.style.color = "#333";
         this.bar.style.zIndex = "999";
+        this.bar.innerHTML = `<div class="bottom-header-hero-txt">Workbook Statistics</div>`
         document.body.appendChild(this.bar);
 
         // Hook into grid redraw (after every redraw, update stats bar)
@@ -42,6 +43,13 @@ export class Statistics {
     }
 
     private updateStatistics() {
+        // Always show the header
+        this.bar.innerHTML = `
+        <div class="bottom-header-hero-txt">Workbook Statistics</div>
+        <div class="bottom-header-stats"></div>
+    `;
+        const statsDiv = this.bar.querySelector('.bottom-header-stats') as HTMLDivElement;
+
         const sel = this.cellSelector.getRangeSelectionData();
         if (
             !sel ||
@@ -49,7 +57,8 @@ export class Statistics {
             sel.startCol < 1 || sel.endCol < 1 ||
             (sel.startRow === sel.endRow && sel.startCol === sel.endCol)
         ) {
-            this.bar.textContent = "";
+            // No stats if nothing selected
+            statsDiv.textContent = "";
             return;
         }
 
@@ -64,7 +73,7 @@ export class Statistics {
         }
         const count = values.length;
         if (count === 0) {
-            this.bar.textContent = "";
+            statsDiv.textContent = "";
             return;
         }
         const sum = values.reduce((a, b) => a + b, 0);
@@ -72,12 +81,12 @@ export class Statistics {
         const min = Math.min(...values);
         const max = Math.max(...values);
 
-        this.bar.innerHTML = `
-            <span style="margin-right: 28px;"><b>Sum:</b> ${sum}</span>
-            <span style="margin-right: 28px;"><b>Avg:</b> ${avg}</span>
-            <span style="margin-right: 28px;"><b>Count:</b> ${count}</span>
-            <span style="margin-right: 28px;"><b>Min:</b> ${min}</span>
-            <span style="margin-right: 28px;"><b>Max:</b> ${max}</span>
-        `;
+        statsDiv.innerHTML = `
+        <span style="margin-right: 28px;"><b>Sum:</b> ${sum}</span>
+        <span style="margin-right: 28px;"><b>Avg:</b> ${avg}</span>
+        <span style="margin-right: 28px;"><b>Count:</b> ${count}</span>
+        <span style="margin-right: 28px;"><b>Min:</b> ${min}</span>
+        <span style="margin-right: 28px;"><b>Max:</b> ${max}</span>
+    `;
     }
 }

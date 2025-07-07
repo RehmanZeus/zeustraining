@@ -75,6 +75,7 @@ export class ColumnSelector {
 
         console.log('PointerDown', e, this.isColumnHeader(e));
         this.dragStartCol = null;
+        this.cellSelector?.selectCell(-1,-1);
         if (!this.isColumnHeader(e)) return;
         if (e.button !== 0) return;
 

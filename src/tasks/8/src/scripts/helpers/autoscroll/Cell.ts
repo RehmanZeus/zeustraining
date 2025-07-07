@@ -12,7 +12,7 @@ export class Cell {
     private lastPointerEvent: PointerEvent | null = null;
 
 
-    constructor(c: CellSelector){
+    constructor(c: CellSelector) {
         this.cellSelector = c;
     }
 
@@ -21,6 +21,9 @@ export class Cell {
         const rect = container.getBoundingClientRect();
         const pointerX = e.clientX;
         const pointerY = e.clientY;
+
+        // Always update lastPointerEvent!
+        this.lastPointerEvent = e;
 
         const leftEdge = rect.left + this.AUTOSCROLL_EDGE_THRESHOLD;
         const rightEdge = rect.right - this.AUTOSCROLL_EDGE_THRESHOLD;
@@ -52,15 +55,18 @@ export class Cell {
                     const maxScrollLeft = container.scrollWidth - container.clientWidth;
                     const maxScrollTop = container.scrollHeight - container.clientHeight;
 
-                    // update speed on every tick for smooth acceleration
-                    let speedX = accelSpeedX;
-                    let speedY = accelSpeedY;
-                    let pointer = this.lastPointerEvent;
-
-                    // use last known pointer position if available
+                    // Use latest pointer position!
+                    const pointer = this.lastPointerEvent;
                     let px = pointer ? pointer.clientX : rect.left;
                     let py = pointer ? pointer.clientY : rect.top;
 
+                    // Clamp pointer position to grid area if needed (optional)
+                    px = Math.max(rect.left, Math.min(rect.right, px));
+                    py = Math.max(rect.top, Math.min(rect.bottom, py));
+
+                    // Update speed for smooth acceleration
+                    let speedX = accelSpeedX;
+                    let speedY = accelSpeedY;
                     if (scrollDirX === -1) {
                         speedX = this.autoscrollSpeed(px - rect.left);
                     } else if (scrollDirX === 1) {
@@ -72,22 +78,22 @@ export class Cell {
                         speedY = this.autoscrollSpeed(rect.bottom - py);
                     }
 
-                    // --- INSTANT scroll: use behavior: 'auto' for Excel-like behavior ---
                     container.scrollTo({
                         left: Math.max(0, Math.min(maxScrollLeft, container.scrollLeft + scrollDirX * speedX)),
                         top: Math.max(0, Math.min(maxScrollTop, container.scrollTop + scrollDirY * speedY)),
                         behavior: 'instant'
                     });
 
-                    // Simulate a move event at the current mouse position to update selection
-                    if (pointer) {
-                        const fakeEvent = new PointerEvent('pointermove', {
-                            clientX: px,
-                            clientY: py,
-                            bubbles: true
-                        });
-                        this.cellSelector.onPointerMove(fakeEvent);
-                    }
+                    // Fire a synthetic pointermove to update selection/range
+                    const fakeEvent = new PointerEvent('pointermove', {
+                        clientX: px,
+                        clientY: py,
+                        bubbles: true
+                    });
+                    this.cellSelector.onPointerMove(fakeEvent);
+
+                    // Always redraw grid
+                    this.cellSelector.redrawGrid();
                 }, this.AUTOSCROLL_INTERVAL_MS);
             }
         } else {
