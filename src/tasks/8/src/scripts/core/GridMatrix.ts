@@ -130,6 +130,32 @@ export class GridMatrix {
             if (fn === "SUM") return nums.reduce((a, b) => a + b, 0);
             if (fn === "AVERAGE") return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
         }
+
+        //Find the minimum value in the range
+        if (fn === "MIN") {
+            const cells = this.getCellsForRange(arg);
+            const nums = cells
+                .map(cell => parseFloat(cell.data ?? ""))
+                .filter(n => !isNaN(n));
+            console.log(nums)
+            return nums.length ? Math.min(...nums) : "#N/A";
+        }
+
+        //Find the maximum value in the range
+        if (fn === "MAX") {
+            const cells = this.getCellsForRange(arg);
+            const nums = cells
+                .map(cell => parseFloat(cell.data ?? ""))
+                .filter(n => !isNaN(n));
+            return nums.length ? Math.max(...nums) : "#N/A";
+        }
+
+        //Find the count of all cells in the range
+        if (fn === "COUNT") {
+            const cells = this.getCellsForRange(arg);
+            return cells.length;
+        }
+
         return "#N/A";
     }
 

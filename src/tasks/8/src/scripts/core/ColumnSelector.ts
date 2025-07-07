@@ -43,8 +43,8 @@ export class ColumnSelector {
     // Autoscroll state
     private autoscrollInterval: number | null = null;
     private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
-    private AUTOSCROLL_BASE_SPEED = 40;     // px per interval at edge
-    private AUTOSCROLL_MAX_SPEED = 180;     // px per interval at far edge
+    private AUTOSCROLL_BASE_SPEED = 10;     // px per interval at edge
+    private AUTOSCROLL_MAX_SPEED = 40;     // px per interval at far edge
     private AUTOSCROLL_INTERVAL_MS = 16;    // ms
 
     /**
@@ -211,51 +211,53 @@ export class ColumnSelector {
      * Checks if the pointer is near the edge of the container to trigger autoscroll.
      * @param e PointerEvent from the mouse movement
      * */
+    private lastPointerEvent: PointerEvent | null = null;
+
     private checkAutoScroll(e: PointerEvent) {
         if (!this.canvas) return;
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const rect = container.getBoundingClientRect();
-        const pointerX = e.clientX;
+        this.lastPointerEvent = e;
 
         const leftEdge = rect.left + this.AUTOSCROLL_EDGE_THRESHOLD;
         const rightEdge = rect.right - this.AUTOSCROLL_EDGE_THRESHOLD;
 
         let scrollDir = 0;
-        let accelSpeed = this.AUTOSCROLL_BASE_SPEED;
 
-        if (pointerX < leftEdge) {
+        if (e.clientX < leftEdge) {
             scrollDir = -1;
-            accelSpeed = this.autoscrollSpeed(pointerX - rect.left);
-        } else if (pointerX > rightEdge) {
+        } else if (e.clientX > rightEdge) {
             scrollDir = 1;
-            accelSpeed = this.autoscrollSpeed(rect.right - pointerX);
         }
 
         if (scrollDir !== 0) {
             if (this.autoscrollInterval === null) {
                 this.autoscrollInterval = window.setInterval(() => {
-                    const maxScrollLeft = container.scrollWidth - container.clientWidth;
-                    // update speed on every tick for smooth acceleration
-                    let speed = accelSpeed;
+                    // Always use the latest pointer position!
+                    const pointer = this.lastPointerEvent || e;
+                    const pointerX = pointer.clientX;
+
+                    let accelSpeed = this.AUTOSCROLL_BASE_SPEED;
                     if (scrollDir === -1) {
-                        speed = this.autoscrollSpeed(parseInt(pointerX - rect.left + ""));
-                    } else {
-                        speed = this.autoscrollSpeed(parseInt(rect.right - pointerX + ""));
+                        accelSpeed = this.autoscrollSpeed(pointerX - rect.left);
+                    } else if (scrollDir === 1) {
+                        accelSpeed = this.autoscrollSpeed(rect.right - pointerX);
                     }
 
-                    if (
-                        (scrollDir === -1 && container.scrollLeft > 0) ||
-                        (scrollDir === 1 && container.scrollLeft < maxScrollLeft)
-                    ) {
-                        container.scrollLeft = Math.max(0, Math.min(maxScrollLeft, container.scrollLeft + scrollDir * speed));
-                        // Simulate a move event at the current mouse position to update selection/clamp
-                        const fakeEvent = new PointerEvent('pointermove', {
-                            clientX: pointerX,
-                            clientY: e.clientY,
-                            bubbles: true
-                        });
-                        this.onPointerMove(fakeEvent);
-                    }
+                    const maxScrollLeft = container.scrollWidth - container.clientWidth;
+                    let newScrollLeft = container.scrollLeft + scrollDir * accelSpeed;
+                    newScrollLeft = Math.max(0, Math.min(maxScrollLeft, newScrollLeft));
+
+                    // --- INSTANT scroll ---
+                    container.scrollTo({ left: newScrollLeft, behavior: "instant" });
+
+                    // Simulate a move event at the last pointer position
+                    const fakeEvent = new PointerEvent('pointermove', {
+                        clientX: pointerX,
+                        clientY: pointer.clientY,
+                        bubbles: true
+                    });
+                    this.onPointerMove(fakeEvent);
                 }, this.AUTOSCROLL_INTERVAL_MS);
             }
         } else {
@@ -266,7 +268,7 @@ export class ColumnSelector {
     // Acceleration: further from edge = faster scroll, up to max speed
     private autoscrollSpeed(distanceFromEdge: number): number {
         let d = Math.max(0, this.AUTOSCROLL_EDGE_THRESHOLD - distanceFromEdge);
-        let speed = this.AUTOSCROLL_BASE_SPEED + d * 5;
+        let speed = this.AUTOSCROLL_BASE_SPEED + d;
         return Math.min(this.AUTOSCROLL_MAX_SPEED, Math.max(this.AUTOSCROLL_BASE_SPEED, speed));
     }
 
