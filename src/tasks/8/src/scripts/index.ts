@@ -50,7 +50,7 @@ window.onload = () => {
 
     const colAutoScroll = new Column(colSelector);
     const rowAutoScroll = new Row(rowSelector);
-    const cellAutoScroll = new Cell(cellSelector);
+    const cellAutoScroll = new Cell(cellSelector, gridMatrix);
 
     colSelector.setColAutoScroll(colAutoScroll);
     rowSelector.setRowAutoScroll(rowAutoScroll);

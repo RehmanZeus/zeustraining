@@ -41,7 +41,7 @@ export class ColumnSelector {
     private isDragging: boolean = false;
     private dragStarted = false;
     private pointerDownCol: number | null = null;
-   
+
 
     /**
      * ColumnSelector constructor
@@ -75,7 +75,7 @@ export class ColumnSelector {
 
         console.log('PointerDown', e, this.isColumnHeader(e));
         this.dragStartCol = null;
-        this.cellSelector?.selectCell(-1,-1);
+        this.cellSelector?.selectCell(-1, -1);
         if (!this.isColumnHeader(e)) return;
         if (e.button !== 0) return;
 
@@ -185,7 +185,7 @@ export class ColumnSelector {
         if (this.isDragging) {
             this.isDragging = false;
             this.initialSelectedCols = [];
-            if(this.colAutoScroll){
+            if (this.colAutoScroll) {
                 this.colAutoScroll.clearAutoScroll();
             }
             window.removeEventListener('pointermove', this.onPointerMove);
@@ -434,7 +434,6 @@ export class ColumnSelector {
             ctx.font = "bold 14px Arial";
             ctx.fillStyle = this.columnHeaderText;
             ctx.textAlign = "center";
-
             ctx.textBaseline = "middle";
             ctx.fillText(
                 headerCell.data || "",
@@ -442,6 +441,19 @@ export class ColumnSelector {
                 headerRect.height / 2
             );
 
+            // --- White border at the right of each selected header except the last ---
+            if (idx < sortedCols.length - 1) {
+                ctx.save();
+                ctx.strokeStyle = "#fff";
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.moveTo(headerRect.x - currentScrollLeft + headerRect.width, 0);
+                ctx.lineTo(headerRect.x - currentScrollLeft + headerRect.width, headerRect.height);
+                ctx.stroke();
+                ctx.restore();
+            }
+
+            // Existing contiguous selection border logic...
             if (isContiguous) {
                 ctx.strokeStyle = this.selectionBorderColor;
                 ctx.lineWidth = 2;
@@ -501,7 +513,6 @@ export class ColumnSelector {
                 const rowHeaderRect = GridCell.getCellRect(row, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
                 const rowHeaderCell = this.gridMatrix.getCell(row, 0);
 
-
                 ctx.save();
                 ctx.fillStyle = "#caead8";
                 ctx.fillRect(0, rowHeaderRect.y - currentScrollTop, rowHeaderRect.width, rowHeaderRect.height);
@@ -520,7 +531,15 @@ export class ColumnSelector {
                 ctx.moveTo(0, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 1);
                 ctx.lineTo(rowHeaderRect.width, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 1);
                 ctx.strokeStyle = "#f5f5f5";
-                ctx.lineWidth = 1;
+                ctx.lineWidth = 0.7;
+                ctx.stroke();
+
+                // ADD: Green border at the right of the row header if columns are selected
+                ctx.beginPath();
+                ctx.moveTo(rowHeaderRect.width - 1.5, rowHeaderRect.y - currentScrollTop);
+                ctx.lineTo(rowHeaderRect.width - 1.5, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height);
+                ctx.strokeStyle = this.selectionBorderColor; // Use green
+                ctx.lineWidth = 1.5;
                 ctx.stroke();
 
                 ctx.restore();
