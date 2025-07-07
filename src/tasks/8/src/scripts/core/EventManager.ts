@@ -18,6 +18,7 @@ export class EventManager {
     rowSelector: RowSelector;
     gridResizer: GridResizer;
     gridMatrix: GridMatrix;
+    suppressNextclick: boolean = false;
 
     // Pointer handler object, set on pointerdown, cleared on pointerup
     private activePointerHandler: {
@@ -64,9 +65,9 @@ export class EventManager {
     }
     handlePointerDown(e: PointerEvent) {
         this.activePointerHandler = null;
-        console.log(`Pointer down at ${e.clientX}, ${e.clientY}, isColumnHeader: ${this.columnSelector.isColumnHeader(e)}, isRowHeader: ${this.rowSelector.isRowHeader(e)}, isCell: ${this.cellSelector.isCell(e)}`);
         if (this.gridResizer.isNearColumnEdge(e) || this.gridResizer.isNearRowEdge(e)) {
             this.activePointerHandler = this.gridResizer;
+            this.suppressNextclick = true;
         } else if (this.columnSelector.isColumnHeader(e)) {
             this.activePointerHandler = this.columnSelector;
             
@@ -106,7 +107,10 @@ export class EventManager {
 
     handleClick(e: MouseEvent) {
         // Suppress click if requested (e.g. after resizing)
-
+        if(this.suppressNextclick){
+            this.suppressNextclick = false;
+            return;
+        }
         // Column header
         if (typeof this.columnSelector.isColumnHeader === "function" && this.columnSelector.isColumnHeader(e)) {
             this.rowSelector.clearSelection();
