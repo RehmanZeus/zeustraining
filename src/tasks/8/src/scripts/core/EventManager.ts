@@ -50,7 +50,6 @@ export class EventManager {
         window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
         window.addEventListener('pointermove', this.handlePointerMove.bind(this));
         window.addEventListener('pointerup', this.handlePointerUp.bind(this));
-        window.addEventListener('click', this.handleClick.bind(this));
         window.addEventListener('dblclick', this.handleDoubleClick.bind(this));
         document.addEventListener('keydown', this.handleKeydown.bind(this));
     }
@@ -96,17 +95,7 @@ export class EventManager {
         this.canvas.style.cursor = "cell";
     }
 
-    handleClick(e: MouseEvent) {
-        // Suppress click if requested (e.g. after resizing)
-       
-       
-        // Data cell
-        if (this.cellSelector.isCell(e)) {
-            this.columnSelector.clearSelection();
-            this.rowSelector.clearSelection();
-            this.cellSelector.onClick(e);
-        }
-    }
+   
 
     handleDoubleClick(e: MouseEvent) {
         if (this.cellSelector.isCell(e)) {

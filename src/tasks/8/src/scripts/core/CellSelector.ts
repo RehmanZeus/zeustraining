@@ -51,8 +51,7 @@ export class CellSelector {
     isDragging = false;
     /** Indicates if the drag operation has started */
     dragStarted = false;
-    /** Indicates if the next click should be suppressed to avoid conflicts with drag */
-    suppressNextClick = false;
+
 
 
 
@@ -112,7 +111,7 @@ export class CellSelector {
     }
 
 
-    setCellAutoScroll(c: Cell){
+    setCellAutoScroll(c: Cell) {
         this.cellAutoScroll = c;
     }
     /**
@@ -124,6 +123,23 @@ export class CellSelector {
         if (e.button !== 0) return;
         this.pointerDownPosition = { x: e.clientX, y: e.clientY };
         this.dragStarted = false;
+
+        if ((e.target as HTMLElement).setPointerCapture) {
+            (e.target as HTMLElement).setPointerCapture(e.pointerId);
+        }
+
+        if (!this.dragStarted) {
+            if (this.canvas.style.cursor === 'col-resize' || this.canvas.style.cursor === 'row-resize') {
+                return;
+            }
+            const { x, y } = this.getMousePosition(e);
+            const { row, col } = this.getCellFromPosition(x, y);
+            this.selectCell(row, col);
+            this.colSelector?.clearSelection();
+            this.rowSelector?.clearSelection();
+            this.clearRangeSelection();
+        }
+
 
 
         const { x, y } = this.getMousePosition(e);
@@ -138,8 +154,7 @@ export class CellSelector {
             this.anchorRow = row;
             this.anchorCol = col;
 
-            window.addEventListener('pointermove', this.onPointerMove);
-            window.addEventListener('pointerup', this.onPointerUp);
+
         }
     }
 
@@ -169,8 +184,8 @@ export class CellSelector {
             }
         }
 
-     
-        if(this.cellAutoScroll){
+
+        if (this.cellAutoScroll) {
             this.cellAutoScroll.checkAutoScroll(e);
         }
 
@@ -189,13 +204,14 @@ export class CellSelector {
      * @returns void
      */
     onPointerUp = (e: PointerEvent) => {
+
         if (this.isDragging) {
             this.isDragging = false;
-            if (this.dragStarted) {
-                this.suppressNextClick = true;
+            if ((e.target as HTMLElement).releasePointerCapture) {
+                (e.target as HTMLElement).releasePointerCapture(e.pointerId);
             }
             this.dragStarted = false;
-            if(this.cellAutoScroll){
+            if (this.cellAutoScroll) {
                 this.cellAutoScroll.clearAutoScroll();
             }
             window.removeEventListener('pointermove', this.onPointerMove);
@@ -205,29 +221,6 @@ export class CellSelector {
     }
 
 
-
-    /**
-     * Handles the click event to select a cell.
-     * @param e The mouse event to get the position from.
-     * @returns void
-     */
-    onClick(e: MouseEvent) {
-        if (this.suppressNextClick) {
-            this.suppressNextClick = false;
-            return;
-        }
-        if (this.canvas.style.cursor === 'col-resize' || this.canvas.style.cursor === 'row-resize') {
-            return;
-        }
-        const { x, y } = this.getMousePosition(e);
-        const { row, col } = this.getCellFromPosition(x, y);
-
-        if (row > 0 && col > 0 && row < this.gridMatrix.noOfRows && col < this.gridMatrix.noOfCols) {
-            this.clearRangeSelection();
-            this.selectCell(row, col);
-        }
-
-    }
 
     /**
      * Handles the double click event to start editing a cell.

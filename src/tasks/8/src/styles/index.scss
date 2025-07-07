@@ -93,7 +93,8 @@ input {
   top: 56px;           /* push below header */
   left: 0;
   right: 0;
-  bottom: 0;
+  height: calc(-92px + 100vh);
+  bottom: 36px;
   overflow: auto;
   scrollbar-width: thin;
   scrollbar-color: #888 #f1f1f1;
@@ -128,4 +129,23 @@ canvas {
   margin: 0;
   padding: 0;
   position: relative;
+}
+
+.statistics-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 36px;
+  background: #fafafa;
+  border-top: 1px solid #ddd;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.03);
+  display: flex;
+  align-items: center;
+  justify-content: end;
+  padding: 0 24px;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 14px;
+  color: #333;
+  z-index: 999;
 }

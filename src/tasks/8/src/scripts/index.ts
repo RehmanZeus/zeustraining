@@ -11,6 +11,7 @@ import { GridResizer } from "./core/GridResizer.js";
 import { Operations } from "./core/Operations.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
+import { Statistics } from "./core/Statistics.js";
 import { Cell } from "./helpers/autoscroll/Cell.js";
 import { Column } from "./helpers/autoscroll/Column.js";
 import { Row } from "./helpers/autoscroll/Row.js";
@@ -150,6 +151,7 @@ window.onload = () => {
 
     new ExcelHeader(cellSelector, gridMatrix, operations, commandManager, calcs);
 
+    new Statistics(cellSelector, gridMatrix);
     /**
      * Handles the keydown event for the document.
      * This function listens for Ctrl+Z and Ctrl+Y key combinations to trigger undo and redo commands.
