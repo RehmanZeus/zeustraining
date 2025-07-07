@@ -1,3 +1,4 @@
+import { Row } from "../helpers/autoscroll/Row.js";
 import { CellSelector } from "./CellSelector.js";
 import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
@@ -30,6 +31,7 @@ export class RowSelector {
     /** HTML canvas element for rendering */
     canvas: HTMLCanvasElement | null = null;
 
+    private rowAutoScroll?: Row;
     /** Drag state */
     private dragStartRow: number | null = null;
     /** Whether the user is currently dragging */
@@ -66,6 +68,10 @@ export class RowSelector {
 
     setCanvas(canvas: HTMLCanvasElement) {
         this.canvas = canvas;
+    }
+
+    setRowAutoScroll(r: Row) {
+        this.rowAutoScroll = r;
     }
 
 
@@ -160,7 +166,9 @@ export class RowSelector {
         const rect = container.getBoundingClientRect();
         const pointerY = e.clientY;
 
-        this.checkAutoScroll(e);
+        if (this.rowAutoScroll) {
+            this.rowAutoScroll.checkAutoScroll(e);
+        }
 
         let rowIndex: number = -1;
 
@@ -218,7 +226,10 @@ export class RowSelector {
             this.isDragging = false;
             this.dragStartRow = null;
             this.initialSelectedRows = [];
-            this.clearAutoScroll();
+            if (this.rowAutoScroll) {
+                this.rowAutoScroll.clearAutoScroll();
+
+            }
             window.removeEventListener("pointermove", this.onPointerMove);
             window.removeEventListener("pointerup", this.onPointerUp);
 
@@ -238,74 +249,7 @@ export class RowSelector {
         }
     };
 
-    /**
-    * Checks if the pointer is near the edge of the container to trigger autoscroll.
-    * @param e PointerEvent from the mouse movement
-    * */
-    private checkAutoScroll(e: PointerEvent) {
-        if (!this.canvas) return;
-        const container = document.getElementById('excel-container') as HTMLDivElement;
-        const rect = container.getBoundingClientRect();
-        this.lastPointerEvent = e;
 
-        const topEdge = rect.top + this.AUTOSCROLL_EDGE_THRESHOLD;
-        const bottomEdge = rect.bottom - this.AUTOSCROLL_EDGE_THRESHOLD;
-        const pointerY = e.clientY;
-
-        let scrollDir = 0;
-
-        if (pointerY < topEdge) {
-            scrollDir = -1;
-        } else if (pointerY > bottomEdge) {
-            scrollDir = 1;
-        }
-
-        if (scrollDir !== 0) {
-            if (this.autoscrollInterval === null) {
-                this.autoscrollInterval = window.setInterval(() => {
-                    const pointer = this.lastPointerEvent || e;
-                    const pointerY = pointer.clientY;
-
-                    let accelSpeed = this.AUTOSCROLL_BASE_SPEED;
-                    if (scrollDir === -1) {
-                        accelSpeed = this.autoscrollSpeed(pointerY - rect.top);
-                    } else if (scrollDir === 1) {
-                        accelSpeed = this.autoscrollSpeed(rect.bottom - pointerY);
-                    }
-
-                    const maxScrollTop = container.scrollHeight - container.clientHeight;
-                    let newScrollTop = container.scrollTop + scrollDir * accelSpeed;
-                    newScrollTop = Math.max(0, Math.min(maxScrollTop, newScrollTop));
-
-                    container.scrollTo({ top: newScrollTop, behavior: "instant" });
-
-                    // Simulate a move event at the last pointer position
-                    const fakeEvent = new PointerEvent('pointermove', {
-                        clientX: pointer.clientX,
-                        clientY: pointerY,
-                        bubbles: true
-                    });
-                    this.onPointerMove(fakeEvent);
-                }, this.AUTOSCROLL_INTERVAL_MS);
-            }
-        } else {
-            this.clearAutoScroll();
-        }
-    }
-
-    // Acceleration: further from edge = faster scroll, up to max speed
-    private autoscrollSpeed(distanceFromEdge: number): number {
-        let d = Math.max(0, this.AUTOSCROLL_EDGE_THRESHOLD - distanceFromEdge);
-        let speed = this.AUTOSCROLL_BASE_SPEED + d;
-        return Math.min(this.AUTOSCROLL_MAX_SPEED, Math.max(this.AUTOSCROLL_BASE_SPEED, speed));
-    }
-
-    private clearAutoScroll() {
-        if (this.autoscrollInterval !== null) {
-            clearInterval(this.autoscrollInterval);
-            this.autoscrollInterval = null;
-        }
-    }
     // --- END AUTOSCROLL LOGIC ---
     /**
      * Gets the row index from a mouse event.

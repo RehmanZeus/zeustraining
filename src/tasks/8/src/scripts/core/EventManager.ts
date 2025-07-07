@@ -18,7 +18,7 @@ export class EventManager {
     rowSelector: RowSelector;
     gridResizer: GridResizer;
     gridMatrix: GridMatrix;
-    suppressNextclick: boolean = false;
+    
 
     // Pointer handler object, set on pointerdown, cleared on pointerup
     private activePointerHandler: {
@@ -45,15 +45,6 @@ export class EventManager {
         this.attachEvents();
     }
 
-    getStartColumnIndex() {
-        const container = document.getElementById('excel-container') as HTMLDivElement;
-        const scrollLeft = container.scrollLeft;
-        const scrollTop = container.scrollTop;
-        const viewportWidth = container.clientWidth;
-        const viewportHeight = container.clientHeight;
-        const { startCol } = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
-        return startCol;
-    }
 
     attachEvents() {
         window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
@@ -67,7 +58,7 @@ export class EventManager {
         this.activePointerHandler = null;
         if (this.gridResizer.isNearColumnEdge(e) || this.gridResizer.isNearRowEdge(e)) {
             this.activePointerHandler = this.gridResizer;
-            this.suppressNextclick = true;
+         
         } else if (this.columnSelector.isColumnHeader(e)) {
             this.activePointerHandler = this.columnSelector;
             
@@ -107,17 +98,7 @@ export class EventManager {
 
     handleClick(e: MouseEvent) {
         // Suppress click if requested (e.g. after resizing)
-        if(this.suppressNextclick){
-            this.suppressNextclick = false;
-            return;
-        }
-        // Column header
-        if (typeof this.columnSelector.isColumnHeader === "function" && this.columnSelector.isColumnHeader(e)) {
-            this.rowSelector.clearSelection();
-            this.cellSelector.clearEditing();
-            return;
-        }
-        // Row header
+       
        
         // Data cell
         if (this.cellSelector.isCell(e)) {

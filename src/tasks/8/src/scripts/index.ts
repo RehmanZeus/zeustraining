@@ -11,6 +11,9 @@ import { GridResizer } from "./core/GridResizer.js";
 import { Operations } from "./core/Operations.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
+import { Cell } from "./helpers/autoscroll/Cell.js";
+import { Column } from "./helpers/autoscroll/Column.js";
+import { Row } from "./helpers/autoscroll/Row.js";
 
 const NUM_ROWS = 1000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
 
@@ -43,6 +46,14 @@ window.onload = () => {
 
     cellSelector.setColumnSelector(colSelector);
     cellSelector.setRowSelector(rowSelector);
+
+    const colAutoScroll = new Column(colSelector);
+    const rowAutoScroll = new Row(rowSelector);
+    const cellAutoScroll = new Cell(cellSelector);
+
+    colSelector.setColAutoScroll(colAutoScroll);
+    rowSelector.setRowAutoScroll(rowAutoScroll);
+    cellSelector.setCellAutoScroll(cellAutoScroll);
    
     const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
     gridMatrix.setCellSelector(cellSelector);
@@ -126,7 +137,6 @@ window.onload = () => {
     colSelector.redrawGrid = drawVisibleGrid;
     resizer.setRedrawGridCallback(drawVisibleGrid);
 
-    // gridMatrix.logStats();
     cellSelector.selectCell(1, 1)
 
     window.addEventListener('resize', () => {
