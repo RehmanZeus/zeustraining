@@ -88,7 +88,7 @@ export class ExcelHeader {
     // Operations menu (Sum, Average, Count, Clear)
     this.operationsMenu = document.createElement("div");
     this.operationsMenu.className = "operations-menu";
-    ["Undo", "Redo", "Sum", "Average", "Count", "Clear"].forEach((label) => {
+    ["Undo", "Redo"].forEach((label) => {
       const btn = document.createElement("button");
       btn.className = "btn";
       btn.textContent = label;
