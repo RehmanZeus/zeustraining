@@ -276,6 +276,8 @@ export class CellSelector {
         if (shift) {
             // --- Shift+Arrow: expand/shrink selection range ---
             let dRow = 0, dCol = 0;
+            
+
             switch (e.key) {
                 case 'ArrowUp': dRow = -1; break;
                 case 'ArrowDown': dRow = 1; break;
@@ -374,6 +376,11 @@ export class CellSelector {
         this.selectedCol = this.selectionEndCol;
 
         this.redrawGrid();
+
+        if (this.cellAutoScroll) {
+            this.cellAutoScroll.scrollSelectionIntoView(this.selectionEndRow, this.selectionEndCol);
+
+        }
     }
 
     /**

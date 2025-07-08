@@ -1,19 +1,23 @@
 import { CellSelector } from "../../core/CellSelector";
+import { GridCell } from "../../core/GridCell.js";
+import { GridMatrix } from "../../core/GridMatrix";
 
 export class Cell {
     private cellSelector: CellSelector;
+    private gridMatrix: GridMatrix
 
     private autoscrollInterval: number | null = null;
     private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
     private AUTOSCROLL_BASE_SPEED = 30;     // px per interval at edge
     private AUTOSCROLL_MAX_SPEED = 80;     // px per interval at far edge
-    private AUTOSCROLL_INTERVAL_MS = 50;    // ms
+    private AUTOSCROLL_INTERVAL_MS = 100;    // ms
 
     private lastPointerEvent: PointerEvent | null = null;
 
 
-    constructor(c: CellSelector) {
+    constructor(c: CellSelector, g: GridMatrix) {
         this.cellSelector = c;
+        this.gridMatrix = g;
     }
 
     checkAutoScroll(e: PointerEvent) {
@@ -92,8 +96,8 @@ export class Cell {
                     });
                     this.cellSelector.onPointerMove(fakeEvent);
 
-                    // Always redraw grid
-                    this.cellSelector.redrawGrid();
+                    // // Always redraw grid
+                    // this.cellSelector.redrawGrid();
                 }, this.AUTOSCROLL_INTERVAL_MS);
             }
         } else {
@@ -111,6 +115,49 @@ export class Cell {
         if (this.autoscrollInterval !== null) {
             clearInterval(this.autoscrollInterval);
             this.autoscrollInterval = null;
+        }
+    }
+
+    scrollSelectionIntoView(row: number, col: number) {
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const cellRect = GridCell.getCellRect(row, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+        const stickyHeaderHeight = this.gridMatrix.rowHeights[0];
+        const stickyColWidth = this.gridMatrix.columnWidths[0];
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+        const visibleLeft = scrollLeft + stickyColWidth;
+        const visibleTop = scrollTop + stickyHeaderHeight;
+        const visibleRight = scrollLeft + viewportWidth;
+        const visibleBottom = scrollTop + viewportHeight;
+
+        let newScrollLeft = scrollLeft;
+        let newScrollTop = scrollTop;
+
+        if (cellRect.x < visibleLeft) {
+            newScrollLeft = cellRect.x - stickyColWidth;
+        } else if (cellRect.x + cellRect.width > visibleRight) {
+            newScrollLeft = cellRect.x + cellRect.width - viewportWidth;
+        }
+        if (cellRect.y < visibleTop) {
+            newScrollTop = cellRect.y - stickyHeaderHeight;
+        } else if (cellRect.y + cellRect.height > visibleBottom) {
+            newScrollTop = cellRect.y + cellRect.height - viewportHeight;
+        }
+        newScrollLeft = Math.max(newScrollLeft, 0);
+        newScrollTop = Math.max(newScrollTop, 0);
+
+        if (newScrollLeft !== scrollLeft || newScrollTop !== scrollTop) {
+            container.scrollTo({
+                left: newScrollLeft,
+                top: newScrollTop,
+                behavior: 'instant'
+            });
+            // Wait for scroll to be applied, then redraw!
+            requestAnimationFrame(() => {
+                this.cellSelector.redrawGrid();
+            });
         }
     }
 }

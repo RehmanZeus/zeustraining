@@ -8,8 +8,6 @@ import { GridMatrix } from "./GridMatrix.js";
  * The EventManager class handles user interactions with the grid.
  * It manages pointer events for cell selection, column and row resizing, and keyboard events for editing.
  * It coordinates between the CellSelector, ColumnSelector, RowSelector, and GridResizer to ensure smooth interactions.
- * 
- * This refactored version eliminates the "mode" property and delegates pointer events to the currently active handler.
  */
 export class EventManager {
     canvas: HTMLCanvasElement;
@@ -18,15 +16,13 @@ export class EventManager {
     rowSelector: RowSelector;
     gridResizer: GridResizer;
     gridMatrix: GridMatrix;
-    
 
-    // Pointer handler object, set on pointerdown, cleared on pointerup
+    // Pointer handler, set on pointerdown, cleared on pointerup
     private activePointerHandler: {
         onPointerDown?: (e: PointerEvent) => void;
         onPointerMove?: (e: PointerEvent) => void;
         onPointerUp?: (e: PointerEvent) => void;
     } | null = null;
-
 
     constructor(
         canvas: HTMLCanvasElement,
@@ -45,6 +41,27 @@ export class EventManager {
         this.attachEvents();
     }
 
+    /** Determines which handler should respond based on pointer event location */
+    handleHitTest(e: PointerEvent) {
+        if (this.gridResizer.isNearColumnEdge(e)) {
+            this.canvas.style.cursor = "ew-resize";
+            return this.gridResizer;
+        } else if (this.gridResizer.isNearRowEdge(e)) {
+            this.canvas.style.cursor = "ns-resize";
+            return this.gridResizer;
+        } else if (this.columnSelector.isColumnHeader(e)) {
+            this.canvas.style.cursor = "cell";
+            return this.columnSelector;
+        } else if (this.rowSelector.isRowHeader(e)) {
+            this.canvas.style.cursor = "cell";
+            return this.rowSelector;
+        } else if (this.cellSelector.isCell(e)) {
+            this.canvas.style.cursor = "cell";
+            return this.cellSelector;
+        }
+        this.canvas.style.cursor = "cell";
+        return null;
+    }
 
     attachEvents() {
         window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
@@ -53,49 +70,33 @@ export class EventManager {
         window.addEventListener('dblclick', this.handleDoubleClick.bind(this));
         document.addEventListener('keydown', this.handleKeydown.bind(this));
     }
+
     handlePointerDown(e: PointerEvent) {
-        this.activePointerHandler = null;
-        if (this.gridResizer.isNearColumnEdge(e) || this.gridResizer.isNearRowEdge(e)) {
-            this.activePointerHandler = this.gridResizer;
-         
-        } else if (this.columnSelector.isColumnHeader(e)) {
-            this.activePointerHandler = this.columnSelector;
-            
-        } else if (this.rowSelector.isRowHeader(e)) {
-            this.activePointerHandler = this.rowSelector;
-        } else if (this.cellSelector.isCell(e)) {
-            this.activePointerHandler = this.cellSelector;
+        // Only set handler on pointerdown!
+        this.activePointerHandler = this.handleHitTest(e);
+        if (this.activePointerHandler?.onPointerDown) {
+            this.activePointerHandler.onPointerDown(e);
         }
-        this.activePointerHandler?.onPointerDown?.(e);
     }
+
     handlePointerMove(e: PointerEvent) {
-        // Let the active handler manage move if present
+        // Only update cursor if not dragging/resizing
+        if (!this.activePointerHandler) {
+            this.handleHitTest(e); // for cursor feedback only
+        }
+        // Call active handler if any
         if (this.activePointerHandler?.onPointerMove) {
             this.activePointerHandler.onPointerMove(e);
-            return;
-        }
-        // Otherwise, update cursor for resize
-        if (this.gridResizer.isNearColumnEdge(e)) {
-            this.canvas.style.cursor = "ew-resize";
-        } else if (this.gridResizer.isNearRowEdge(e)) {
-            this.canvas.style.cursor = "ns-resize";
-        } else {
-            this.canvas.style.cursor = "cell";
         }
     }
 
     handlePointerUp(e: PointerEvent) {
-        // Let the active handler manage up if present
+        // Only call pointerUp on the handler we started with!
         if (this.activePointerHandler?.onPointerUp) {
             this.activePointerHandler.onPointerUp(e);
         }
-
         this.activePointerHandler = null;
-        // Always reset cursor
-        this.canvas.style.cursor = "cell";
     }
-
-   
 
     handleDoubleClick(e: MouseEvent) {
         if (this.cellSelector.isCell(e)) {

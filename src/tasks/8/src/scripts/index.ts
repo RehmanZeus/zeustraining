@@ -50,18 +50,17 @@ window.onload = () => {
 
     const colAutoScroll = new Column(colSelector);
     const rowAutoScroll = new Row(rowSelector);
-    const cellAutoScroll = new Cell(cellSelector);
+    const cellAutoScroll = new Cell(cellSelector, gridMatrix);
 
     colSelector.setColAutoScroll(colAutoScroll);
     rowSelector.setRowAutoScroll(rowAutoScroll);
     cellSelector.setCellAutoScroll(cellAutoScroll);
-   
+
     const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
     gridMatrix.setCellSelector(cellSelector);
 
     resizer.setCommandManager(commandManager);
     cellSelector.setCommangManager(commandManager);
-
 
     /**
      * Draws the visible grid area based on the current scroll position and viewport size.  
@@ -96,7 +95,7 @@ window.onload = () => {
         drawCornerCell(ctx);
     }
 
-    
+
 
     /**
      * Draws the top-left corner cell of the grid, which is used for selection.
