@@ -32,6 +32,7 @@ export class GridResizer {
 
 
     redrawGrid: () => void = () => { };
+    
 
     // Track visible viewport
     private viewportStartCol: number = 0;

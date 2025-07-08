@@ -159,8 +159,7 @@ export class RowSelector {
     onPointerMove = (e: PointerEvent) => {
         if (!this.isDragging || this.dragStartRow === null) return;
         this.dragStarted = true;
-        // const rowIndex = this.getRowFromMouseEvent(e);
-        // if (rowIndex < 1 || rowIndex === this.selectedRow) return;
+
 
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const rect = container.getBoundingClientRect();

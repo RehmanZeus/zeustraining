@@ -276,6 +276,7 @@ export class CellSelector {
         if (shift) {
             // --- Shift+Arrow: expand/shrink selection range ---
             let dRow = 0, dCol = 0;
+            
 
             switch (e.key) {
                 case 'ArrowUp': dRow = -1; break;

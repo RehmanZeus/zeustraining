@@ -10,7 +10,7 @@ export class Cell {
     private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
     private AUTOSCROLL_BASE_SPEED = 30;     // px per interval at edge
     private AUTOSCROLL_MAX_SPEED = 80;     // px per interval at far edge
-    private AUTOSCROLL_INTERVAL_MS = 50;    // ms
+    private AUTOSCROLL_INTERVAL_MS = 100;    // ms
 
     private lastPointerEvent: PointerEvent | null = null;
 
