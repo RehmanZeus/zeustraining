@@ -230,10 +230,11 @@ export class GridResizer {
         let x = 0;
         for (let i = 0; i < colIndex; i++) x += this.gridMatrix.columnWidths[i];
 
+
         // Green left border for header
         this.ctx.save();
-        this.ctx.strokeStyle = "#22b573";
-        this.ctx.lineWidth = 3;
+        this.ctx.strokeStyle = "#137e43";
+        this.ctx.lineWidth = 2;
         this.ctx.beginPath();
         this.ctx.moveTo(x - scrollLeft, MIN_GRIDCELL_HEIGHT);
         this.ctx.lineTo(x - scrollLeft, container.clientHeight);
@@ -258,6 +259,78 @@ export class GridResizer {
         this.ctx.setLineDash([]);
         this.ctx.restore();
     }
+
+    previewRowResize(rowIndex: number, previewHeight: number, initialHeight: number) {
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+        const viewport = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
+
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw grid with preview ONLY for header (left column), and suppress selection header color
+        this.gridMatrix.drawGrid(
+            this.ctx,
+            viewport,
+            scrollLeft,
+            scrollTop,
+            undefined,      // previewColIndex (not resizing columns)
+            undefined,      // previewColWidth
+            true,           // suppressHeaderSelectionColor (so no row header highlight for previewed row)
+            this.columnSelector?.selectedCols
+        );
+
+        // Draw overlays for selection (they will skip fill if preview)
+        if (this.cellSelector) {
+            this.cellSelector.drawSelection(this.ctx, scrollLeft, scrollTop, undefined);
+        }
+        if (this.gridMatrix.cellSelector?.rowSelector) {
+            // Pass previewRowIndex and previewRowHeight for rowSelector
+            this.gridMatrix.cellSelector.rowSelector.drawSelection(
+                this.ctx, scrollLeft, scrollTop
+            );
+        }
+        if (this.gridMatrix.cellSelector?.colSelector) {
+            this.gridMatrix.cellSelector.colSelector.drawSelection(
+                this.ctx, scrollLeft, scrollTop
+            );
+        }
+
+        // Y for top edge of row
+        let y = 0;
+        for (let i = 0; i < rowIndex; i++) y += this.gridMatrix.rowHeights[i];
+
+        // Green top border for header (left column)
+        this.ctx.save();
+        this.ctx.strokeStyle = "#137e43";
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(MIN_GRIDCELL_WIDTH, y - scrollTop);
+        this.ctx.lineTo(container.clientWidth, y - scrollTop);
+        this.ctx.stroke();
+
+        // Green bottom border for header (at initial/original height)
+        this.ctx.beginPath();
+        this.ctx.moveTo(MIN_GRIDCELL_WIDTH, y + initialHeight - scrollTop);
+        this.ctx.lineTo(container.clientWidth, y + initialHeight - scrollTop);
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // Dotted line at previewHeight for header
+        this.ctx.save();
+        this.ctx.setLineDash([6, 4]);
+        this.ctx.strokeStyle = "#1a7f37";
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(MIN_GRIDCELL_WIDTH, y + previewHeight - scrollTop);
+        this.ctx.lineTo(container.clientWidth, y + previewHeight - scrollTop);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        this.ctx.restore();
+    }
+
     /**
      * Handles the pointer down event for resizing.
      * @param e Takes a pointer event and determines if the pointer is near a column or row edge.

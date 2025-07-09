@@ -22,7 +22,7 @@ export class ColumnSelector {
     /** Colors for selection and column header */
     selectionColor = "#0f9d58";
     /** Border color for selected columns */
-    selectionBorderColor = "#137e43";
+    selectionBorderColor = "#1a7f37";
     /** Background color for column headers */
     columnHeaderBg = "#107c41";
     /** Text color for column headers */

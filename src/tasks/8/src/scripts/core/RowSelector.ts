@@ -324,41 +324,29 @@ export class RowSelector {
      * @param scrollLeft The current horizontal scroll position
      * @param scrollTop The current vertical scroll position
      */
-    drawSelectionForRowHeaderInput(
-        row: number,
-        col: number,
-        scrollLeft: number,
-        scrollTop: number,
-        previewRowIndex?: number,
-        previewRowHeight?: number
-    ) {
-        // Use previewRowHeight for the header cell only if this is the previewed row
-        const rowHeights = [...this.gridMatrix.rowHeights];
-        if (
-            typeof previewRowIndex === "number" &&
-            typeof previewRowHeight === "number" &&
-            row === previewRowIndex
-        ) {
-            rowHeights[row] = previewRowHeight;
-        }
-        const { x, y, width, height } = GridCell.getCellRect(row, col, rowHeights, this.gridMatrix.columnWidths);
+    drawSelectionForRowHeaderInput(row: number, col: number, scrollLeft: number, scrollTop: number) {
+        const { x, y, width, height } = GridCell.getCellRect(row, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
         const drawX = x - scrollLeft;
         const drawY = y - scrollTop;
 
-        const padding = 3;
+        const padding = 3; // Adjust for more/less padding
 
         this.ctx.save();
         this.ctx.fillStyle = 'rgba(255,255,255,0.125)';
+        // Optional: shrink fill rect too, or keep full area
         this.ctx.fillRect(drawX, drawY, width, height);
 
+        // Draw inside border with padding, 1px sharp
         this.ctx.strokeStyle = this.selectionBorderColor;
         this.ctx.lineWidth = 1;
+        // +0.5 for pixel-perfect, +padding for inset
         this.ctx.strokeRect(
             drawX + padding + 0.5,
             drawY + padding + 0.5,
             width - 2 * padding - 1,
             height - 2 * padding - 1
         );
+
         this.ctx.restore();
     }
 
@@ -367,8 +355,7 @@ export class RowSelector {
      * - For contiguous drag selection: draws only the top border on the first row and the bottom border on the last row.
      * - For ctrl+pointerdown (multi-selection with gaps): does not draw top/bottom borders, just fill.
      */
-    drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0, previewRowIndex?: number,
-        previewRowHeight?: number) {
+    drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
 
         if (!this.selectedRows || this.selectedRows.length === 0) return;
 
@@ -380,8 +367,10 @@ export class RowSelector {
         const viewportHeight = container.clientHeight;
         const viewport = this.gridMatrix.getViewportBounds(currentScrollLeft, currentScrollTop, viewportWidth, viewportHeight);
 
+        // Sort rows for easier logic
         const sortedRows = [...this.selectedRows].sort((a, b) => a - b);
 
+        // Check if selection is contiguous
         let isContiguous = true;
         for (let i = 1; i < sortedRows.length; i++) {
             if (sortedRows[i] !== sortedRows[i - 1] + 1) {
@@ -390,20 +379,11 @@ export class RowSelector {
             }
         }
 
-        // Compute rowHeights for header preview
-        const rowHeightsPreview = [...this.gridMatrix.rowHeights];
-        if (
-            typeof previewRowIndex === "number" &&
-            typeof previewRowHeight === "number" &&
-            previewRowIndex >= 0
-        ) {
-            rowHeightsPreview[previewRowIndex] = previewRowHeight;
-        }
-
         for (let idx = 0; idx < sortedRows.length; idx++) {
             const selectedRow = sortedRows[idx];
-            // Use preview height for header if it's the previewed row
-            const headerRect = GridCell.getCellRect(selectedRow, 0, rowHeightsPreview, this.gridMatrix.columnWidths);
+            // Get row position
+            const headerRect = GridCell.getCellRect(selectedRow, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+
             // Skip drawing if row is completely out of view
             const rowTop = headerRect.y - currentScrollTop;
             const rowBottom = rowTop + headerRect.height;
@@ -428,7 +408,6 @@ export class RowSelector {
                 headerRect.y - currentScrollTop + headerRect.height - 4
             );
 
-
             // Row header borders (solid left, top, bottom only)
             ctx.strokeStyle = this.selectionBorderColor;
             ctx.lineWidth = 1;
@@ -446,8 +425,6 @@ export class RowSelector {
             ctx.stroke();
             ctx.restore();
 
-
-
             // 2. Draw visible data cell highlights (scroll in both directions)
             for (let col = Math.max(1, viewport.startCol); col < viewport.endCol; col++) {
                 const rect = GridCell.getCellRect(selectedRow, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
@@ -455,7 +432,7 @@ export class RowSelector {
                 ctx.save();
                 ctx.fillStyle = this.selectionColor + "20";
                 ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
-                ctx.restore();
+
 
                 if ((selectedRow === this.selectedRows[this.selectedRows.length - 1]) && col === 1 && this.selectedRows.length > 1 && !isContiguous) {
                     const container = document.getElementById('excel-container') as HTMLDivElement;
