@@ -271,6 +271,13 @@ export class CellSelector {
         if (this.isEditing) return;
         if ((this.selectedRow === -1 || this.selectedCol === -1) && (this.selectionStartRow == -1 && this.selectionStartCol == -1)) return;
 
+        if(this.anchorRow !== null && this.anchorCol !== null && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey){
+            this.selectedRow = this.anchorRow;
+            this.selectedCol = this.anchorCol;
+            const gridData = this.gridMatrix.getCell(this.anchorRow, this.anchorCol);
+            this.startEditing(gridData.data);
+        }
+
         const shift = e.shiftKey;
 
         if (shift) {
@@ -301,7 +308,7 @@ export class CellSelector {
             case 'ArrowDown':
             case 'Enter':
                 e.preventDefault();
-                console.log(this.selectedRow, this.selectedCol)
+                
                 if (this.isEditing) {
                     console.log("yolo", this.selectedRow, this.selectedCol)
                     this.moveSelection(-1, 0);
