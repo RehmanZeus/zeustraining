@@ -294,22 +294,23 @@ export class GridMatrix {
     }
 
 
-    // ... other imports and code
     /**
      * Draws the grid on the specified canvas context.
-     * Supports header-only preview resizing (Excel-like behavior).
      * @param ctx CanvasRenderingContext2D - The context to draw on.
      * @param viewport The visible area of the grid.
      * @param scrollLeft The horizontal scroll position.
      * @param scrollTop The vertical scroll position.
-     * @param previewColIndex (optional) If set, use previewColWidth only for the header cell at this column.
+     * @param previewColIndex (optional) If set, use previewColWidth ONLY for the header cell at this column.
      * @param previewColWidth (optional) The temporary width to use for the header cell at previewColIndex.
+     * @param suppressHeaderSelectionColor (optional) If true, don't highlight header selection (for preview mode).
      */
     drawGrid(
         ctx: CanvasRenderingContext2D,
         viewport?: { startRow: number, endRow: number, startCol: number, endCol: number },
         scrollLeft: number = 0, scrollTop: number = 0,
-        previewColIndex?: number, previewColWidth?: number
+        previewColIndex?: number, previewColWidth?: number,
+        suppressHeaderSelectionColor?: boolean, // for preview mode
+        selectedColP?: number[]
     ) {
         this.updateRowHeaderWidth(ctx);
         ctx.save();
@@ -319,29 +320,24 @@ export class GridMatrix {
         const startCol = viewport?.startCol ?? 0;
         const endCol = viewport?.endCol ?? this.noOfCols;
 
-        // Compute cumulative offsets for grid lines
-        let rowOffsets: number[] = [0];
-        for (let r = 0; r < this.noOfRows; ++r) rowOffsets[r + 1] = rowOffsets[r] + this.rowHeights[r];
-
-        // --- 1. Compute separate colOffsets for header and data ---
+        // Separate offsets for header (row 0) and data (rows 1+)
         let colOffsetsHeader: number[] = [0];
         let colOffsetsData: number[] = [0];
         for (let c = 0; c < this.noOfCols; ++c) {
-            // For header row, preview width if previewColIndex
             let headerW = this.columnWidths[c];
             if (previewColIndex !== undefined && previewColWidth !== undefined && c === previewColIndex) {
                 headerW = previewColWidth;
             }
             colOffsetsHeader[c + 1] = colOffsetsHeader[c] + headerW;
-            // For data, always use original width
             colOffsetsData[c + 1] = colOffsetsData[c] + this.columnWidths[c];
         }
 
-        // --- 2. Draw DATA GRID LINES (excluding headers) ---
+        let rowOffsets: number[] = [0];
+        for (let r = 0; r < this.noOfRows; ++r) rowOffsets[r + 1] = rowOffsets[r] + this.rowHeights[r];
+
+        // 1. Draw DATA GRID LINES (excluding headers, use colOffsetsData)
         ctx.strokeStyle = "#e0e0e0";
         ctx.lineWidth = 1;
-
-        // Vertical lines for data area
         for (let c = Math.max(1, startCol); c <= endCol; ++c) {
             let x = colOffsetsData[c] - scrollLeft;
             ctx.beginPath();
@@ -349,7 +345,6 @@ export class GridMatrix {
             ctx.lineTo(x, rowOffsets[endRow] - scrollTop);
             ctx.stroke();
         }
-        // Horizontal lines for data area
         for (let r = Math.max(1, startRow); r <= endRow; ++r) {
             let y = rowOffsets[r] - scrollTop;
             ctx.beginPath();
@@ -358,7 +353,7 @@ export class GridMatrix {
             ctx.stroke();
         }
 
-        // --- 3. Draw DATA CELLS (excluding headers) ---
+        // 2. Draw DATA CELLS (excluding headers, use colOffsetsData)
         ctx.font = "14px Arial";
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
@@ -369,10 +364,8 @@ export class GridMatrix {
                 const y = rowOffsets[row] - scrollTop;
                 const width = this.columnWidths[col];
                 const height = this.rowHeights[row];
-
                 const cell = this.getCell(row, col);
                 const displayValue = this.evaluateCell(cell);
-
                 if (displayValue !== undefined && displayValue !== "") {
                     ctx.fillText(
                         typeof displayValue === "number"
@@ -387,19 +380,31 @@ export class GridMatrix {
             }
         }
 
-        // --- 4. Draw COLUMN HEADERS (row 0) ---
+        // 3. Draw COLUMN HEADERS (row 0, use colOffsetsHeader)
         for (let col = startCol; col < endCol; ++col) {
             const x = colOffsetsHeader[col] - scrollLeft;
             const y = 0;
-            // Use preview width for header if this is the preview column
             const width = (previewColIndex !== undefined && previewColWidth !== undefined && col === previewColIndex)
                 ? previewColWidth
                 : this.columnWidths[col];
             const height = this.rowHeights[0];
-            const selectedCol = this.cellSelector?.selectedCol;
 
-            // Background
-            ctx.fillStyle = selectedCol === col ? "#caead8" : "#f5f5f5";
+            // Multi-select support
+            let isSelected = false;
+            if (Array.isArray(selectedColP) && selectedColP.length) {
+                isSelected = selectedColP.includes(col);
+            } else if (typeof this.cellSelector?.selectedCol === "number" && this.cellSelector.selectedCol === col) {
+                isSelected = true;
+            }
+
+            // Only fill with selection color if not in preview mode and selected
+            let bgColor = "#f5f5f5";
+            if (suppressHeaderSelectionColor && isSelected && selectedColP?.length === 0) {
+                bgColor = "#caead8"; // Excel-like selection green
+            } else if (suppressHeaderSelectionColor && isSelected && selectedColP?.length !== 0) {
+                bgColor = "#107c41";
+            }
+            ctx.fillStyle = bgColor;
             ctx.fillRect(x, y, width, height);
 
             // Border
@@ -407,11 +412,11 @@ export class GridMatrix {
             ctx.lineWidth = 1;
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
-            // Thick green border for selected
-            if (selectedCol === col) {
+            // Thick green border for selected (not during preview)
+            if (suppressHeaderSelectionColor && isSelected && selectedColP?.length === 0) {
                 ctx.save();
                 ctx.strokeStyle = "#107c41";
-                ctx.lineWidth = 3;
+                ctx.lineWidth = 2;
                 ctx.beginPath();
                 ctx.moveTo(x, y + height - 1.5);
                 ctx.lineTo(x + width, y + height - 1.5);
@@ -419,24 +424,31 @@ export class GridMatrix {
                 ctx.restore();
             }
 
-            // Text
+            // Text (ensure contrast)
             const cell = this.getCell(0, col);
             if (cell.data) {
                 ctx.font = "14px Arial";
+
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-                ctx.fillStyle = "#616161";
+                // Use white text if bg is dark, else normal
+                let textColor = "#616161";
+                if (suppressHeaderSelectionColor && isSelected) {
+                    ctx.font = "bold 14px Arial";
+                    textColor = ("#107c41" === bgColor  || selectedColP?.length !== 0) ? "#fff" :  "#616161";
+                }
+                ctx.fillStyle = textColor;
                 ctx.fillText(cell.data, x + width / 2, y + height / 2);
             }
         }
 
-        // --- 5. Draw STICKY ROW HEADERS (col 0, fixed at left) ---
+
+        // 4. Draw STICKY ROW HEADERS (col 0, fixed at left)
         for (let row = startRow; row < endRow; ++row) {
             const x = 0;
             const y = rowOffsets[row] - scrollTop;
             const width = this.columnWidths[0];
             const height = this.rowHeights[row];
-
             const selectedRow = this.cellSelector?.selectedRow;
             ctx.fillStyle = selectedRow === row ? "#caead8" : "#f5f5f5";
             ctx.fillRect(x, y, width, height);
@@ -456,7 +468,6 @@ export class GridMatrix {
                 ctx.restore();
             }
 
-            // Header text
             const cell = this.getCell(row, 0);
             if (cell.data) {
                 ctx.fillStyle = "#616161";
@@ -467,12 +478,11 @@ export class GridMatrix {
             }
         }
 
-        // --- 6. Draw CORNER CELL (0,0) - Always visible ---
+        // 5. Draw CORNER CELL (0,0) - Always visible
         const cornerX = 0;
         const cornerY = 0;
         const cornerWidth = this.columnWidths[0];
         const cornerHeight = this.rowHeights[0];
-
         ctx.fillStyle = "#f5f5f5";
         ctx.fillRect(cornerX, cornerY, cornerWidth, cornerHeight);
         ctx.strokeStyle = "#e0e0e0";

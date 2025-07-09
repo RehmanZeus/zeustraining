@@ -1,5 +1,6 @@
 import { MIN_GRIDCELL_HEIGHT, MIN_GRIDCELL_WIDTH } from "../constants.js";
 import { CellSelector } from "./CellSelector.js";
+import { ColumnSelector } from "./ColumnSelector.js";
 import { CommandManager } from "./commands/CommandManager.js";
 import { ResizeColumnCommand } from "./commands/ResizeColumnCommand.js";
 import { ResizeRowCommand } from "./commands/ResizeRowCommand.js";
@@ -12,6 +13,7 @@ export class GridResizer {
     ctx: CanvasRenderingContext2D;
     gridMatrix: GridMatrix;
     cellSelector?: CellSelector;
+    columnSelector?: ColumnSelector;
 
     isResizingCol = false;
     isResizingRow = false;
@@ -64,6 +66,10 @@ export class GridResizer {
 
     setCommandManager(cmdManager: CommandManager) {
         this.commandManager = cmdManager;
+    }
+
+    setColumnSelector(c: ColumnSelector) {
+        this.columnSelector = c;
     }
 
     /**
@@ -193,22 +199,36 @@ export class GridResizer {
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw grid with preview only for header
+        // Draw grid with preview ONLY for header, and suppress selection header color
         this.gridMatrix.drawGrid(
             this.ctx,
             viewport,
             scrollLeft,
             scrollTop,
             colIndex,      // previewColIndex
-            previewWidth   // previewColWidth
+            previewWidth,  // previewColWidth
+            true, // suppressHeaderSelectionColor
+            this.columnSelector?.selectedCols
         );
+
+        // Draw overlays for selection (they will skip fill if preview)
+        if (this.cellSelector) {
+            this.cellSelector.drawSelection(this.ctx, scrollLeft, scrollTop, true);
+        }
+        if (this.gridMatrix.cellSelector?.rowSelector) {
+            this.gridMatrix.cellSelector.rowSelector.drawSelection(this.ctx, scrollLeft, scrollTop);
+        }
+        if (this.gridMatrix.cellSelector?.colSelector) {
+            // Pass previewColIndex and previewColWidth, suppressHeaderSelectionColor:true for preview overlay
+            this.gridMatrix.cellSelector.colSelector.drawSelection(
+                this.ctx, scrollLeft, scrollTop,
+                colIndex, previewWidth, true
+            );
+        }
 
         // X for left edge of column
         let x = 0;
         for (let i = 0; i < colIndex; i++) x += this.gridMatrix.columnWidths[i];
-
-        // Draw vertical green borders and dotted line ONLY for header
-        const headerHeight = this.gridMatrix.rowHeights[0];
 
         // Green left border for header
         this.ctx.save();
@@ -219,14 +239,14 @@ export class GridResizer {
         this.ctx.lineTo(x - scrollLeft, container.clientHeight);
         this.ctx.stroke();
 
-        // Green right border for header (at preview width)
+        // Green right border for header (at initial/original width)
         this.ctx.beginPath();
         this.ctx.moveTo(x + initialWidth - scrollLeft, MIN_GRIDCELL_HEIGHT);
         this.ctx.lineTo(x + initialWidth - scrollLeft, container.clientHeight);
         this.ctx.stroke();
         this.ctx.restore();
 
-        // Dotted line at preview width for header
+        // Dotted line at previewWidth for header
         this.ctx.save();
         this.ctx.setLineDash([6, 4]);
         this.ctx.strokeStyle = "#1a7f37";

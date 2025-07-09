@@ -392,15 +392,24 @@ export class ColumnSelector {
             e.preventDefault();
         }
     }
-
     /**
      * Draws the selection rectangle for the column header input.
      * @param ctx CanvasRenderingContext2D to draw the selection
      * @param scrollLeft The current horizontal scroll position
      * @param scrollTop The current vertical scroll position
+     * @param previewColIndex (optional) If set, use previewColWidth for the header cell at this column.
+     * @param previewColWidth (optional) The temporary width to use for the header cell at previewColIndex.
+     * @param suppressHeaderSelectionColor (optional) If true, do not fill the header selection color (for preview).
      * @returns 
      */
-    drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
+    drawSelection(
+        ctx: CanvasRenderingContext2D,
+        scrollLeft = 0,
+        scrollTop = 0,
+        previewColIndex?: number,
+        previewColWidth?: number,
+        suppressHeaderSelectionColor: boolean = false
+    ) {
         if (!this.selectedCols || this.selectedCols.length === 0) return;
 
         const container = document.getElementById('excel-container') as HTMLDivElement;
@@ -423,32 +432,44 @@ export class ColumnSelector {
 
         for (let idx = 0; idx < sortedCols.length; idx++) {
             const selectedCol = sortedCols[idx];
-            const headerRect = GridCell.getCellRect(0, selectedCol, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+            // Use preview width for header if previewColIndex matches
+            const width = (previewColIndex !== undefined && previewColWidth !== undefined && selectedCol === previewColIndex)
+                ? previewColWidth
+                : this.gridMatrix.columnWidths[selectedCol];
+            const headerRect = GridCell.getCellRect(0, selectedCol, this.gridMatrix.rowHeights, [
+                ...this.gridMatrix.columnWidths.slice(0, selectedCol),
+                width,
+                ...this.gridMatrix.columnWidths.slice(selectedCol + 1)
+            ]);
 
             // 1. Column header (sticky at top, scrolls horizontally)
-            const headerCell = this.gridMatrix.getCell(0, selectedCol);
-            ctx.save();
-            ctx.fillStyle = this.columnHeaderBg;
-            ctx.fillRect(headerRect.x - currentScrollLeft, 0, headerRect.width, headerRect.height);
+            if (!suppressHeaderSelectionColor) {
+                const headerCell = this.gridMatrix.getCell(0, selectedCol);
+                ctx.save();
+                // Only fill header background if not previewing (Excel-like)
 
-            ctx.font = "bold 14px Arial";
-            ctx.fillStyle = this.columnHeaderText;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(
-                headerCell.data || "",
-                headerRect.x - currentScrollLeft + headerRect.width / 2,
-                headerRect.height / 2
-            );
+                ctx.fillStyle = this.columnHeaderBg;
+                ctx.fillRect(headerRect.x - currentScrollLeft, 0, width, headerRect.height);
 
+                ctx.font = "bold 14px Arial";
+                ctx.fillStyle = this.columnHeaderText;
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(
+                    headerCell.data || "",
+                    headerRect.x - currentScrollLeft + width / 2,
+                    headerRect.height / 2
+                );
+
+            }
             // --- White border at the right of each selected header except the last ---
             if (idx < sortedCols.length - 1) {
                 ctx.save();
                 ctx.strokeStyle = "#fff";
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(headerRect.x - currentScrollLeft + headerRect.width, 0);
-                ctx.lineTo(headerRect.x - currentScrollLeft + headerRect.width, headerRect.height);
+                ctx.moveTo(headerRect.x - currentScrollLeft + width, 0);
+                ctx.lineTo(headerRect.x - currentScrollLeft + width, headerRect.height);
                 ctx.stroke();
                 ctx.restore();
             }
@@ -463,8 +484,8 @@ export class ColumnSelector {
                     ctx.lineTo(headerRect.x - currentScrollLeft, headerRect.height);
                 }
                 if (idx === sortedCols.length - 1) {
-                    ctx.moveTo(headerRect.x - currentScrollLeft + headerRect.width, 0);
-                    ctx.lineTo(headerRect.x - currentScrollLeft + headerRect.width, headerRect.height);
+                    ctx.moveTo(headerRect.x - currentScrollLeft + width, 0);
+                    ctx.lineTo(headerRect.x - currentScrollLeft + width, headerRect.height);
                 }
                 ctx.stroke();
             }
@@ -483,7 +504,6 @@ export class ColumnSelector {
                     this.drawSelectionForColumnHeaderInput(row, selectedCol, container.scrollLeft, container.scrollTop);
                 } else if (!(this.selectedCols.length === 1 && row === 1) && !(row === 1 && isContiguous && selectedCol === this.selectedCols[0])) {
                     ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
-
                 }
 
                 if (isContiguous) {
@@ -538,7 +558,7 @@ export class ColumnSelector {
                 ctx.beginPath();
                 ctx.moveTo(rowHeaderRect.width - 1.5, rowHeaderRect.y - currentScrollTop);
                 ctx.lineTo(rowHeaderRect.width - 1.5, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height);
-                ctx.strokeStyle = this.selectionBorderColor; // Use green
+                ctx.strokeStyle = this.selectionBorderColor;
                 ctx.lineWidth = 1.5;
                 ctx.stroke();
 

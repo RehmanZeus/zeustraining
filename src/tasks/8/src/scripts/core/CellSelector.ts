@@ -276,7 +276,7 @@ export class CellSelector {
         if (shift) {
             // --- Shift+Arrow: expand/shrink selection range ---
             let dRow = 0, dCol = 0;
-            
+
 
             switch (e.key) {
                 case 'ArrowUp': dRow = -1; break;
@@ -601,7 +601,7 @@ export class CellSelector {
      * @param scrollTop The amount of vertical scrolling.
      * @returns void
      */
-    drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
+    drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0, suppressHeaderSelection: boolean = false) {
         // If a range selection is present, draw the range highlight
         if (
             this.selectionStartRow > 0 && this.selectionStartCol > 0 &&
@@ -685,19 +685,21 @@ export class CellSelector {
             }
 
             // 3. Draw thick header borders
-            ctx.save();
-            ctx.strokeStyle = "#107c41";
-            ctx.lineWidth = 2;
-            for (let col = minCol; col <= maxCol; col++) {
-                const { x, y, width, height } = GridCell.getCellRect(
-                    0, col,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.beginPath();
-                ctx.moveTo(x - scrollLeft, y + height - 1);
-                ctx.lineTo(x - scrollLeft + width, y + height - 1);
-                ctx.stroke();
+            if (!suppressHeaderSelection) {
+                ctx.save();
+                ctx.strokeStyle = "#107c41";
+                ctx.lineWidth = 2;
+                for (let col = minCol; col <= maxCol; col++) {
+                    const { x, y, width, height } = GridCell.getCellRect(
+                        0, col,
+                        this.gridMatrix.rowHeights,
+                        this.gridMatrix.columnWidths
+                    );
+                    ctx.beginPath();
+                    ctx.moveTo(x - scrollLeft, y + height - 1);
+                    ctx.lineTo(x - scrollLeft + width, y + height - 1);
+                    ctx.stroke();
+                }
             }
             ctx.restore();
 
@@ -762,29 +764,32 @@ export class CellSelector {
             );
 
             // --- Highlight column header cell ---
-            ctx.save();
-            ctx.fillStyle = "#caead8";
-            ctx.fillRect(hx - scrollLeft, hy - scrollTop, hw, hh);
+            if (!suppressHeaderSelection) {
+                ctx.save();
+                ctx.fillStyle = "#caead8";
+                ctx.fillRect(hx - scrollLeft, hy - scrollTop, hw, hh);
 
-            // Redraw column header text
-            ctx.font = "14px Arial";
-            ctx.fillStyle = "#616161";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(
-                header.data || "",
-                hx + hw / 2 - scrollLeft,
-                hy + hh / 2 - scrollTop
-            );
-            // Draw bottom border for the column header
-            if (this.selectedRow !== 1) {
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(hx - scrollLeft, hy + hh - 1 - scrollTop);
-                ctx.lineTo(hx + hw - scrollLeft, hy + hh - 1 - scrollTop);
-                ctx.stroke();
+                // Redraw column header text
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#616161";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(
+                    header.data || "",
+                    hx + hw / 2 - scrollLeft,
+                    hy + hh / 2 - scrollTop
+                );
+                // Draw bottom border for the column header
+                if (this.selectedRow !== 1) {
+                    ctx.strokeStyle = this.selectionBorderColor;
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.moveTo(hx - scrollLeft, hy + hh - 1 - scrollTop);
+                    ctx.lineTo(hx + hw - scrollLeft, hy + hh - 1 - scrollTop);
+                    ctx.stroke();
+                }
                 ctx.restore();
+
             }
 
             // --- Highlight row header cell ---

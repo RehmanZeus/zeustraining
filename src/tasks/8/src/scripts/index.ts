@@ -61,7 +61,7 @@ window.onload = () => {
 
     resizer.setCommandManager(commandManager);
     cellSelector.setCommangManager(commandManager);
-
+    resizer.setColumnSelector(colSelector);
     /**
      * Draws the visible grid area based on the current scroll position and viewport size.  
      * This function clears the canvas, calculates the viewport bounds, and draws the grid, selections, and corner cell.
