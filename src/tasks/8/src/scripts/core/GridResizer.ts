@@ -199,6 +199,14 @@ export class GridResizer {
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        let cellSelectionArr = [];
+        if (this.cellSelector && this.cellSelector.selectionStartCol !== -1 && this.cellSelector.selectionEndCol !== -1) {
+            for (let i = this.cellSelector?.selectionStartCol; i <= this.cellSelector?.selectionEndCol; ++i) {
+                cellSelectionArr.push(i);
+            }
+        }
+
+        console.log(cellSelectionArr)
         // Draw grid with preview ONLY for header, and suppress selection header color
         this.gridMatrix.drawGrid(
             this.ctx,
@@ -208,7 +216,8 @@ export class GridResizer {
             colIndex,      // previewColIndex
             previewWidth,  // previewColWidth
             true, // suppressHeaderSelectionColor
-            this.columnSelector?.selectedCols
+            this.columnSelector?.selectedCols,
+            cellSelectionArr
         );
 
         // Draw overlays for selection (they will skip fill if preview)
@@ -270,6 +279,15 @@ export class GridResizer {
 
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+        let cellSelectionArr = [];
+        if (this.cellSelector && this.cellSelector.selectionStartCol !== -1 && this.cellSelector.selectionEndCol !== -1) {
+            for (let i = this.cellSelector?.selectionStartCol; i <= this.cellSelector?.selectionEndCol; ++i) {
+                cellSelectionArr.push(i);
+            }
+        }
+
+        console.log(cellSelectionArr)
+
         // Draw grid with preview ONLY for header (left column), and suppress selection header color
         this.gridMatrix.drawGrid(
             this.ctx,
@@ -279,7 +297,8 @@ export class GridResizer {
             undefined,      // previewColIndex (not resizing columns)
             undefined,      // previewColWidth
             true,           // suppressHeaderSelectionColor (so no row header highlight for previewed row)
-            this.columnSelector?.selectedCols
+            this.columnSelector?.selectedCols,
+            cellSelectionArr
         );
 
         // Draw overlays for selection (they will skip fill if preview)

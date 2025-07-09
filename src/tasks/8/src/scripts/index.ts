@@ -16,7 +16,7 @@ import { Cell } from "./helpers/autoscroll/Cell.js";
 import { Column } from "./helpers/autoscroll/Column.js";
 import { Row } from "./helpers/autoscroll/Row.js";
 
-const NUM_ROWS = 1000, NUM_COLS = 100, CELL_W = 70, CELL_H = 25;
+const NUM_ROWS = 1000, NUM_COLS = 500, CELL_W = 70, CELL_H = 25;
 
 window.onload = () => {
     console.log(window.innerHeight, window.innerWidth)

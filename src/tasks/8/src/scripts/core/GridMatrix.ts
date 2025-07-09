@@ -310,7 +310,8 @@ export class GridMatrix {
         scrollLeft: number = 0, scrollTop: number = 0,
         previewColIndex?: number, previewColWidth?: number,
         suppressHeaderSelectionColor?: boolean, // for preview mode
-        selectedColP?: number[]
+        selectedColP?: number[],
+        cellSelectionArr?: number[]
     ) {
         this.updateRowHeaderWidth(ctx);
         ctx.save();
@@ -395,7 +396,12 @@ export class GridMatrix {
                 isSelected = selectedColP.includes(col);
             } else if (typeof this.cellSelector?.selectedCol === "number" && this.cellSelector.selectedCol === col) {
                 isSelected = true;
+            }else if(Array.isArray(cellSelectionArr) && cellSelectionArr.length){
+        
+                isSelected = cellSelectionArr.includes(col);
             }
+
+            
 
             // Only fill with selection color if not in preview mode and selected
             let bgColor = "#f5f5f5";
@@ -403,6 +409,9 @@ export class GridMatrix {
                 bgColor = "#caead8"; // Excel-like selection green
             } else if (suppressHeaderSelectionColor && isSelected && selectedColP?.length !== 0) {
                 bgColor = "#107c41";
+            }else if(suppressHeaderSelectionColor && isSelected && cellSelectionArr?.length !== 0){
+                console.log("cell", cellSelectionArr)
+                bgColor = "#e8f1ec";
             }
             ctx.fillStyle = bgColor;
             ctx.fillRect(x, y, width, height);

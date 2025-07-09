@@ -271,7 +271,7 @@ export class CellSelector {
         if (this.isEditing) return;
         if ((this.selectedRow === -1 || this.selectedCol === -1) && (this.selectionStartRow == -1 && this.selectionStartCol == -1)) return;
 
-        if(this.anchorRow !== null && this.anchorCol !== null && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey){
+        if (this.anchorRow !== null && this.anchorCol !== null && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
             this.selectedRow = this.anchorRow;
             this.selectedCol = this.anchorCol;
             const gridData = this.gridMatrix.getCell(this.anchorRow, this.anchorCol);
@@ -308,7 +308,7 @@ export class CellSelector {
             case 'ArrowDown':
             case 'Enter':
                 e.preventDefault();
-                
+
                 if (this.isEditing) {
                     console.log("yolo", this.selectedRow, this.selectedCol)
                     this.moveSelection(-1, 0);
@@ -635,14 +635,16 @@ export class CellSelector {
                     ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
                 }
             }
-            for (let col = minCol; col <= maxCol; col++) {
-                const { x, y, width, height } = GridCell.getCellRect(
-                    0, col,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.fillStyle = "#caead8";
-                ctx.fillRect(x - scrollLeft, y, width, height);
+            if (!suppressHeaderSelection) {
+                for (let col = minCol; col <= maxCol; col++) {
+                    const { x, y, width, height } = GridCell.getCellRect(
+                        0, col,
+                        this.gridMatrix.rowHeights,
+                        this.gridMatrix.columnWidths
+                    );
+                    ctx.fillStyle = "#caead8";
+                    ctx.fillRect(x - scrollLeft, y, width, height);
+                }
             }
             for (let row = minRow; row <= maxRow; row++) {
                 const { x, y, width, height } = GridCell.getCellRect(
@@ -656,22 +658,24 @@ export class CellSelector {
             ctx.globalAlpha = 1.0;
 
             // 2. Draw header text (white)
-            for (let col = minCol; col <= maxCol; col++) {
-                const colHeader = this.gridMatrix.getCell(0, col);
-                const { x, y, width, height } = GridCell.getCellRect(
-                    0, col,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.font = "14px Arial";
-                ctx.fillStyle = "#0f7d87";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(
-                    colHeader.data || "",
-                    x + width / 2 - scrollLeft,
-                    y + height / 2
-                );
+            if (!suppressHeaderSelection) {
+                for (let col = minCol; col <= maxCol; col++) {
+                    const colHeader = this.gridMatrix.getCell(0, col);
+                    const { x, y, width, height } = GridCell.getCellRect(
+                        0, col,
+                        this.gridMatrix.rowHeights,
+                        this.gridMatrix.columnWidths
+                    );
+                    ctx.font = "14px Arial";
+                    ctx.fillStyle = "#0f7d87";
+                    ctx.textAlign = "center";
+                    ctx.textBaseline = "middle";
+                    ctx.fillText(
+                        colHeader.data || "",
+                        x + width / 2 - scrollLeft,
+                        y + height / 2
+                    );
+                }
             }
             for (let row = minRow; row <= maxRow; row++) {
                 const rowHeader = this.gridMatrix.getCell(row, 0);
