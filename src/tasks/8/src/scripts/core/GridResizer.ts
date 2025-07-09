@@ -32,7 +32,9 @@ export class GridResizer {
 
 
     redrawGrid: () => void = () => { };
-    
+
+    private previewColWidth: number | null = null;
+
 
     // Track visible viewport
     private viewportStartCol: number = 0;
@@ -181,6 +183,78 @@ export class GridResizer {
         return false;
     }
 
+    previewDrawResize(colIndex: number, previewWidth: number, initialWidth: number) {
+        // Compute scroll and viewport info
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+        const viewport = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
+
+        // Clear canvas
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        // Draw the grid with preview header width
+        this.gridMatrix.drawGrid(
+            this.ctx,
+            viewport,
+            scrollLeft,
+            scrollTop,
+            colIndex,      // previewColIndex
+            previewWidth   // previewColWidth
+        );
+
+        // Calculate x offset for the left edge of the column
+        let x = 0;
+        for (let i = 0; i < colIndex; i++) x += this.gridMatrix.columnWidths[i];
+
+        // Get the header height
+        const headerHeight = this.gridMatrix.rowHeights[0];
+
+        // Highlight the column (header uses preview width, data cells use actual width)
+        // this.ctx.save();
+        // this.ctx.globalAlpha = 0.3;
+        // this.ctx.fillStyle = "#b2f2dd";
+        // Header uses preview width
+        // this.ctx.fillRect(x - scrollLeft, 0, previewWidth, headerHeight);
+        // Data cells use original width
+        // let y = headerHeight;
+        // for (let row = 1; row < this.gridMatrix.noOfRows; row++) {
+        //     this.ctx.fillRect(x - scrollLeft, y - scrollTop, this.gridMatrix.columnWidths[colIndex], this.gridMatrix.rowHeights[row]);
+        //     y += this.gridMatrix.rowHeights[row];
+        // }
+        // this.ctx.globalAlpha = 1.0;
+        // this.ctx.restore();
+
+        // Green left border
+        this.ctx.save();
+        this.ctx.strokeStyle = "#22b573";
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x - scrollLeft, MIN_GRIDCELL_HEIGHT);
+        this.ctx.lineTo(x - scrollLeft, container.clientHeight);
+        this.ctx.stroke();
+
+        // Green right border (at preview width, only for header)
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + initialWidth - scrollLeft, MIN_GRIDCELL_HEIGHT);
+        this.ctx.lineTo(x + initialWidth - scrollLeft, container.clientHeight);
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // Draw vertical dotted line at previewWidth (entire column, including cells)
+        this.ctx.save();
+        this.ctx.setLineDash([6, 4]);
+        this.ctx.strokeStyle = "#1a7f37";
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + previewWidth - scrollLeft, MIN_GRIDCELL_HEIGHT);
+        this.ctx.lineTo(x + previewWidth - scrollLeft, container.clientHeight);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        this.ctx.restore();
+    }
     /**
      * Handles the pointer down event for resizing.
      * @param e Takes a pointer event and determines if the pointer is near a column or row edge.
@@ -211,7 +285,16 @@ export class GridResizer {
      * If it is, it changes the cursor style to indicate resizing.
      */
     onPointerMove(e: PointerEvent) {
-        if (this.isResizingCol || this.isResizingRow) {
+        if (this.isResizingCol && this.resizingColIndex >= 0) {
+            const { x } = this.getMousePositionForEdgeDetection(e);
+            const delta = x - this.startX;
+            const previewWidth = Math.max(MIN_GRIDCELL_WIDTH, this.initialWidth + delta);
+            this.previewColWidth = previewWidth;
+            this.previewDrawResize(this.resizingColIndex, previewWidth, this.initialWidth);
+            return;
+        }
+        if (this.isResizingRow && this.resizingRowIndex >= 0) {
+            // You could implement a similar preview for row resizing if you wish
             this.handleResize(e);
             return;
         }
@@ -224,18 +307,20 @@ export class GridResizer {
         }
     }
 
+
     /**
      * Handles the pointer up event for resizing.
      * @param e Takes a pointer event and resets the resizing state.
      */
     onPointerUp(e: PointerEvent) {
         if (this.isResizingCol && this.resizingColIndex >= 0 && this.commandManager) {
-            const newWidth = this.gridMatrix.columnWidths[this.resizingColIndex];
+            const newWidth = this.previewColWidth ?? this.gridMatrix.columnWidths[this.resizingColIndex];
             if (this.lastResizeColOldWidth !== null && newWidth !== this.lastResizeColOldWidth) {
                 this.commandManager.executeCommand(
                     new ResizeColumnCommand(this.gridMatrix, this.resizingColIndex, this.lastResizeColOldWidth, newWidth, this)
                 );
             }
+            this.gridMatrix.columnWidths[this.resizingColIndex] = newWidth;
         }
         if (this.isResizingRow && this.resizingRowIndex >= 0 && this.commandManager) {
             const newHeight = this.gridMatrix.rowHeights[this.resizingRowIndex];
@@ -252,6 +337,9 @@ export class GridResizer {
         this.canvas.style.cursor = "cell";
         this.lastResizeColOldWidth = null;
         this.lastResizeRowOldHeight = null;
+        console.log(this.gridMatrix.columnWidths);
+        this.previewColWidth = null;
+        this.redrawGrid();
     }
 
     /**
