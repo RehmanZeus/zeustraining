@@ -184,7 +184,6 @@ export class GridResizer {
     }
 
     previewDrawResize(colIndex: number, previewWidth: number, initialWidth: number) {
-        // Compute scroll and viewport info
         const container = document.getElementById('excel-container') as HTMLDivElement;
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
@@ -192,10 +191,9 @@ export class GridResizer {
         const viewportHeight = container.clientHeight;
         const viewport = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
 
-        // Clear canvas
         this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-        // Draw the grid with preview header width
+        // Draw grid with preview only for header
         this.gridMatrix.drawGrid(
             this.ctx,
             viewport,
@@ -205,29 +203,14 @@ export class GridResizer {
             previewWidth   // previewColWidth
         );
 
-        // Calculate x offset for the left edge of the column
+        // X for left edge of column
         let x = 0;
         for (let i = 0; i < colIndex; i++) x += this.gridMatrix.columnWidths[i];
 
-        // Get the header height
+        // Draw vertical green borders and dotted line ONLY for header
         const headerHeight = this.gridMatrix.rowHeights[0];
 
-        // Highlight the column (header uses preview width, data cells use actual width)
-        // this.ctx.save();
-        // this.ctx.globalAlpha = 0.3;
-        // this.ctx.fillStyle = "#b2f2dd";
-        // Header uses preview width
-        // this.ctx.fillRect(x - scrollLeft, 0, previewWidth, headerHeight);
-        // Data cells use original width
-        // let y = headerHeight;
-        // for (let row = 1; row < this.gridMatrix.noOfRows; row++) {
-        //     this.ctx.fillRect(x - scrollLeft, y - scrollTop, this.gridMatrix.columnWidths[colIndex], this.gridMatrix.rowHeights[row]);
-        //     y += this.gridMatrix.rowHeights[row];
-        // }
-        // this.ctx.globalAlpha = 1.0;
-        // this.ctx.restore();
-
-        // Green left border
+        // Green left border for header
         this.ctx.save();
         this.ctx.strokeStyle = "#22b573";
         this.ctx.lineWidth = 3;
@@ -236,14 +219,14 @@ export class GridResizer {
         this.ctx.lineTo(x - scrollLeft, container.clientHeight);
         this.ctx.stroke();
 
-        // Green right border (at preview width, only for header)
+        // Green right border for header (at preview width)
         this.ctx.beginPath();
         this.ctx.moveTo(x + initialWidth - scrollLeft, MIN_GRIDCELL_HEIGHT);
         this.ctx.lineTo(x + initialWidth - scrollLeft, container.clientHeight);
         this.ctx.stroke();
         this.ctx.restore();
 
-        // Draw vertical dotted line at previewWidth (entire column, including cells)
+        // Dotted line at preview width for header
         this.ctx.save();
         this.ctx.setLineDash([6, 4]);
         this.ctx.strokeStyle = "#1a7f37";

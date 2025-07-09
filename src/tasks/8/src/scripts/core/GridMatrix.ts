@@ -294,14 +294,16 @@ export class GridMatrix {
     }
 
 
+    // ... other imports and code
     /**
      * Draws the grid on the specified canvas context.
+     * Supports header-only preview resizing (Excel-like behavior).
      * @param ctx CanvasRenderingContext2D - The context to draw on.
      * @param viewport The visible area of the grid.
      * @param scrollLeft The horizontal scroll position.
      * @param scrollTop The vertical scroll position.
-     * @param previewColIndex (optional) If set, use previewColWidth for the header cell at this column
-     * @param previewColWidth (optional) The temporary width to use for the header cell at previewColIndex
+     * @param previewColIndex (optional) If set, use previewColWidth only for the header cell at this column.
+     * @param previewColWidth (optional) The temporary width to use for the header cell at previewColIndex.
      */
     drawGrid(
         ctx: CanvasRenderingContext2D,
@@ -321,48 +323,49 @@ export class GridMatrix {
         let rowOffsets: number[] = [0];
         for (let r = 0; r < this.noOfRows; ++r) rowOffsets[r + 1] = rowOffsets[r] + this.rowHeights[r];
 
-        // Compute colOffsets, but with preview width for header if needed
-        let colOffsets: number[] = [0];
+        // --- 1. Compute separate colOffsets for header and data ---
+        let colOffsetsHeader: number[] = [0];
+        let colOffsetsData: number[] = [0];
         for (let c = 0; c < this.noOfCols; ++c) {
-            let w = this.columnWidths[c];
-            // Only header row uses preview width
+            // For header row, preview width if previewColIndex
+            let headerW = this.columnWidths[c];
             if (previewColIndex !== undefined && previewColWidth !== undefined && c === previewColIndex) {
-                w = previewColWidth;
+                headerW = previewColWidth;
             }
-            colOffsets[c + 1] = colOffsets[c] + w;
+            colOffsetsHeader[c + 1] = colOffsetsHeader[c] + headerW;
+            // For data, always use original width
+            colOffsetsData[c + 1] = colOffsetsData[c] + this.columnWidths[c];
         }
 
-        // 1. Draw DATA GRID LINES (excluding headers)
+        // --- 2. Draw DATA GRID LINES (excluding headers) ---
         ctx.strokeStyle = "#e0e0e0";
         ctx.lineWidth = 1;
 
         // Vertical lines for data area
         for (let c = Math.max(1, startCol); c <= endCol; ++c) {
-            let x = colOffsets[c] - scrollLeft;
+            let x = colOffsetsData[c] - scrollLeft;
             ctx.beginPath();
             ctx.moveTo(x, Math.max(this.rowHeights[0], rowOffsets[Math.max(1, startRow)] - scrollTop));
             ctx.lineTo(x, rowOffsets[endRow] - scrollTop);
             ctx.stroke();
         }
-
-        // Horizontal lines for data area  
+        // Horizontal lines for data area
         for (let r = Math.max(1, startRow); r <= endRow; ++r) {
             let y = rowOffsets[r] - scrollTop;
             ctx.beginPath();
-            ctx.moveTo(Math.max(this.columnWidths[0], colOffsets[Math.max(1, startCol)] - scrollLeft), y);
-            ctx.lineTo(colOffsets[endCol] - scrollLeft, y);
+            ctx.moveTo(Math.max(this.columnWidths[0], colOffsetsData[Math.max(1, startCol)] - scrollLeft), y);
+            ctx.lineTo(colOffsetsData[endCol] - scrollLeft, y);
             ctx.stroke();
         }
 
-        // 2. Draw DATA CELLS (excluding headers)
+        // --- 3. Draw DATA CELLS (excluding headers) ---
         ctx.font = "14px Arial";
         ctx.fillStyle = "#000";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-
         for (let row = Math.max(1, startRow); row < endRow; ++row) {
             for (let col = Math.max(1, startCol); col < endCol; ++col) {
-                const x = colOffsets[col] - scrollLeft;
+                const x = colOffsetsData[col] - scrollLeft;
                 const y = rowOffsets[row] - scrollTop;
                 const width = this.columnWidths[col];
                 const height = this.rowHeights[row];
@@ -384,9 +387,9 @@ export class GridMatrix {
             }
         }
 
-        // 3. Draw COLUMN HEADERS (row 0)
+        // --- 4. Draw COLUMN HEADERS (row 0) ---
         for (let col = startCol; col < endCol; ++col) {
-            const x = colOffsets[col] - scrollLeft;
+            const x = colOffsetsHeader[col] - scrollLeft;
             const y = 0;
             // Use preview width for header if this is the preview column
             const width = (previewColIndex !== undefined && previewColWidth !== undefined && col === previewColIndex)
@@ -427,7 +430,7 @@ export class GridMatrix {
             }
         }
 
-        // 4. Draw STICKY ROW HEADERS (col 0, fixed at left)
+        // --- 5. Draw STICKY ROW HEADERS (col 0, fixed at left) ---
         for (let row = startRow; row < endRow; ++row) {
             const x = 0;
             const y = rowOffsets[row] - scrollTop;
@@ -435,17 +438,13 @@ export class GridMatrix {
             const height = this.rowHeights[row];
 
             const selectedRow = this.cellSelector?.selectedRow;
-
-            // Set background color for selected row header
             ctx.fillStyle = selectedRow === row ? "#caead8" : "#f5f5f5";
             ctx.fillRect(x, y, width, height);
 
-            // Header border (thin gray all sides)
             ctx.strokeStyle = "#e0e0e0";
             ctx.lineWidth = 1;
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
-            // Draw thick green right border if selected
             if (selectedRow === row && !this.cellSelector?.isDragging) {
                 ctx.save();
                 ctx.strokeStyle = "#107c41";
@@ -468,7 +467,7 @@ export class GridMatrix {
             }
         }
 
-        // 5. Draw CORNER CELL (0,0) - Always visible
+        // --- 6. Draw CORNER CELL (0,0) - Always visible ---
         const cornerX = 0;
         const cornerY = 0;
         const cornerWidth = this.columnWidths[0];
