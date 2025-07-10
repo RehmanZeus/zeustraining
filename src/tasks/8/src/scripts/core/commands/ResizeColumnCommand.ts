@@ -1,6 +1,7 @@
 import { Command } from "./Command";
 import { GridMatrix } from "../GridMatrix";
 import { GridResizer } from "../GridResizer";
+import { ColumnResizer } from "../ColumnResizer";
 
 export class ResizeColumnCommand implements Command {
 
@@ -13,7 +14,7 @@ export class ResizeColumnCommand implements Command {
     /** New width of the column */
     private newWidth: number;
     /** Resizer handle for the grid */
-    private gridResizer: GridResizer;
+    private gridResizer: ColumnResizer;
 
 
     /**
@@ -24,7 +25,7 @@ export class ResizeColumnCommand implements Command {
      * @param newWidth New width of the column
      * @param gridResizer Resizer handle for the grid
      */
-    constructor(gridMatrix: GridMatrix, colIndex: number, oldWidth: number, newWidth: number, gridResizer: GridResizer) {
+    constructor(gridMatrix: GridMatrix, colIndex: number, oldWidth: number, newWidth: number, gridResizer: ColumnResizer) {
         this.gridMatrix = gridMatrix;
         this.colIndex = colIndex;
         this.oldWidth = oldWidth;

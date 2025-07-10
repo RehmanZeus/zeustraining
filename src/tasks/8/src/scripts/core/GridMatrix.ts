@@ -293,6 +293,8 @@ export class GridMatrix {
         this.columnWidths[0] = width;
     }
 
+    
+
 
     /**
      * Draws the grid on the specified canvas context.
@@ -309,11 +311,15 @@ export class GridMatrix {
         viewport?: { startRow: number, endRow: number, startCol: number, endCol: number },
         scrollLeft: number = 0, scrollTop: number = 0,
         previewColIndex?: number, previewColWidth?: number,
-        suppressHeaderSelectionColor?: boolean, // for preview mode
+        suppressHeaderSelectionColor?: boolean,
         selectedColP?: number[],
-        cellSelectionArr?: number[]
+        cellSelectionArr?: number[],
+        previewRowIndex?: number,
+        previewRowHeight?: number
     ) {
         this.updateRowHeaderWidth(ctx);
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+
         ctx.save();
 
         const startRow = viewport?.startRow ?? 0;
@@ -321,7 +327,7 @@ export class GridMatrix {
         const startCol = viewport?.startCol ?? 0;
         const endCol = viewport?.endCol ?? this.noOfCols;
 
-        // Separate offsets for header (row 0) and data (rows 1+)
+        // === Calculate column and row offsets ===
         let colOffsetsHeader: number[] = [0];
         let colOffsetsData: number[] = [0];
         for (let c = 0; c < this.noOfCols; ++c) {
@@ -332,56 +338,100 @@ export class GridMatrix {
             colOffsetsHeader[c + 1] = colOffsetsHeader[c] + headerW;
             colOffsetsData[c + 1] = colOffsetsData[c] + this.columnWidths[c];
         }
+        let rowHeightsPreview = [...this.rowHeights];
+        if (
+            typeof previewRowIndex === "number" &&
+            typeof previewRowHeight === "number" &&
+            previewRowIndex >= 0
+        ) {
+            rowHeightsPreview[previewRowIndex] = previewRowHeight;
+        }
+        let rowOffsetsHeader: number[] = [0];
+        let rowOffsetsData: number[] = [0];
+        for (let r = 0; r < this.noOfRows; ++r) {
+            let rh = rowHeightsPreview[r];
+            rowOffsetsHeader[r + 1] = rowOffsetsHeader[r] + rh;
+            rowOffsetsData[r + 1] = rowOffsetsData[r] + this.rowHeights[r];
+        }
 
-        let rowOffsets: number[] = [0];
-        for (let r = 0; r < this.noOfRows; ++r) rowOffsets[r + 1] = rowOffsets[r] + this.rowHeights[r];
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(
+            this.columnWidths[0],
+            this.rowHeights[0],
+            ctx.canvas.offsetWidth - this.columnWidths[0],
+            ctx.canvas.offsetHeight - this.rowHeights[0]
+        );
+        ctx.clip();
 
-        // 1. Draw DATA GRID LINES (excluding headers, use colOffsetsData)
+        // === 1. Draw Data Grid Lines ===
         ctx.strokeStyle = "#e0e0e0";
         ctx.lineWidth = 1;
+
+        const align = (v: number) => Math.round(v) + 0.5;
+
+        // Vertical lines
         for (let c = Math.max(1, startCol); c <= endCol; ++c) {
-            let x = colOffsetsData[c] - scrollLeft;
+            let x = align(colOffsetsData[c] - scrollLeft);
             ctx.beginPath();
-            ctx.moveTo(x, Math.max(this.rowHeights[0], rowOffsets[Math.max(1, startRow)] - scrollTop));
-            ctx.lineTo(x, rowOffsets[endRow] - scrollTop);
+            ctx.moveTo(x, Math.max(this.rowHeights[0], rowOffsetsData[Math.max(1, startRow)] - scrollTop));
+            ctx.lineTo(x, rowOffsetsData[endRow] - scrollTop);
             ctx.stroke();
         }
+
+        // Horizontal lines
         for (let r = Math.max(1, startRow); r <= endRow; ++r) {
-            let y = rowOffsets[r] - scrollTop;
+            let y = align(rowOffsetsData[r] - scrollTop);
             ctx.beginPath();
             ctx.moveTo(Math.max(this.columnWidths[0], colOffsetsData[Math.max(1, startCol)] - scrollLeft), y);
             ctx.lineTo(colOffsetsData[endCol] - scrollLeft, y);
             ctx.stroke();
         }
 
-        // 2. Draw DATA CELLS (excluding headers, use colOffsetsData)
+        // === 2. Draw Data Cells ===
         ctx.font = "14px Arial";
         ctx.fillStyle = "#000";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
         for (let row = Math.max(1, startRow); row < endRow; ++row) {
             for (let col = Math.max(1, startCol); col < endCol; ++col) {
                 const x = colOffsetsData[col] - scrollLeft;
-                const y = rowOffsets[row] - scrollTop;
+                const y = rowOffsetsData[row] - scrollTop;
                 const width = this.columnWidths[col];
                 const height = this.rowHeights[row];
                 const cell = this.getCell(row, col);
                 const displayValue = this.evaluateCell(cell);
+
+                // Default alignment: left for text, right for numbers
+                let text = "";
+                let isNumber = false;
+
                 if (displayValue !== undefined && displayValue !== "") {
-                    ctx.fillText(
-                        typeof displayValue === "number"
-                            ? displayValue.toLocaleString(undefined, { maximumFractionDigits: 6 })
-                            : displayValue,
-                        x + width / 2,
-                        y + height / 2
-                    );
+                    text = typeof displayValue === "number"
+                        ? displayValue.toLocaleString(undefined, { maximumFractionDigits: 6 })
+                        : displayValue;
+                    isNumber = typeof displayValue === "number" || (!isNaN(parseFloat(displayValue)) && isFinite(parseFloat(displayValue)));
                 } else if (cell.data) {
-                    ctx.fillText(cell.data, x + width / 2, y + height / 2);
+                    text = cell.data;
+                    isNumber = !isNaN(parseFloat(text)) && isFinite(parseFloat(text));
+                }
+
+                ctx.textBaseline = "middle";
+                ctx.font = "14px Arial";
+                ctx.fillStyle = "#000";
+
+                if (isNumber) {
+                    ctx.textAlign = "right";
+                    ctx.fillText(text, x + width - 8, y + height / 2); // 8px right padding
+                } else {
+                    ctx.textAlign = "left";
+                    ctx.fillText(text, x + 8, y + height / 2); // 8px left padding
                 }
             }
         }
 
-        // 3. Draw COLUMN HEADERS (row 0, use colOffsetsHeader)
+
+        ctx.restore(); // Remove clipping
+
+        // === 3. Draw Column Headers (row 0) ===
         for (let col = startCol; col < endCol; ++col) {
             const x = colOffsetsHeader[col] - scrollLeft;
             const y = 0;
@@ -390,28 +440,28 @@ export class GridMatrix {
                 : this.columnWidths[col];
             const height = this.rowHeights[0];
 
-            // Multi-select support
+            // Selection logic
             let isSelected = false;
             if (Array.isArray(selectedColP) && selectedColP.length) {
                 isSelected = selectedColP.includes(col);
             } else if (typeof this.cellSelector?.selectedCol === "number" && this.cellSelector.selectedCol === col) {
                 isSelected = true;
-            }else if(Array.isArray(cellSelectionArr) && cellSelectionArr.length){
-        
+            } else if (Array.isArray(cellSelectionArr) && cellSelectionArr.length) {
                 isSelected = cellSelectionArr.includes(col);
             }
 
-            
-
-            // Only fill with selection color if not in preview mode and selected
+            // Pick background color
             let bgColor = "#f5f5f5";
-            if (suppressHeaderSelectionColor && isSelected && selectedColP?.length === 0) {
-                bgColor = "#caead8"; // Excel-like selection green
-            } else if (suppressHeaderSelectionColor && isSelected && selectedColP?.length !== 0) {
-                bgColor = "#107c41";
-            }else if(suppressHeaderSelectionColor && isSelected && cellSelectionArr?.length !== 0){
-                console.log("cell", cellSelectionArr)
-                bgColor = "#e8f1ec";
+            let textColor = "#616161";
+            if (!suppressHeaderSelectionColor && isSelected) {
+                if (Array.isArray(selectedColP) && selectedColP.length) {
+                    bgColor = "#107c41";
+                    textColor = "#fff";
+                } else if (Array.isArray(cellSelectionArr) && cellSelectionArr.length) {
+                    bgColor = "#e8f1ec";
+                } else {
+                    bgColor = "#caead8";
+                }
             }
             ctx.fillStyle = bgColor;
             ctx.fillRect(x, y, width, height);
@@ -422,7 +472,7 @@ export class GridMatrix {
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
             // Thick green border for selected (not during preview)
-            if (suppressHeaderSelectionColor && isSelected && selectedColP?.length === 0) {
+            if (!suppressHeaderSelectionColor && isSelected && (!selectedColP || selectedColP.length === 0)) {
                 ctx.save();
                 ctx.strokeStyle = "#107c41";
                 ctx.lineWidth = 2;
@@ -433,31 +483,23 @@ export class GridMatrix {
                 ctx.restore();
             }
 
-            // Text (ensure contrast)
+            // Text
             const cell = this.getCell(0, col);
             if (cell.data) {
-                ctx.font = "14px Arial";
-
+                ctx.font = (isSelected ? "bold " : "") + "14px Arial";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
-                // Use white text if bg is dark, else normal
-                let textColor = "#616161";
-                if (suppressHeaderSelectionColor && isSelected) {
-                    ctx.font = "bold 14px Arial";
-                    textColor = ("#107c41" === bgColor  || selectedColP?.length !== 0) ? "#fff" :  "#616161";
-                }
                 ctx.fillStyle = textColor;
                 ctx.fillText(cell.data, x + width / 2, y + height / 2);
             }
         }
 
-
-        // 4. Draw STICKY ROW HEADERS (col 0, fixed at left)
+        // === 4. Draw Sticky Row Headers (col 0, fixed at left, use rowOffsetsHeader and rowHeightsPreview) ===
         for (let row = startRow; row < endRow; ++row) {
             const x = 0;
-            const y = rowOffsets[row] - scrollTop;
+            const y = rowOffsetsHeader[row] - scrollTop;
             const width = this.columnWidths[0];
-            const height = this.rowHeights[row];
+            const height = rowHeightsPreview[row];
             const selectedRow = this.cellSelector?.selectedRow;
             ctx.fillStyle = selectedRow === row ? "#caead8" : "#f5f5f5";
             ctx.fillRect(x, y, width, height);
@@ -487,7 +529,7 @@ export class GridMatrix {
             }
         }
 
-        // 5. Draw CORNER CELL (0,0) - Always visible
+        // === 5. Draw Corner Cell (0,0) ===
         const cornerX = 0;
         const cornerY = 0;
         const cornerWidth = this.columnWidths[0];

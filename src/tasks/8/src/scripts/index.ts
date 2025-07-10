@@ -1,5 +1,6 @@
 import { Calculations } from "./core/Calculations.js";
 import { CellSelector } from "./core/CellSelector.js";
+import { ColumnResizer } from "./core/ColumnResizer.js";
 import { ColumnSelector } from "./core/ColumnSelector.js";
 import { CommandManager } from "./core/commands/CommandManager.js";
 import { EventManager } from "./core/EventManager.js";
@@ -9,6 +10,7 @@ import { GridDataLoader } from "./core/GridDataLoader.js";
 import { GridMatrix } from "./core/GridMatrix.js";
 import { GridResizer } from "./core/GridResizer.js";
 import { Operations } from "./core/Operations.js";
+import { RowResizer } from "./core/RowResizer.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 import { Statistics } from "./core/Statistics.js";
@@ -16,7 +18,7 @@ import { Cell } from "./helpers/autoscroll/Cell.js";
 import { Column } from "./helpers/autoscroll/Column.js";
 import { Row } from "./helpers/autoscroll/Row.js";
 
-const NUM_ROWS = 1000, NUM_COLS = 500, CELL_W = 70, CELL_H = 25;
+const NUM_ROWS = 1000, NUM_COLS = 300, CELL_W = 70, CELL_H = 25;
 
 window.onload = () => {
     console.log(window.innerHeight, window.innerWidth)
@@ -28,12 +30,14 @@ window.onload = () => {
     const container = document.getElementById('excel-container') as HTMLDivElement;
     const gridMatrix = new GridMatrix(ctx, NUM_ROWS, NUM_COLS);
 
-    const resizer = new GridResizer(canvas, ctx, gridMatrix);
+    const rowResizer = new RowResizer(canvas, ctx, gridMatrix);
+    const colResizer = new ColumnResizer(canvas, ctx, gridMatrix);
+    
     const cellSelector = new CellSelector(canvas, ctx, gridMatrix);
-    resizer.setCellSelector(cellSelector);
+   
 
     const gridDataLoader = new GridDataLoader(gridMatrix);
-    const dataGen = new GridDataGen(500);
+    const dataGen = new GridDataGen(100);
     const sampleData = dataGen.generateData();
     gridDataLoader.loadJSONData(sampleData);
 
@@ -48,6 +52,9 @@ window.onload = () => {
     cellSelector.setColumnSelector(colSelector);
     cellSelector.setRowSelector(rowSelector);
 
+    rowResizer.setCommandManager(commandManager);
+    colResizer.setCommandManager(commandManager);
+
     const colAutoScroll = new Column(colSelector);
     const rowAutoScroll = new Row(rowSelector);
     const cellAutoScroll = new Cell(cellSelector, gridMatrix);
@@ -59,9 +66,7 @@ window.onload = () => {
     const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
     gridMatrix.setCellSelector(cellSelector);
 
-    resizer.setCommandManager(commandManager);
     cellSelector.setCommangManager(commandManager);
-    resizer.setColumnSelector(colSelector);
     /**
      * Draws the visible grid area based on the current scroll position and viewport size.  
      * This function clears the canvas, calculates the viewport bounds, and draws the grid, selections, and corner cell.
@@ -78,7 +83,8 @@ window.onload = () => {
         const viewport = gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
 
         // Pass viewport to resizer before any pointer event
-        resizer.setViewport(viewport.startCol, viewport.endCol, viewport.startRow, viewport.endRow);
+        rowResizer.setViewportForRows(viewport.startRow, viewport.endRow);
+        colResizer.setViewport(viewport.startCol, viewport.endCol);
         // 1. Draw grid
         gridMatrix.drawGrid(ctx, viewport, scrollLeft, scrollTop);
 
@@ -96,6 +102,7 @@ window.onload = () => {
     }
 
 
+    
 
     /**
      * Draws the top-left corner cell of the grid, which is used for selection.
@@ -135,8 +142,9 @@ window.onload = () => {
     cellSelector.setRedrawGridCallback(drawVisibleGrid);
     rowSelector.redrawGrid = drawVisibleGrid;
     colSelector.redrawGrid = drawVisibleGrid;
-    resizer.setRedrawGridCallback(drawVisibleGrid);
-
+    rowResizer.redrawGrid = drawVisibleGrid;
+    colResizer.redrawGrid = drawVisibleGrid
+ 
     cellSelector.selectCell(1, 1)
 
     window.addEventListener('resize', () => {
@@ -146,7 +154,7 @@ window.onload = () => {
     const calcs = new Calculations(cellSelector, colSelector, rowSelector, gridMatrix, ctx, commandManager)
 
     // --- Attach all pointer/click events to EventAttacher! ---
-    new EventManager(canvas, cellSelector, colSelector, rowSelector, resizer, gridMatrix);
+    new EventManager(rowResizer, gridMatrix, colResizer);
 
     new ExcelHeader(cellSelector, gridMatrix, operations, commandManager, calcs);
 
