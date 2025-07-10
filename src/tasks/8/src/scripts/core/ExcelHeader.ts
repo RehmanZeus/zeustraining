@@ -1,9 +1,7 @@
 import { Calculations } from "./Calculations.js";
 import { CellSelector } from "./CellSelector.js";
 import { CommandManager } from "./commands/CommandManager.js";
-import { GridCell } from "./GridCell.js";
 import { GridMatrix } from "./GridMatrix.js";
-import { Operations } from "./Operations.js";
 
 /**
  * ExcelHeader manages the header UI above the grid,
@@ -43,7 +41,6 @@ export class ExcelHeader {
   /**
    * The Operations instance for performing operations on the grid.
    */
-  operations: Operations;
   /**
    * The CommandManager instance for managing undo/redo operations.
    */
@@ -71,13 +68,11 @@ export class ExcelHeader {
   constructor(
     cellSelector: CellSelector,
     gridMatrix: GridMatrix,
-    operations: Operations,
     commandManager: CommandManager,
     calc: Calculations
   ) {
     this.cellSelector = cellSelector;
     this.gridMatrix = gridMatrix;
-    this.operations = operations;
     this.commandManager = commandManager;
     this.calculation = calc
 
@@ -95,35 +90,6 @@ export class ExcelHeader {
       btn.addEventListener("click", () => {
         let value: number | undefined;
         switch (label) {
-          case "Sum":
-
-            value = this.operations.globalSum();
-
-            break;
-          case "Average":
-            const sum = this.operations.globalSum();
-            const data = this.cellSelector.getRangeSelectionData();
-            const count = data
-              ? (data.endRow - data.startRow + 1) * (data.endCol - data.startCol + 1)
-              : 0;
-            value = count > 0 ? Math.floor(sum / count) : 0;
-            // this.calculation.avgCalcHandler();
-            break;
-          case "Count":
-            const r = this.cellSelector.getRangeSelectionData();
-            if (r) {
-              let count = 0;
-              for (let i = r.startRow; i <= r.endRow; ++i) {
-                for (let j = r.startCol; j <= r.endCol; ++j) {
-                  const cell = this.gridMatrix.getCell(i, j);
-                  if (cell.data) count++;
-                }
-              }
-              value = count;
-            } else {
-              value = 0;
-            }
-            break;
           case "Undo":
             commandManager.undo();
             break;

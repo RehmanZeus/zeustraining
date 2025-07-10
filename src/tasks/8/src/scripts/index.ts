@@ -8,8 +8,6 @@ import { ExcelHeader } from "./core/ExcelHeader.js";
 import { GridDataGen } from "./core/GridDataGen.js";
 import { GridDataLoader } from "./core/GridDataLoader.js";
 import { GridMatrix } from "./core/GridMatrix.js";
-import { GridResizer } from "./core/GridResizer.js";
-import { Operations } from "./core/Operations.js";
 import { RowResizer } from "./core/RowResizer.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
@@ -66,7 +64,6 @@ window.onload = () => {
     rowSelector.setRowAutoScroll(rowAutoScroll);
     cellSelector.setCellAutoScroll(cellAutoScroll);
 
-    const operations = new Operations(rowSelector, colSelector, gridMatrix, ctx, cellSelector);
     gridMatrix.setCellSelector(cellSelector);
 
     cellSelector.setCommangManager(commandManager);
@@ -159,7 +156,7 @@ window.onload = () => {
     // --- Attach all pointer/click events to EventAttacher! ---
     new EventManager(rowResizer, gridMatrix, colResizer,cellSelector, rowSelector, colSelector);
 
-    new ExcelHeader(cellSelector, gridMatrix, operations, commandManager, calcs);
+    new ExcelHeader(cellSelector, gridMatrix, commandManager, calcs);
 
     new Statistics(cellSelector, gridMatrix);
     /**

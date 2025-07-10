@@ -58,7 +58,6 @@ export class EventManager {
         window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
         window.addEventListener('pointermove', this.handlePointerMove.bind(this));
         window.addEventListener('pointerup', this.handlePointerUp.bind(this));
-
         this.container.addEventListener('dblclick', this.handleDoubleClick.bind(this));
         document.addEventListener('keydown', this.handleKeydown.bind(this));
     }

@@ -23,6 +23,8 @@ export class RowResizeStrategy implements Strategy {
         this.rowResizer.initialHeight = this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex];
         this.rowResizer.lastResizeRowOldHeight = this.rowResizer.initialHeight;
         this.setCursor("ns-resize");
+        window.addEventListener("pointermove", this.onPointerMove.bind(this));
+        window.addEventListener("pointerup", this.onPointerUp.bind(this));
         e.preventDefault();
     }
 
@@ -47,6 +49,8 @@ export class RowResizeStrategy implements Strategy {
                 new ResizeRowCommand(this.gridMatrix, this.rowResizer.resizingRowIndex, this.rowResizer.lastResizeRowOldHeight, newHeight, this.rowResizer)
             );
         }
+        window.addEventListener("pointermove", this.onPointerMove.bind(this));
+        window.removeEventListener("pointerdown", this.onPointerDown.bind(this));
         this.setCursor("cell");
     }
 
