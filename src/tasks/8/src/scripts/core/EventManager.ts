@@ -8,6 +8,7 @@ import { ColumnSelector } from "./ColumnSelector.js";
 import { CellSelector } from "./CellSelector.js";
 import { RowSelector } from "./RowSelector.js";
 import { RowSelectorStrategy } from "./strategies/RowSelectorStrategy.js";
+import { CellSelectionStrategy } from "./strategies/CellSelectionStrategy.js";
 
 export class EventManager {
     rowResizer: RowResizer;
@@ -16,9 +17,9 @@ export class EventManager {
     cellSelector: CellSelector;
     rowSelector: RowSelector;
     columnSelector: ColumnSelector;
-    strategies: [RowResizeStrategy, ColumnResizeStrategy, ColumnSelectorStrategy, RowSelectorStrategy];
-    activeStrategy: RowResizeStrategy | ColumnResizeStrategy | ColumnSelectorStrategy | RowSelectorStrategy | null = null;
-
+    strategies: [RowResizeStrategy, ColumnResizeStrategy, ColumnSelectorStrategy, RowSelectorStrategy, CellSelectionStrategy];
+    activeStrategy: RowResizeStrategy | ColumnResizeStrategy | ColumnSelectorStrategy | RowSelectorStrategy | CellSelectionStrategy | null = null;
+    container = document.getElementById('excel-container') as HTMLDivElement;
     constructor(
         rowR: RowResizer,
         gm: GridMatrix,
@@ -37,7 +38,8 @@ export class EventManager {
             new RowResizeStrategy(this.rowResizer, this.gridMatrix),
             new ColumnResizeStrategy(this.colResizer, this.gridMatrix),
             new ColumnSelectorStrategy(this.columnSelector, this.cellSelector, this.gridMatrix),
-            new RowSelectorStrategy(this.rowSelector,  this.cellSelector, this.gridMatrix)
+            new RowSelectorStrategy(this.rowSelector, this.cellSelector, this.gridMatrix),
+            new CellSelectionStrategy(this.cellSelector)
         ];
         this.attachEvents();
     }
@@ -56,6 +58,9 @@ export class EventManager {
         window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
         window.addEventListener('pointermove', this.handlePointerMove.bind(this));
         window.addEventListener('pointerup', this.handlePointerUp.bind(this));
+
+        this.container.addEventListener('dblclick', this.handleDoubleClick.bind(this));
+        document.addEventListener('keydown', this.handleKeydown.bind(this));
     }
 
     handlePointerDown(e: PointerEvent) {
@@ -70,8 +75,8 @@ export class EventManager {
             this.activeStrategy.onPointerMove(e);
         } else {
             this.activeStrategy = this.findStrategy(e);
-            
-            if(this.activeStrategy){
+
+            if (this.activeStrategy) {
                 this.activeStrategy.onPointerMove(e);
             }
 
@@ -82,6 +87,21 @@ export class EventManager {
         if (this.activeStrategy) {
             this.activeStrategy.onPointerUp(e);
             this.activeStrategy = null;
+        }
+    }
+
+    handleDoubleClick(e: MouseEvent) {
+        if (this.cellSelector.isCell(e)) {
+            this.cellSelector.onDoubleClick(e);
+        }
+    }
+
+    handleKeydown(e: KeyboardEvent) {
+        if (typeof this.cellSelector.handleKeydown === "function") {
+            this.cellSelector.handleKeydown(e);
+        }
+        if (typeof this.columnSelector.handleKeydown === "function") {
+            this.columnSelector.handleKeydown(e);
         }
     }
 }
