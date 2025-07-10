@@ -14,6 +14,7 @@ import { RowResizer } from "./core/RowResizer.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 import { Statistics } from "./core/Statistics.js";
+import { ColumnSelectorStrategy } from "./core/strategies/ColumnSelectorStrategy.js";
 import { Cell } from "./helpers/autoscroll/Cell.js";
 import { Column } from "./helpers/autoscroll/Column.js";
 import { Row } from "./helpers/autoscroll/Row.js";
@@ -49,13 +50,15 @@ window.onload = () => {
     const colSelector = new ColumnSelector(ctx, gridMatrix, cellSelector);
     colSelector.setCanvas(canvas);
 
+    const columnSelectorStrategy = new ColumnSelectorStrategy(colSelector, cellSelector, gridMatrix)
+
     cellSelector.setColumnSelector(colSelector);
     cellSelector.setRowSelector(rowSelector);
 
     rowResizer.setCommandManager(commandManager);
     colResizer.setCommandManager(commandManager);
 
-    const colAutoScroll = new Column(colSelector);
+    const colAutoScroll = new Column(colSelector,columnSelectorStrategy );
     const rowAutoScroll = new Row(rowSelector);
     const cellAutoScroll = new Cell(cellSelector, gridMatrix);
 
@@ -154,7 +157,7 @@ window.onload = () => {
     const calcs = new Calculations(cellSelector, colSelector, rowSelector, gridMatrix, ctx, commandManager)
 
     // --- Attach all pointer/click events to EventAttacher! ---
-    new EventManager(rowResizer, gridMatrix, colResizer);
+    new EventManager(rowResizer, gridMatrix, colResizer,cellSelector, rowSelector, colSelector);
 
     new ExcelHeader(cellSelector, gridMatrix, operations, commandManager, calcs);
 

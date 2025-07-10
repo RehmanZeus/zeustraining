@@ -34,10 +34,12 @@ export class ColumnResizeStrategy implements Strategy {
             const previewWidth = Math.max(MIN_GRIDCELL_WIDTH, this.columnResizer.initialWidth + delta);
             this.columnResizer.previewColWidth = previewWidth;
             this.columnResizer.previewDrawResize(this.columnResizer.resizingColIndex, previewWidth, this.columnResizer.initialWidth);
+            e.preventDefault()
+            return;
+        }
+        if(this.hitTest(e) && this.columnResizer.resizingColIndex > 0){
             this.setCursor("ew-resize");
-        } else if (this.hitTest(e)) {
-            this.setCursor("ew-resize");
-        } else {
+        }else{
             this.setCursor("cell");
         }
     }

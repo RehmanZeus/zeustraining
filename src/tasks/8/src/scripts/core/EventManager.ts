@@ -3,30 +3,47 @@ import { RowResizeStrategy } from "./strategies/RowResizeStrategy.js";
 import { RowResizer } from "./RowResizer.js";
 import { ColumnResizer } from "./ColumnResizer.js";
 import { ColumnResizeStrategy } from "./strategies/ColumnResizeStrategy.js";
+import { ColumnSelectorStrategy } from "./strategies/ColumnSelectorStrategy.js";
+import { ColumnSelector } from "./ColumnSelector.js";
+import { CellSelector } from "./CellSelector.js";
+import { RowSelector } from "./RowSelector.js";
+import { RowSelectorStrategy } from "./strategies/RowSelectorStrategy.js";
 
 export class EventManager {
     rowResizer: RowResizer;
     gridMatrix: GridMatrix;
     colResizer: ColumnResizer;
-    strategies: [RowResizeStrategy, ColumnResizeStrategy];
-    activeStrategy: RowResizeStrategy | ColumnResizeStrategy | null = null;
+    cellSelector: CellSelector;
+    rowSelector: RowSelector;
+    columnSelector: ColumnSelector;
+    strategies: [RowResizeStrategy, ColumnResizeStrategy, ColumnSelectorStrategy, RowSelectorStrategy];
+    activeStrategy: RowResizeStrategy | ColumnResizeStrategy | ColumnSelectorStrategy | RowSelectorStrategy | null = null;
 
     constructor(
         rowR: RowResizer,
         gm: GridMatrix,
-        colR: ColumnResizer
+        colR: ColumnResizer,
+        cellS: CellSelector,
+        rowS: RowSelector,
+        colS: ColumnSelector
     ) {
         this.rowResizer = rowR;
         this.gridMatrix = gm;
         this.colResizer = colR;
+        this.columnSelector = colS;
+        this.cellSelector = cellS;
+        this.rowSelector = rowS;
         this.strategies = [
             new RowResizeStrategy(this.rowResizer, this.gridMatrix),
-            new ColumnResizeStrategy(this.colResizer, this.gridMatrix)
+            new ColumnResizeStrategy(this.colResizer, this.gridMatrix),
+            new ColumnSelectorStrategy(this.columnSelector, this.cellSelector, this.gridMatrix),
+            new RowSelectorStrategy(this.rowSelector,  this.cellSelector, this.gridMatrix)
         ];
         this.attachEvents();
     }
 
     findStrategy(e: PointerEvent) {
+
         for (const strategy of this.strategies) {
             if (strategy.hitTest(e)) {
                 return strategy;
@@ -52,19 +69,12 @@ export class EventManager {
         if (this.activeStrategy) {
             this.activeStrategy.onPointerMove(e);
         } else {
-            // Let each strategy decide cursor
-            let found = false;
-            for (const strategy of this.strategies) {
-                if (strategy.hitTest(e)) {
-                    strategy.onPointerMove(e);
-                    found = true;
-                    break;
-                }
+            this.activeStrategy = this.findStrategy(e);
+            
+            if(this.activeStrategy){
+                this.activeStrategy.onPointerMove(e);
             }
-            if (!found) {
-                // Let all strategies reset their own cursor if not active
-                this.strategies.forEach(s => s.onPointerMove(e));
-            }
+
         }
     }
 

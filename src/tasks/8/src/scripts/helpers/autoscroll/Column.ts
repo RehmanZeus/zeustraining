@@ -1,8 +1,10 @@
 import { ColumnSelector } from "../../core/ColumnSelector";
+import { ColumnSelectorStrategy } from "../../core/strategies/ColumnSelectorStrategy";
 
 export class Column {
     
     private columnSelector: ColumnSelector;
+    private colSelectorStrategy: ColumnSelectorStrategy;
     private autoscrollInterval: number | null = null;
     private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
     private AUTOSCROLL_BASE_SPEED = 10;     // px per interval at edge
@@ -10,8 +12,9 @@ export class Column {
     private AUTOSCROLL_INTERVAL_MS = 16;    // ms
     private lastPointerEvent: PointerEvent | null = null;
 
-    constructor(c: ColumnSelector) {
+    constructor(c: ColumnSelector, cStr: ColumnSelectorStrategy) {
         this.columnSelector = c;
+        this.colSelectorStrategy = cStr;
     }
 
     checkAutoScroll(e: PointerEvent) {
@@ -58,7 +61,7 @@ export class Column {
                         clientY: pointer.clientY,
                         bubbles: true
                     });
-                    this.columnSelector.onPointerMove(fakeEvent);
+                    this.colSelectorStrategy.onPointerMove(fakeEvent);
                 }, this.AUTOSCROLL_INTERVAL_MS);
             }
         } else {

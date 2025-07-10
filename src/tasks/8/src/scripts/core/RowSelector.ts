@@ -31,26 +31,20 @@ export class RowSelector {
     /** HTML canvas element for rendering */
     canvas: HTMLCanvasElement | null = null;
 
-    private rowAutoScroll?: Row;
+     rowAutoScroll?: Row;
     /** Drag state */
-    private dragStartRow: number | null = null;
+     dragStartRow: number | null = null;
     /** Whether the user is currently dragging */
-    private isDragging: boolean = false;
+     isDragging: boolean = false;
 
     /** Combination selection state */
-    private pointerDownRow: number | null = null;
+     pointerDownRow: number | null = null;
     /** Whether a drag operation has started */
-    private dragStarted: boolean = false;
+     dragStarted: boolean = false;
     /** Initial selected rows before drag operation */
-    private initialSelectedRows: number[] = [];
+     initialSelectedRows: number[] = [];
 
-    // Autoscroll state
-    private autoscrollInterval: number | null = null;
-    private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
-    private AUTOSCROLL_BASE_SPEED = 10;     // px per interval at edge
-    private AUTOSCROLL_MAX_SPEED = 40;     // px per interval at far edge
-    private AUTOSCROLL_INTERVAL_MS = 16;    // ms
-    private lastPointerEvent: PointerEvent | null = null;
+   
 
 
 
@@ -109,7 +103,7 @@ export class RowSelector {
 
 
     /** Handles selection on the row header area (pointerdown only) */
-    onPointerDown = (e: MouseEvent | PointerEvent) => {
+    onPointerDown = (e: PointerEvent) => {
         if (!this.isRowHeader(e)) return;
         // Only left click
         if (e.button !== 0) return;

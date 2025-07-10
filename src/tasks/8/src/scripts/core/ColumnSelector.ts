@@ -32,15 +32,15 @@ export class ColumnSelector {
 
     /** Initial selected columns when starting a drag operation */
     // This is used to remember the initial selection state when ctrl/dragging
-    private initialSelectedCols: number[] = [];
+    initialSelectedCols: number[] = [];
 
     colAutoScroll?: Column;
 
     // Drag state
-    private dragStartCol: number | null = null;
-    private isDragging: boolean = false;
-    private dragStarted = false;
-    private pointerDownCol: number | null = null;
+    dragStartCol: number | null = null;
+    isDragging: boolean = false;
+    dragStarted = false;
+    pointerDownCol: number | null = null;
 
 
     /**
@@ -66,149 +66,6 @@ export class ColumnSelector {
     setColAutoScroll(c: Column) {
         this.colAutoScroll = c;
     }
-
-    /**
-     * Initializes event listeners for column selection.
-     * Should be called after setting the canvas.
-     */
-    onPointerDown = (e: PointerEvent) => {
-
-        console.log('PointerDown', e, this.isColumnHeader(e));
-        this.dragStartCol = null;
-        this.cellSelector?.selectCell(-1, -1);
-        if (!this.isColumnHeader(e)) return;
-        if (e.button !== 0) return;
-
-        const colIndex = this.getColFromMouseEvent(e);
-        if (colIndex < 0) return;
-
-        this.dragStarted = false;
-        this.pointerDownCol = colIndex;
-
-        // Ctrl/Cmd+Click: toggle multi-select, but do not drag
-        if (e.ctrlKey || e.metaKey) {
-            const idx = this.selectedCols.indexOf(colIndex);
-            if (idx === -1) {
-                this.selectedCols.push(colIndex);
-                this.selectedCol = colIndex;
-            } else {
-                this.selectedCols.splice(idx, 1);
-                this.selectedCol = this.selectedCols.length ? this.selectedCols[this.selectedCols.length - 1] : -1;
-            }
-            if (this.cellSelector) {
-                this.cellSelector.clearRangeSelection();
-                this.cellSelector.selectedRow = -1;
-                this.cellSelector.selectedCol = -1;
-                this.cellSelector.isEditing = false;
-                this.cellSelector.inputElement.style.display = 'none';
-            }
-            this.redrawGrid();
-            // prepare for possible ctrl+drag
-        }
-
-        // Always prepare for drag (ctrl or not)
-        this.isDragging = true;
-        this.dragStartCol = colIndex;
-        this.initialSelectedCols = (e.ctrlKey || e.metaKey) ? [...this.selectedCols] : [colIndex];
-
-        window.addEventListener('pointermove', this.onPointerMove);
-        window.addEventListener('pointerup', this.onPointerUp);
-    };
-
-    /**
-     * Handles pointer move events for dragging column selection.
-     * Updates the selected columns based on drag position.
-     * @param e PointerEvent from the mouse movement
-     */
-    onPointerMove = (e: PointerEvent) => {
-        if (!this.isDragging || this.dragStartCol === null) return;
-        this.dragStarted = true;
-        const container = document.getElementById('excel-container') as HTMLDivElement;
-        const rect = container.getBoundingClientRect();
-        const pointerX = e.clientX;
-
-        if (this.colAutoScroll) {
-            this.colAutoScroll.checkAutoScroll(e);
-        }
-
-        let colIndex: number = -1;
-
-        if (pointerX < rect.left) {
-            const scrollLeft = container.scrollLeft;
-            let totalX = 0;
-            for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
-                totalX += this.gridMatrix.columnWidths[col];
-                if (totalX > scrollLeft) {
-                    colIndex = col;
-                    break;
-                }
-            }
-            if (colIndex === -1) colIndex = 1;
-        } else if (pointerX > rect.right) {
-            const scrollLeft = container.scrollLeft;
-            const viewportWidth = container.clientWidth;
-            let totalX = 0;
-            for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
-                totalX += this.gridMatrix.columnWidths[col];
-                if (totalX > scrollLeft + viewportWidth) {
-                    colIndex = col;
-                    break;
-                }
-            }
-            if (colIndex === -1) colIndex = this.gridMatrix.noOfCols - 1;
-        } else {
-            colIndex = this.getColFromMouseEvent(e);
-        }
-
-        if (colIndex < 0 || colIndex === this.selectedCol) return;
-
-        const [start, end] = [this.dragStartCol, colIndex].sort((a, b) => a - b);
-        let dragCols: number[] = [];
-        for (let col = start; col <= end; col++) dragCols.push(col);
-
-        if (e.ctrlKey || e.metaKey) {
-            const allCols = Array.from(new Set([...this.initialSelectedCols, ...dragCols]));
-            this.selectedCols = allCols.sort((a, b) => a - b);
-        } else {
-            this.selectedCols = dragCols;
-        }
-        this.selectedCol = colIndex;
-        this.redrawGrid();
-    };
-
-    /**
-     * Handles pointer up events to finalize column selection.
-     * Cleans up drag state and event listeners.
-     * @param e PointerEvent from the mouse release
-     */
-    onPointerUp = (e: PointerEvent) => {
-        if (this.isDragging) {
-            this.isDragging = false;
-            this.initialSelectedCols = [];
-            if (this.colAutoScroll) {
-                this.colAutoScroll.clearAutoScroll();
-            }
-            window.removeEventListener('pointermove', this.onPointerMove);
-            window.removeEventListener('pointerup', this.onPointerUp);
-
-            // If simple click (no drag), select only that column (unless ctrl/cmd)
-            if (!this.dragStarted && this.pointerDownCol !== null && !(e.ctrlKey || e.metaKey)) {
-                this.selectedCols = [this.pointerDownCol];
-                this.selectedCol = this.pointerDownCol;
-                if (this.cellSelector) {
-                    this.cellSelector.clearRangeSelection();
-                    this.cellSelector.selectedRow = -1;
-                    this.cellSelector.selectedCol = -1;
-                    this.cellSelector.isEditing = false;
-                    this.cellSelector.inputElement.style.display = 'none';
-                }
-                this.redrawGrid();
-            }
-            this.pointerDownCol = null;
-            this.dragStarted = false;
-        }
-    };
-
 
     /**
      * Checks if the mouse event is over a column header.
