@@ -102,6 +102,8 @@ function connectSelectorsAndStrategies({
 
     rowResizer.setCommandManager(commandManager);
     colResizer.setCommandManager(commandManager);
+    colResizer.setCellSelector(cellSelector);
+    colResizer.setColumnSelector(colSelector);
 
     colSelector.setColAutoScroll(new Column(colSelector, columnSelectorStrategy));
     rowSelector.setRowAutoScroll(new Row(rowSelector, rowSelectorStrategy));

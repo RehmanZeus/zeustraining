@@ -529,7 +529,7 @@ export class GridMatrix {
             // Pick background color
             let bgColor = "#f5f5f5";
             let textColor = "#616161";
-            if (!suppressHeaderSelectionColor && isSelected) {
+            if (suppressHeaderSelectionColor && isSelected) {
                 if (Array.isArray(selectedColP) && selectedColP.length) {
                     bgColor = "#107c41";
                     textColor = "#fff";
@@ -548,7 +548,7 @@ export class GridMatrix {
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
             // Thick green border for selected (not during preview)
-            if (!suppressHeaderSelectionColor && isSelected && (!selectedColP || selectedColP.length === 0)) {
+            if (suppressHeaderSelectionColor && isSelected && (!selectedColP || selectedColP.length === 0)) {
                 ctx.save();
                 ctx.strokeStyle = "#107c41";
                 ctx.lineWidth = 2;

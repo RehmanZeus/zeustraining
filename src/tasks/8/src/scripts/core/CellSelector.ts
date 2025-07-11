@@ -843,9 +843,8 @@ export class CellSelector {
         ctx: CanvasRenderingContext2D,
         scrollLeft: number,
         scrollTop: number,
-        suppressHeaderSelection: boolean
+        suppressHeaderSelection: boolean = false
     ) {
-        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
         const header = this.gridMatrix.getCell(0, this.selectedCol);
         const row = this.gridMatrix.getCell(this.selectedRow, 0);
 
@@ -875,12 +874,21 @@ export class CellSelector {
         ctx.fillStyle = 'rgba(255,255,255,0.125)';
         ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
 
-        // Draw selection border
         ctx.strokeStyle = this.selectionBorderColor;
         ctx.lineWidth = 2;
         ctx.strokeRect(x - scrollLeft, y - scrollTop, width, height);
-        ctx.lineWidth = 1; // Reset line width
         ctx.restore();
+
+        // --- Highlight column header cell (skip only if in preview) ---
+        if (!suppressHeaderSelection) {
+            this.highlightSingleColumnHeader(ctx, hx, hy, hw, hh, header, scrollLeft, scrollTop);
+        }
+
+        // --- Highlight row header cell (skip only if in preview) ---
+        if (!suppressHeaderSelection) {
+            this.highlightSingleRowHeader(ctx, rx, ry, rw, rh, row, scrollLeft, scrollTop);
+        }
+        
     }
 
     highlightSingleColumnHeader(

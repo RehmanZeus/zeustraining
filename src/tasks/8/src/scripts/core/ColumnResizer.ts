@@ -45,6 +45,14 @@ export class ColumnResizer {
         this.commandManager = cmdManager;
     }
 
+    setCellSelector(cs: CellSelector){
+        this.cellSelector = cs;
+    }
+
+    setColumnSelector(cs: ColumnSelector){
+        this.columnSelector = cs;
+    }
+
 
     /**
      * 
@@ -133,7 +141,6 @@ export class ColumnResizer {
             }
         }
 
-        console.log(cellSelectionArr)
         // Draw grid with preview ONLY for header, and suppress selection header color
         this.gridMatrix.drawGrid(
             this.ctx,
@@ -142,7 +149,7 @@ export class ColumnResizer {
             scrollTop,
             colIndex,      // previewColIndex
             previewWidth,  // previewColWidth
-            false, // suppressHeaderSelectionColor
+            true, // suppressHeaderSelectionColor
             this.columnSelector?.selectedCols,
             cellSelectionArr
         );
