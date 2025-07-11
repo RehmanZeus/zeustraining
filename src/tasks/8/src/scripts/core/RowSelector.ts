@@ -31,26 +31,20 @@ export class RowSelector {
     /** HTML canvas element for rendering */
     canvas: HTMLCanvasElement | null = null;
 
-    private rowAutoScroll?: Row;
+    rowAutoScroll?: Row;
     /** Drag state */
-    private dragStartRow: number | null = null;
+    dragStartRow: number | null = null;
     /** Whether the user is currently dragging */
-    private isDragging: boolean = false;
+    isDragging: boolean = false;
 
     /** Combination selection state */
-    private pointerDownRow: number | null = null;
+    pointerDownRow: number | null = null;
     /** Whether a drag operation has started */
-    private dragStarted: boolean = false;
+    dragStarted: boolean = false;
     /** Initial selected rows before drag operation */
-    private initialSelectedRows: number[] = [];
+    initialSelectedRows: number[] = [];
 
-    // Autoscroll state
-    private autoscrollInterval: number | null = null;
-    private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
-    private AUTOSCROLL_BASE_SPEED = 10;     // px per interval at edge
-    private AUTOSCROLL_MAX_SPEED = 40;     // px per interval at far edge
-    private AUTOSCROLL_INTERVAL_MS = 16;    // ms
-    private lastPointerEvent: PointerEvent | null = null;
+
 
 
 
@@ -106,147 +100,6 @@ export class RowSelector {
             rowIndex > 0 // skip header row
         );
     }
-
-
-    /** Handles selection on the row header area (pointerdown only) */
-    onPointerDown = (e: MouseEvent | PointerEvent) => {
-        if (!this.isRowHeader(e)) return;
-        // Only left click
-        if (e.button !== 0) return;
-
-        const rowIndex = this.getRowFromMouseEvent(e);
-        if (rowIndex < 1) return;
-
-        this.dragStarted = false;
-        this.pointerDownRow = rowIndex;
-
-        // Ctrl/Cmd+Click: toggle row selection, but do not drag unless ctrl+drag
-        if (e.ctrlKey || e.metaKey) {
-            const idx = this.selectedRows.indexOf(rowIndex);
-            if (idx === -1) {
-                this.selectedRows.push(rowIndex);
-                this.selectedRow = rowIndex;
-            } else {
-                this.selectedRows.splice(idx, 1);
-                this.selectedRow = this.selectedRows.length ? this.selectedRows[this.selectedRows.length - 1] : -1;
-            }
-            this.cellSelector.clearRangeSelection();
-            this.cellSelector.selectedRow = -1;
-            this.cellSelector.selectedCol = -1;
-            this.cellSelector.isEditing = false;
-            this.cellSelector.inputElement.style.display = 'none';
-            this.redrawGrid();
-        }
-
-        // Always allow drag setup (ctrl or not)
-        this.isDragging = true;
-        this.dragStartRow = rowIndex;
-        if (e.ctrlKey || e.metaKey) {
-            this.initialSelectedRows = [...this.selectedRows];
-        } else {
-            this.initialSelectedRows = [rowIndex];
-        }
-
-        window.addEventListener("pointermove", this.onPointerMove);
-        window.addEventListener("pointerup", this.onPointerUp);
-    };
-
-    /**
-     * Handles pointer move events for row selection.
-     * @param e PointerEvent to handle pointer move events for row selection
-     * @returns 
-     */
-    onPointerMove = (e: PointerEvent) => {
-        if (!this.isDragging || this.dragStartRow === null) return;
-        this.dragStarted = true;
-
-
-        const container = document.getElementById('excel-container') as HTMLDivElement;
-        const rect = container.getBoundingClientRect();
-        const pointerY = e.clientY;
-
-        if (this.rowAutoScroll) {
-            this.rowAutoScroll.checkAutoScroll(e);
-        }
-
-        let rowIndex: number = -1;
-
-        if (pointerY < rect.top) {
-            const scrollTop = container.scrollTop;
-            let totalY = 0;
-            for (let row = 0; row < this.gridMatrix.rowHeights.length; row++) {
-                totalY += this.gridMatrix.rowHeights[row];
-                if (totalY > scrollTop) {
-                    rowIndex = row;
-                    break;
-                }
-            }
-            if (rowIndex === -1) rowIndex = 1;
-        } else if (pointerY > rect.bottom) {
-            const scrollTop = container.scrollTop;
-            const viewportHeight = container.clientHeight;
-            let totalY = 0;
-            for (let row = 0; row < this.gridMatrix.rowHeights.length; row++) {
-                totalY += this.gridMatrix.rowHeights[row];
-                if (totalY > scrollTop + viewportHeight) {
-                    rowIndex = row;
-                    break;
-                }
-            }
-            if (rowIndex === -1) rowIndex = this.gridMatrix.noOfRows - 1;
-        } else {
-            rowIndex = this.getRowFromMouseEvent(e);
-        }
-
-        if (rowIndex < 1 || rowIndex === this.selectedRow) return;
-
-
-
-        // Drag selection: select contiguous range
-        const [start, end] = [this.dragStartRow, rowIndex].sort((a, b) => a - b);
-        let dragRows: number[] = [];
-        for (let row = start; row <= end; row++) {
-            dragRows.push(row);
-        }
-        if ((e.ctrlKey || e.metaKey)) {
-            // Union with any previous ctrl+click selection
-            const allRows = Array.from(new Set([...this.initialSelectedRows, ...dragRows]));
-            this.selectedRows = allRows.sort((a, b) => a - b);
-        } else {
-            // Replace selection with contiguous drag range
-            this.selectedRows = dragRows;
-        }
-        this.selectedRow = rowIndex;
-        this.redrawGrid();
-    };
-
-    onPointerUp = (e: PointerEvent) => {
-        if (this.isDragging) {
-            this.isDragging = false;
-            this.dragStartRow = null;
-            this.initialSelectedRows = [];
-            if (this.rowAutoScroll) {
-                this.rowAutoScroll.clearAutoScroll();
-
-            }
-            window.removeEventListener("pointermove", this.onPointerMove);
-            window.removeEventListener("pointerup", this.onPointerUp);
-
-            // If simple click (no drag), select only that row (unless ctrl/cmd)
-            if (!this.dragStarted && this.pointerDownRow !== null && !(e.ctrlKey || e.metaKey)) {
-                this.selectedRows = [this.pointerDownRow];
-                this.selectedRow = this.pointerDownRow;
-                this.cellSelector.clearRangeSelection();
-                this.cellSelector.selectedRow = -1;
-                this.cellSelector.selectedCol = -1;
-                this.cellSelector.isEditing = false;
-                this.cellSelector.inputElement.style.display = 'none';
-                this.redrawGrid();
-            }
-            this.pointerDownRow = null;
-            this.dragStarted = false;
-        }
-    };
 
 
     // --- END AUTOSCROLL LOGIC ---
@@ -356,7 +209,6 @@ export class RowSelector {
      * - For ctrl+pointerdown (multi-selection with gaps): does not draw top/bottom borders, just fill.
      */
     drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
-
         if (!this.selectedRows || this.selectedRows.length === 0) return;
 
         const container = document.getElementById('excel-container') as HTMLDivElement;
@@ -367,140 +219,153 @@ export class RowSelector {
         const viewportHeight = container.clientHeight;
         const viewport = this.gridMatrix.getViewportBounds(currentScrollLeft, currentScrollTop, viewportWidth, viewportHeight);
 
-        // Sort rows for easier logic
         const sortedRows = [...this.selectedRows].sort((a, b) => a - b);
-
-        // Check if selection is contiguous
-        let isContiguous = true;
-        for (let i = 1; i < sortedRows.length; i++) {
-            if (sortedRows[i] !== sortedRows[i - 1] + 1) {
-                isContiguous = false;
-                break;
-            }
-        }
+        const isContiguous = this.areRowsContiguous(sortedRows);
 
         for (let idx = 0; idx < sortedRows.length; idx++) {
             const selectedRow = sortedRows[idx];
-            // Get row position
             const headerRect = GridCell.getCellRect(selectedRow, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
 
             // Skip drawing if row is completely out of view
             const rowTop = headerRect.y - currentScrollTop;
             const rowBottom = rowTop + headerRect.height;
-            if (rowBottom < 0 || rowTop > viewportHeight) {
-                continue; // Row is not visible, skip drawing
-            }
+            if (rowBottom < 0 || rowTop > viewportHeight) continue;
 
-            // 1. Draw STICKY row header highlight (scrolls vertically, fixed at left)
-            const headerCell = this.gridMatrix.getCell(selectedRow, 0);
+            // 1. Draw row header cell (sticky left)
+            this.drawRowHeaderCell(ctx, selectedRow, headerRect, currentScrollTop);
 
-            ctx.save();
-            ctx.fillStyle = this.rowHeaderBg;
-            ctx.fillRect(0, headerRect.y - currentScrollTop, headerRect.width, headerRect.height);
+            // 2. Draw contiguous borders for row header
+            this.drawContiguousRowBorder(ctx, headerRect, currentScrollTop, isContiguous, idx, sortedRows.length);
 
-            ctx.font = "bold 14px Arial";
-            ctx.fillStyle = this.rowHeaderText;
-            ctx.textAlign = "right";
-            ctx.textBaseline = "bottom";
-            ctx.fillText(
-                headerCell.data || "",
-                headerRect.width - 8,
-                headerRect.y - currentScrollTop + headerRect.height - 4
+            // 3. Draw body selection for this row
+            this.drawBodySelectionCells(
+                ctx, selectedRow, idx, sortedRows, isContiguous, viewport, currentScrollLeft, currentScrollTop
             );
 
-            // Row header borders (solid left, top, bottom only)
-            ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            // Top
-            if (isContiguous && idx === 0) {
-                ctx.moveTo(0, headerRect.y - currentScrollTop);
-                ctx.lineTo(headerRect.width, headerRect.y - currentScrollTop);
-            }
-            // Bottom
-            if (isContiguous && idx === sortedRows.length - 1) {
-                ctx.moveTo(0, headerRect.y - currentScrollTop + headerRect.height);
-                ctx.lineTo(headerRect.width, headerRect.y - currentScrollTop + headerRect.height);
-            }
-            ctx.stroke();
-            ctx.restore();
-
-            // 2. Draw visible data cell highlights (scroll in both directions)
-            for (let col = Math.max(1, viewport.startCol); col < viewport.endCol; col++) {
-                const rect = GridCell.getCellRect(selectedRow, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
-
-                ctx.save();
-                ctx.fillStyle = this.selectionColor + "20";
-                ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
-
-
-                if ((selectedRow === this.selectedRows[this.selectedRows.length - 1]) && col === 1 && this.selectedRows.length > 1 && !isContiguous) {
-                    const container = document.getElementById('excel-container') as HTMLDivElement;
-
-                    this.drawSelectionForRowHeaderInput(selectedRow, col, container.scrollLeft, container.scrollTop);
-                } else if (!(this.selectedRows.length === 1 && col === 1) && !(col === 1 && isContiguous && selectedRow === this.selectedRows[0])) {
-                    ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
-
-                }
-
-                // Only draw top and bottom borders for contiguous drag
-                if (isContiguous) {
-                    const x = rect.x - currentScrollLeft;
-                    const y = rect.y - currentScrollTop;
-                    const w = rect.width;
-                    const h = rect.height;
-
-                    ctx.strokeStyle = this.selectionBorderColor;
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-                    // Top border for first row
-                    if (idx === 0) {
-                        ctx.moveTo(x, y);
-                        ctx.lineTo(x + w, y);
-                    }
-                    // Bottom border for last row
-                    if (idx === sortedRows.length - 1) {
-                        ctx.moveTo(x, y + h);
-                        ctx.lineTo(x + w, y + h);
-                    }
-                    ctx.stroke();
-                }
-
-                ctx.restore();
-            }
-
-            // 3. Draw sticky column header highlights for visible columns
-            for (let col = Math.max(1, viewport.startCol); col < viewport.endCol; col++) {
-                const colHeaderRect = GridCell.getCellRect(0, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
-                const colHeaderCell = this.gridMatrix.getCell(0, col);
-
-                ctx.save();
-                ctx.fillStyle = "#caead8";
-                ctx.fillRect(colHeaderRect.x - currentScrollLeft, 0, colHeaderRect.width, colHeaderRect.height);
-
-                ctx.font = "bold 14px Arial";
-                ctx.fillStyle = "#107c41";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(
-                    colHeaderCell.data || "",
-                    colHeaderRect.x - currentScrollLeft + colHeaderRect.width / 2,
-                    colHeaderRect.height / 2
-                );
-
-                // Thick green bottom border for column headers
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(colHeaderRect.x - currentScrollLeft, colHeaderRect.height - 1);
-                ctx.lineTo(colHeaderRect.x - currentScrollLeft + colHeaderRect.width, colHeaderRect.height - 1);
-                ctx.stroke();
-                ctx.restore();
-            }
+            // 4. Draw sticky column headers for visible columns
+            this.drawColumnHeaderCells(ctx, viewport, currentScrollLeft);
         }
 
-        // 5. REDRAW CORNER CELL (0,0) to ensure it's always on top
+        // 5. Redraw corner cell to keep it on top
         this.drawCornerCell(ctx);
+    }
+
+    areRowsContiguous(rows: number[]): boolean {
+        for (let i = 1; i < rows.length; i++) {
+            if (rows[i] !== rows[i - 1] + 1) return false;
+        }
+        return true;
+    }
+
+    drawRowHeaderCell(ctx: CanvasRenderingContext2D, row: number, rect: any, scrollTop: number) {
+        const headerCell = this.gridMatrix.getCell(row, 0);
+        ctx.save();
+        ctx.fillStyle = this.rowHeaderBg;
+        ctx.fillRect(0, rect.y - scrollTop, rect.width, rect.height);
+
+        ctx.font = "bold 14px Arial";
+        ctx.fillStyle = this.rowHeaderText;
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(
+            headerCell.data || "",
+            rect.width - 8,
+            rect.y - scrollTop + rect.height - 4
+        );
+        ctx.restore();
+    }
+
+    drawContiguousRowBorder(ctx: CanvasRenderingContext2D, rect: any, scrollTop: number, isContiguous: boolean, idx: number, totalRows: number) {
+        if (!isContiguous) return;
+        ctx.save();
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        // Top
+        if (idx === 0) {
+            ctx.moveTo(0, rect.y - scrollTop);
+            ctx.lineTo(rect.width, rect.y - scrollTop);
+        }
+        // Bottom
+        if (idx === totalRows - 1) {
+            ctx.moveTo(0, rect.y - scrollTop + rect.height);
+            ctx.lineTo(rect.width, rect.y - scrollTop + rect.height);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    drawBodySelectionCells(
+        ctx: CanvasRenderingContext2D, selectedRow: number, idx: number, sortedRows: number[], isContiguous: boolean,
+        viewport: any, scrollLeft: number, scrollTop: number
+    ) {
+        for (let col = Math.max(1, viewport.startCol); col < viewport.endCol; col++) {
+            const rect = GridCell.getCellRect(selectedRow, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+
+            ctx.save();
+            ctx.fillStyle = this.selectionColor + "20";
+            ctx.fillRect(rect.x - scrollLeft, rect.y - scrollTop, rect.width, rect.height);
+
+            // Special preview highlight logic
+            if ((selectedRow === sortedRows[sortedRows.length - 1]) && col === 1 && sortedRows.length > 1 && !isContiguous) {
+                const container = document.getElementById('excel-container') as HTMLDivElement;
+                this.drawSelectionForRowHeaderInput(selectedRow, col, container.scrollLeft, container.scrollTop);
+            } else if (!(sortedRows.length === 1 && col === 1) && !(col === 1 && isContiguous && selectedRow === sortedRows[0])) {
+                ctx.fillRect(rect.x - scrollLeft, rect.y - scrollTop, rect.width, rect.height);
+            }
+
+            // Draw contiguous top/bottom border
+            if (isContiguous) {
+                const x = rect.x - scrollLeft;
+                const y = rect.y - scrollTop;
+                const w = rect.width;
+                const h = rect.height;
+
+                ctx.strokeStyle = this.selectionBorderColor;
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                if (idx === 0) {
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x + w, y);
+                }
+                if (idx === sortedRows.length - 1) {
+                    ctx.moveTo(x, y + h);
+                    ctx.lineTo(x + w, y + h);
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+        }
+    }
+
+    drawColumnHeaderCells(ctx: CanvasRenderingContext2D, viewport: any, scrollLeft: number) {
+        for (let col = Math.max(1, viewport.startCol); col < viewport.endCol; col++) {
+            const colHeaderRect = GridCell.getCellRect(0, col, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+            const colHeaderCell = this.gridMatrix.getCell(0, col);
+
+            ctx.save();
+            ctx.fillStyle = "#caead8";
+            ctx.fillRect(colHeaderRect.x - scrollLeft, 0, colHeaderRect.width, colHeaderRect.height);
+
+            ctx.font = "bold 14px Arial";
+            ctx.fillStyle = "#107c41";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(
+                colHeaderCell.data || "",
+                colHeaderRect.x - scrollLeft + colHeaderRect.width / 2,
+                colHeaderRect.height / 2
+            );
+
+            // Thick green bottom border for column headers
+            ctx.strokeStyle = this.selectionBorderColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(colHeaderRect.x - scrollLeft, colHeaderRect.height - 1);
+            ctx.lineTo(colHeaderRect.x - scrollLeft + colHeaderRect.width, colHeaderRect.height - 1);
+            ctx.stroke();
+            ctx.restore();
+        }
     }
 
     // Add this new method to RowSelector

@@ -22,7 +22,7 @@ export class ColumnSelector {
     /** Colors for selection and column header */
     selectionColor = "#0f9d58";
     /** Border color for selected columns */
-    selectionBorderColor = "#137e43";
+    selectionBorderColor = "#1a7f37";
     /** Background color for column headers */
     columnHeaderBg = "#107c41";
     /** Text color for column headers */
@@ -32,15 +32,15 @@ export class ColumnSelector {
 
     /** Initial selected columns when starting a drag operation */
     // This is used to remember the initial selection state when ctrl/dragging
-    private initialSelectedCols: number[] = [];
+    initialSelectedCols: number[] = [];
 
     colAutoScroll?: Column;
 
     // Drag state
-    private dragStartCol: number | null = null;
-    private isDragging: boolean = false;
-    private dragStarted = false;
-    private pointerDownCol: number | null = null;
+    dragStartCol: number | null = null;
+    isDragging: boolean = false;
+    dragStarted = false;
+    pointerDownCol: number | null = null;
 
 
     /**
@@ -66,149 +66,6 @@ export class ColumnSelector {
     setColAutoScroll(c: Column) {
         this.colAutoScroll = c;
     }
-
-    /**
-     * Initializes event listeners for column selection.
-     * Should be called after setting the canvas.
-     */
-    onPointerDown = (e: PointerEvent) => {
-
-        console.log('PointerDown', e, this.isColumnHeader(e));
-        this.dragStartCol = null;
-        this.cellSelector?.selectCell(-1, -1);
-        if (!this.isColumnHeader(e)) return;
-        if (e.button !== 0) return;
-
-        const colIndex = this.getColFromMouseEvent(e);
-        if (colIndex < 0) return;
-
-        this.dragStarted = false;
-        this.pointerDownCol = colIndex;
-
-        // Ctrl/Cmd+Click: toggle multi-select, but do not drag
-        if (e.ctrlKey || e.metaKey) {
-            const idx = this.selectedCols.indexOf(colIndex);
-            if (idx === -1) {
-                this.selectedCols.push(colIndex);
-                this.selectedCol = colIndex;
-            } else {
-                this.selectedCols.splice(idx, 1);
-                this.selectedCol = this.selectedCols.length ? this.selectedCols[this.selectedCols.length - 1] : -1;
-            }
-            if (this.cellSelector) {
-                this.cellSelector.clearRangeSelection();
-                this.cellSelector.selectedRow = -1;
-                this.cellSelector.selectedCol = -1;
-                this.cellSelector.isEditing = false;
-                this.cellSelector.inputElement.style.display = 'none';
-            }
-            this.redrawGrid();
-            // prepare for possible ctrl+drag
-        }
-
-        // Always prepare for drag (ctrl or not)
-        this.isDragging = true;
-        this.dragStartCol = colIndex;
-        this.initialSelectedCols = (e.ctrlKey || e.metaKey) ? [...this.selectedCols] : [colIndex];
-
-        window.addEventListener('pointermove', this.onPointerMove);
-        window.addEventListener('pointerup', this.onPointerUp);
-    };
-
-    /**
-     * Handles pointer move events for dragging column selection.
-     * Updates the selected columns based on drag position.
-     * @param e PointerEvent from the mouse movement
-     */
-    onPointerMove = (e: PointerEvent) => {
-        if (!this.isDragging || this.dragStartCol === null) return;
-        this.dragStarted = true;
-        const container = document.getElementById('excel-container') as HTMLDivElement;
-        const rect = container.getBoundingClientRect();
-        const pointerX = e.clientX;
-
-        if (this.colAutoScroll) {
-            this.colAutoScroll.checkAutoScroll(e);
-        }
-
-        let colIndex: number = -1;
-
-        if (pointerX < rect.left) {
-            const scrollLeft = container.scrollLeft;
-            let totalX = 0;
-            for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
-                totalX += this.gridMatrix.columnWidths[col];
-                if (totalX > scrollLeft) {
-                    colIndex = col;
-                    break;
-                }
-            }
-            if (colIndex === -1) colIndex = 1;
-        } else if (pointerX > rect.right) {
-            const scrollLeft = container.scrollLeft;
-            const viewportWidth = container.clientWidth;
-            let totalX = 0;
-            for (let col = 0; col < this.gridMatrix.columnWidths.length; col++) {
-                totalX += this.gridMatrix.columnWidths[col];
-                if (totalX > scrollLeft + viewportWidth) {
-                    colIndex = col;
-                    break;
-                }
-            }
-            if (colIndex === -1) colIndex = this.gridMatrix.noOfCols - 1;
-        } else {
-            colIndex = this.getColFromMouseEvent(e);
-        }
-
-        if (colIndex < 0 || colIndex === this.selectedCol) return;
-
-        const [start, end] = [this.dragStartCol, colIndex].sort((a, b) => a - b);
-        let dragCols: number[] = [];
-        for (let col = start; col <= end; col++) dragCols.push(col);
-
-        if (e.ctrlKey || e.metaKey) {
-            const allCols = Array.from(new Set([...this.initialSelectedCols, ...dragCols]));
-            this.selectedCols = allCols.sort((a, b) => a - b);
-        } else {
-            this.selectedCols = dragCols;
-        }
-        this.selectedCol = colIndex;
-        this.redrawGrid();
-    };
-
-    /**
-     * Handles pointer up events to finalize column selection.
-     * Cleans up drag state and event listeners.
-     * @param e PointerEvent from the mouse release
-     */
-    onPointerUp = (e: PointerEvent) => {
-        if (this.isDragging) {
-            this.isDragging = false;
-            this.initialSelectedCols = [];
-            if (this.colAutoScroll) {
-                this.colAutoScroll.clearAutoScroll();
-            }
-            window.removeEventListener('pointermove', this.onPointerMove);
-            window.removeEventListener('pointerup', this.onPointerUp);
-
-            // If simple click (no drag), select only that column (unless ctrl/cmd)
-            if (!this.dragStarted && this.pointerDownCol !== null && !(e.ctrlKey || e.metaKey)) {
-                this.selectedCols = [this.pointerDownCol];
-                this.selectedCol = this.pointerDownCol;
-                if (this.cellSelector) {
-                    this.cellSelector.clearRangeSelection();
-                    this.cellSelector.selectedRow = -1;
-                    this.cellSelector.selectedCol = -1;
-                    this.cellSelector.isEditing = false;
-                    this.cellSelector.inputElement.style.display = 'none';
-                }
-                this.redrawGrid();
-            }
-            this.pointerDownCol = null;
-            this.dragStarted = false;
-        }
-    };
-
 
     /**
      * Checks if the mouse event is over a column header.
@@ -392,15 +249,24 @@ export class ColumnSelector {
             e.preventDefault();
         }
     }
-
     /**
      * Draws the selection rectangle for the column header input.
      * @param ctx CanvasRenderingContext2D to draw the selection
      * @param scrollLeft The current horizontal scroll position
      * @param scrollTop The current vertical scroll position
+     * @param previewColIndex (optional) If set, use previewColWidth for the header cell at this column.
+     * @param previewColWidth (optional) The temporary width to use for the header cell at previewColIndex.
+     * @param suppressHeaderSelectionColor (optional) If true, do not fill the header selection color (for preview).
      * @returns 
      */
-    drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
+    drawSelection(
+        ctx: CanvasRenderingContext2D,
+        scrollLeft = 0,
+        scrollTop = 0,
+        previewColIndex?: number,
+        previewColWidth?: number,
+        suppressHeaderSelectionColor: boolean = false
+    ) {
         if (!this.selectedCols || this.selectedCols.length === 0) return;
 
         const container = document.getElementById('excel-container') as HTMLDivElement;
@@ -412,138 +278,174 @@ export class ColumnSelector {
         const viewport = this.gridMatrix.getViewportBounds(currentScrollLeft, currentScrollTop, viewportWidth, viewportHeight);
 
         const sortedCols = [...this.selectedCols].sort((a, b) => a - b);
-
-        let isContiguous = true;
-        for (let i = 1; i < sortedCols.length; i++) {
-            if (sortedCols[i] !== sortedCols[i - 1] + 1) {
-                isContiguous = false;
-                break;
-            }
-        }
+        const isContiguous = this.areColumnsContiguous(sortedCols);
 
         for (let idx = 0; idx < sortedCols.length; idx++) {
             const selectedCol = sortedCols[idx];
-            const headerRect = GridCell.getCellRect(0, selectedCol, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+            const width = (previewColIndex !== undefined && previewColWidth !== undefined && selectedCol === previewColIndex)
+                ? previewColWidth
+                : this.gridMatrix.columnWidths[selectedCol];
 
-            // 1. Column header (sticky at top, scrolls horizontally)
-            const headerCell = this.gridMatrix.getCell(0, selectedCol);
-            ctx.save();
-            ctx.fillStyle = this.columnHeaderBg;
-            ctx.fillRect(headerRect.x - currentScrollLeft, 0, headerRect.width, headerRect.height);
+            const headerRect = GridCell.getCellRect(0, selectedCol, this.gridMatrix.rowHeights, [
+                ...this.gridMatrix.columnWidths.slice(0, selectedCol),
+                width,
+                ...this.gridMatrix.columnWidths.slice(selectedCol + 1)
+            ]);
 
-            ctx.font = "bold 14px Arial";
-            ctx.fillStyle = this.columnHeaderText;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(
-                headerCell.data || "",
-                headerRect.x - currentScrollLeft + headerRect.width / 2,
-                headerRect.height / 2
+            // Draw column header cell
+            if (!suppressHeaderSelectionColor) {
+                this.drawHeaderCell(ctx, selectedCol, headerRect, width, currentScrollLeft);
+            }
+
+            // Draw header cell border (white, Excel-style)
+            if (idx < sortedCols.length - 1) {
+                this.drawHeaderCellBorder(ctx, headerRect, width, currentScrollLeft);
+            }
+
+            // Draw contiguous selection border for header
+            if (isContiguous) {
+                this.drawContiguousHeaderBorder(ctx, headerRect, width, currentScrollLeft, idx, sortedCols.length);
+            }
+
+            // Draw body cells and their selection
+            this.drawBodySelectionCells(
+                ctx, selectedCol, idx, sortedCols, isContiguous,
+                viewport, currentScrollLeft, currentScrollTop, previewColIndex, previewColWidth
             );
 
-            // --- White border at the right of each selected header except the last ---
-            if (idx < sortedCols.length - 1) {
-                ctx.save();
-                ctx.strokeStyle = "#fff";
+            // Draw row headers for visible rows (with green border)
+            this.drawRowHeaderCells(ctx, viewport, currentScrollTop);
+        }
+    }
+
+    areColumnsContiguous(cols: number[]): boolean {
+        for (let i = 1; i < cols.length; i++) {
+            if (cols[i] !== cols[i - 1] + 1) return false;
+        }
+        return true;
+    }
+
+    drawHeaderCell(ctx: CanvasRenderingContext2D, col: number, rect: any, width: number, scrollLeft: number) {
+        const headerCell = this.gridMatrix.getCell(0, col);
+        ctx.save();
+        ctx.fillStyle = this.columnHeaderBg;
+        ctx.fillRect(rect.x - scrollLeft, 0, width, rect.height);
+
+        ctx.font = "bold 14px Arial";
+        ctx.fillStyle = this.columnHeaderText;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(
+            headerCell.data || "",
+            rect.x - scrollLeft + width / 2,
+            rect.height / 2
+        );
+        ctx.restore();
+    }
+
+    drawHeaderCellBorder(ctx: CanvasRenderingContext2D, rect: any, width: number, scrollLeft: number) {
+        ctx.save();
+        ctx.strokeStyle = "#fff";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(rect.x - scrollLeft + width, 0);
+        ctx.lineTo(rect.x - scrollLeft + width, rect.height);
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    drawContiguousHeaderBorder(ctx: CanvasRenderingContext2D, rect: any, width: number, scrollLeft: number, idx: number, totalCols: number) {
+        ctx.save();
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        if (idx === 0) {
+            ctx.moveTo(rect.x - scrollLeft, 0);
+            ctx.lineTo(rect.x - scrollLeft, rect.height);
+        }
+        if (idx === totalCols - 1) {
+            ctx.moveTo(rect.x - scrollLeft + width, 0);
+            ctx.lineTo(rect.x - scrollLeft + width, rect.height);
+        }
+        ctx.stroke();
+        ctx.restore();
+    }
+
+    drawBodySelectionCells(
+        ctx: CanvasRenderingContext2D, selectedCol: number, idx: number, sortedCols: number[], isContiguous: boolean,
+        viewport: any, scrollLeft: number, scrollTop: number, previewColIndex?: number, previewColWidth?: number
+    ) {
+        for (let row = Math.max(1, viewport.startRow); row < viewport.endRow; row++) {
+            const rect = GridCell.getCellRect(row, selectedCol, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+
+            ctx.save();
+            ctx.fillStyle = this.selectionColor + "20";
+
+            if ((selectedCol === sortedCols[sortedCols.length - 1]) && row === 1 && sortedCols.length > 1 && !isContiguous) {
+                const container = document.getElementById('excel-container') as HTMLDivElement;
+                this.drawSelectionForColumnHeaderInput(row, selectedCol, container.scrollLeft, container.scrollTop);
+            } else if (!(sortedCols.length === 1 && row === 1) && !(row === 1 && isContiguous && selectedCol === sortedCols[0])) {
+                ctx.fillRect(rect.x - scrollLeft, rect.y - scrollTop, rect.width, rect.height);
+            }
+
+            if (isContiguous) {
+                const x = rect.x - scrollLeft;
+                const y = rect.y - scrollTop;
+                const w = rect.width;
+                const h = rect.height;
+
+                ctx.strokeStyle = this.selectionBorderColor;
                 ctx.lineWidth = 1;
                 ctx.beginPath();
-                ctx.moveTo(headerRect.x - currentScrollLeft + headerRect.width, 0);
-                ctx.lineTo(headerRect.x - currentScrollLeft + headerRect.width, headerRect.height);
-                ctx.stroke();
-                ctx.restore();
-            }
-
-            // Existing contiguous selection border logic...
-            if (isContiguous) {
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
                 if (idx === 0) {
-                    ctx.moveTo(headerRect.x - currentScrollLeft, 0);
-                    ctx.lineTo(headerRect.x - currentScrollLeft, headerRect.height);
+                    ctx.moveTo(x, y);
+                    ctx.lineTo(x, y + h);
                 }
                 if (idx === sortedCols.length - 1) {
-                    ctx.moveTo(headerRect.x - currentScrollLeft + headerRect.width, 0);
-                    ctx.lineTo(headerRect.x - currentScrollLeft + headerRect.width, headerRect.height);
+                    ctx.moveTo(x + w, y);
+                    ctx.lineTo(x + w, y + h);
                 }
                 ctx.stroke();
             }
+            ctx.restore();
+        }
+    }
+
+    drawRowHeaderCells(ctx: CanvasRenderingContext2D, viewport: any, scrollTop: number) {
+        for (let row = Math.max(1, viewport.startRow); row < viewport.endRow; row++) {
+            const rowHeaderRect = GridCell.getCellRect(row, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
+            const rowHeaderCell = this.gridMatrix.getCell(row, 0);
+
+            ctx.save();
+            ctx.fillStyle = "#caead8";
+            ctx.fillRect(0, rowHeaderRect.y - scrollTop, rowHeaderRect.width, rowHeaderRect.height);
+
+            ctx.font = "14px Arial";
+            ctx.fillStyle = "#0f7072";
+            ctx.textAlign = "right";
+            ctx.textBaseline = "bottom";
+            ctx.fillText(
+                rowHeaderCell.data || "",
+                rowHeaderRect.width - 8,
+                rowHeaderRect.y - scrollTop + rowHeaderRect.height - 4
+            );
+
+            ctx.beginPath();
+            ctx.moveTo(0, rowHeaderRect.y - scrollTop + rowHeaderRect.height - 1);
+            ctx.lineTo(rowHeaderRect.width, rowHeaderRect.y - scrollTop + rowHeaderRect.height - 1);
+            ctx.strokeStyle = "#f5f5f5";
+            ctx.lineWidth = 0.7;
+            ctx.stroke();
+
+            // Green border at right
+            ctx.beginPath();
+            ctx.moveTo(rowHeaderRect.width - 1.5, rowHeaderRect.y - scrollTop);
+            ctx.lineTo(rowHeaderRect.width - 1.5, rowHeaderRect.y - scrollTop + rowHeaderRect.height);
+            ctx.strokeStyle = this.selectionBorderColor;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
 
             ctx.restore();
-
-            for (let row = Math.max(1, viewport.startRow); row < viewport.endRow; row++) {
-                const rect = GridCell.getCellRect(row, selectedCol, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
-
-                ctx.save();
-                ctx.fillStyle = this.selectionColor + "20";
-
-                if ((selectedCol === this.selectedCols[this.selectedCols.length - 1]) && row === 1 && this.selectedCols.length > 1 && !isContiguous) {
-                    const container = document.getElementById('excel-container') as HTMLDivElement;
-
-                    this.drawSelectionForColumnHeaderInput(row, selectedCol, container.scrollLeft, container.scrollTop);
-                } else if (!(this.selectedCols.length === 1 && row === 1) && !(row === 1 && isContiguous && selectedCol === this.selectedCols[0])) {
-                    ctx.fillRect(rect.x - currentScrollLeft, rect.y - currentScrollTop, rect.width, rect.height);
-
-                }
-
-                if (isContiguous) {
-                    const x = rect.x - currentScrollLeft;
-                    const y = rect.y - currentScrollTop;
-                    const w = rect.width;
-                    const h = rect.height;
-
-                    ctx.strokeStyle = this.selectionBorderColor;
-                    ctx.lineWidth = 1;
-                    ctx.beginPath();
-
-                    if (idx === 0) {
-                        ctx.moveTo(x, y);
-                        ctx.lineTo(x, y + h);
-                    }
-                    if (idx === sortedCols.length - 1) {
-                        ctx.moveTo(x + w, y);
-                        ctx.lineTo(x + w, y + h);
-                    }
-                    ctx.stroke();
-                }
-                ctx.restore();
-            }
-
-            for (let row = Math.max(1, viewport.startRow); row < viewport.endRow; row++) {
-                const rowHeaderRect = GridCell.getCellRect(row, 0, this.gridMatrix.rowHeights, this.gridMatrix.columnWidths);
-                const rowHeaderCell = this.gridMatrix.getCell(row, 0);
-
-                ctx.save();
-                ctx.fillStyle = "#caead8";
-                ctx.fillRect(0, rowHeaderRect.y - currentScrollTop, rowHeaderRect.width, rowHeaderRect.height);
-
-                ctx.font = "14px Arial";
-                ctx.fillStyle = "#0f7072";
-                ctx.textAlign = "right";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(
-                    rowHeaderCell.data || "",
-                    rowHeaderRect.width - 8,
-                    rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 4
-                );
-
-                ctx.beginPath();
-                ctx.moveTo(0, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 1);
-                ctx.lineTo(rowHeaderRect.width, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height - 1);
-                ctx.strokeStyle = "#f5f5f5";
-                ctx.lineWidth = 0.7;
-                ctx.stroke();
-
-                // ADD: Green border at the right of the row header if columns are selected
-                ctx.beginPath();
-                ctx.moveTo(rowHeaderRect.width - 1.5, rowHeaderRect.y - currentScrollTop);
-                ctx.lineTo(rowHeaderRect.width - 1.5, rowHeaderRect.y - currentScrollTop + rowHeaderRect.height);
-                ctx.strokeStyle = this.selectionBorderColor; // Use green
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
-
-                ctx.restore();
-            }
         }
     }
 

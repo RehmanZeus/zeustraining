@@ -1,15 +1,15 @@
 import { Command } from "./Command";
 import { GridMatrix } from "../GridMatrix";
-import { GridResizer } from "../GridResizer";
+import { RowResizer } from "../RowResizer";
 
 export class ResizeRowCommand implements Command {
     private gridMatrix: GridMatrix;
     private rowIndex: number;
     private oldHeight: number;
     private newHeight: number;
-    private gridResizer: GridResizer
+    private gridResizer: RowResizer
     container: HTMLDivElement
-    constructor(gridMatrix: GridMatrix, rowIndex: number, oldHeight: number, newHeight: number, gridResizer: GridResizer) {
+    constructor(gridMatrix: GridMatrix, rowIndex: number, oldHeight: number, newHeight: number, gridResizer: RowResizer) {
         this.gridMatrix = gridMatrix;
         this.rowIndex = rowIndex;
         this.oldHeight = oldHeight;

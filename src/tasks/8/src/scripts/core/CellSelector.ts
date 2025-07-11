@@ -271,12 +271,19 @@ export class CellSelector {
         if (this.isEditing) return;
         if ((this.selectedRow === -1 || this.selectedCol === -1) && (this.selectionStartRow == -1 && this.selectionStartCol == -1)) return;
 
+        if (this.anchorRow !== null && this.anchorCol !== null && e.key.length === 1 && !e.ctrlKey && !e.altKey && !e.metaKey) {
+            this.selectedRow = this.anchorRow;
+            this.selectedCol = this.anchorCol;
+            const gridData = this.gridMatrix.getCell(this.anchorRow, this.anchorCol);
+            this.startEditing(gridData.data);
+        }
+
         const shift = e.shiftKey;
 
         if (shift) {
             // --- Shift+Arrow: expand/shrink selection range ---
             let dRow = 0, dCol = 0;
-            
+
 
             switch (e.key) {
                 case 'ArrowUp': dRow = -1; break;
@@ -301,7 +308,7 @@ export class CellSelector {
             case 'ArrowDown':
             case 'Enter':
                 e.preventDefault();
-                console.log(this.selectedRow, this.selectedCol)
+
                 if (this.isEditing) {
                     console.log("yolo", this.selectedRow, this.selectedCol)
                     this.moveSelection(-1, 0);
@@ -601,230 +608,343 @@ export class CellSelector {
      * @param scrollTop The amount of vertical scrolling.
      * @returns void
      */
-    drawSelection(ctx: CanvasRenderingContext2D, scrollLeft = 0, scrollTop = 0) {
-        // If a range selection is present, draw the range highlight
-        if (
+    drawSelection(
+        ctx: CanvasRenderingContext2D,
+        scrollLeft = 0,
+        scrollTop = 0,
+        suppressHeaderSelection: boolean = false
+    ) {
+        if (this.hasRangeSelection()) {
+            this.drawRangeHighlight(ctx, scrollLeft, scrollTop, suppressHeaderSelection);
+            return;
+        }
+        if (this.hasSingleCellSelection()) {
+            this.drawSingleCellHighlight(ctx, scrollLeft, scrollTop, suppressHeaderSelection);
+        }
+    }
+
+    hasRangeSelection() {
+        return (
             this.selectionStartRow > 0 && this.selectionStartCol > 0 &&
             this.selectionEndRow > 0 && this.selectionEndCol > 0 &&
             (this.selectionStartRow !== this.selectionEndRow || this.selectionStartCol !== this.selectionEndCol)
-        ) {
-            let minRow = Math.min(this.selectionStartRow, this.selectionEndRow);
-            let maxRow = Math.max(this.selectionStartRow, this.selectionEndRow);
-            let minCol = Math.min(this.selectionStartCol, this.selectionEndCol);
-            let maxCol = Math.max(this.selectionStartCol, this.selectionEndCol);
+        );
+    }
 
-            // 1. Fill selection cells and headers background
-            ctx.save();
-            ctx.globalAlpha = 0.3;
-            for (let row = minRow; row <= maxRow; row++) {
-                for (let col = minCol; col <= maxCol; col++) {
-                    if (row === this.anchorRow && col === this.anchorCol) continue;
-                    const { x, y, width, height } = GridCell.getCellRect(
-                        row, col,
-                        this.gridMatrix.rowHeights,
-                        this.gridMatrix.columnWidths
-                    );
-                    ctx.fillStyle = '#caead8';
-                    ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
-                }
-            }
-            for (let col = minCol; col <= maxCol; col++) {
-                const { x, y, width, height } = GridCell.getCellRect(
-                    0, col,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.fillStyle = "#caead8";
-                ctx.fillRect(x - scrollLeft, y, width, height);
-            }
-            for (let row = minRow; row <= maxRow; row++) {
-                const { x, y, width, height } = GridCell.getCellRect(
-                    row, 0,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.fillStyle = "#caead8";
-                ctx.fillRect(x, y - scrollTop, width, height);
-            }
-            ctx.globalAlpha = 1.0;
+    hasSingleCellSelection() {
+        return this.selectedRow > 0 && this.selectedCol > 0;
+    }
 
-            // 2. Draw header text (white)
-            for (let col = minCol; col <= maxCol; col++) {
-                const colHeader = this.gridMatrix.getCell(0, col);
-                const { x, y, width, height } = GridCell.getCellRect(
-                    0, col,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.font = "14px Arial";
-                ctx.fillStyle = "#0f7d87";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(
-                    colHeader.data || "",
-                    x + width / 2 - scrollLeft,
-                    y + height / 2
-                );
-            }
-            for (let row = minRow; row <= maxRow; row++) {
-                const rowHeader = this.gridMatrix.getCell(row, 0);
-                const { x, y, width, height } = GridCell.getCellRect(
-                    row, 0,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.font = "14px Arial";
-                ctx.fillStyle = "#0f7d87";
-                ctx.textAlign = "right";
-                ctx.textBaseline = "bottom";
-                ctx.fillText(
-                    rowHeader.data || "",
-                    x + width - 8,
-                    y + height - 4 - scrollTop
-                );
-            }
+    drawRangeHighlight(
+        ctx: CanvasRenderingContext2D,
+        scrollLeft: number,
+        scrollTop: number,
+        suppressHeaderSelection: boolean
+    ) {
+        let minRow = Math.min(this.selectionStartRow, this.selectionEndRow);
+        let maxRow = Math.max(this.selectionStartRow, this.selectionEndRow);
+        let minCol = Math.min(this.selectionStartCol, this.selectionEndCol);
+        let maxCol = Math.max(this.selectionStartCol, this.selectionEndCol);
 
-            // 3. Draw thick header borders
-            ctx.save();
-            ctx.strokeStyle = "#107c41";
-            ctx.lineWidth = 2;
-            for (let col = minCol; col <= maxCol; col++) {
-                const { x, y, width, height } = GridCell.getCellRect(
-                    0, col,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.beginPath();
-                ctx.moveTo(x - scrollLeft, y + height - 1);
-                ctx.lineTo(x - scrollLeft + width, y + height - 1);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            ctx.save();
-            ctx.strokeStyle = "#107c41";
-            ctx.lineWidth = 2;
-            for (let row = minRow; row <= maxRow; row++) {
-                const { x, y, width, height } = GridCell.getCellRect(
-                    row, 0,
-                    this.gridMatrix.rowHeights,
-                    this.gridMatrix.columnWidths
-                );
-                ctx.beginPath();
-                ctx.moveTo(x + width - 1, y - scrollTop);
-                ctx.lineTo(x + width - 1, y + height - scrollTop);
-                ctx.stroke();
-            }
-            ctx.restore();
-
-            // 4. Draw border around the selection
-            ctx.save();
-            ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 2;
-            const { x: topLeftX, y: topLeftY } = GridCell.getCellRect(
-                minRow, minCol,
-                this.gridMatrix.rowHeights,
-                this.gridMatrix.columnWidths
-            );
-            const { x: bottomRightX, y: bottomRightY, width: bottomRightW, height: bottomRightH } = GridCell.getCellRect(
-                maxRow, maxCol,
-                this.gridMatrix.rowHeights,
-                this.gridMatrix.columnWidths
-            );
-            ctx.strokeRect(
-                topLeftX - scrollLeft, topLeftY - scrollTop,
-                (bottomRightX + bottomRightW) - topLeftX,
-                (bottomRightY + bottomRightH) - topLeftY
-            );
-            ctx.restore();
-            return;
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        this.fillRangeCells(ctx, minRow, maxRow, minCol, maxCol, scrollLeft, scrollTop);
+        if (!suppressHeaderSelection) {
+            this.fillRangeColumnHeaders(ctx, minCol, maxCol, scrollLeft);
         }
-        // Otherwise, draw single cell highlight if available and not dragging
-        if (this.selectedRow > 0 && this.selectedCol > 0) {
-            const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
-            const header = this.gridMatrix.getCell(0, this.selectedCol);
-            const row = this.gridMatrix.getCell(this.selectedRow, 0);
+        this.fillRangeRowHeaders(ctx, minRow, maxRow, scrollTop);
+        ctx.globalAlpha = 1.0;
 
+        if (!suppressHeaderSelection) {
+            this.drawRangeHeaderTexts(ctx, minCol, maxCol, scrollLeft);
+        }
+        this.drawRangeRowHeaderTexts(ctx, minRow, maxRow, scrollTop);
+
+        if (!suppressHeaderSelection) {
+            this.drawRangeHeaderBorders(ctx, minCol, maxCol, scrollLeft);
+        }
+        this.drawRangeRowBorders(ctx, minRow, maxRow, scrollTop);
+
+        this.drawRangeSelectionBorder(ctx, minRow, maxRow, minCol, maxCol, scrollLeft, scrollTop);
+    }
+
+    fillRangeCells(
+        ctx: CanvasRenderingContext2D,
+        minRow: number, maxRow: number,
+        minCol: number, maxCol: number,
+        scrollLeft: number, scrollTop: number
+    ) {
+        for (let row = minRow; row <= maxRow; row++) {
+            for (let col = minCol; col <= maxCol; col++) {
+                if (row === this.anchorRow && col === this.anchorCol) continue;
+                const { x, y, width, height } = GridCell.getCellRect(
+                    row, col,
+                    this.gridMatrix.rowHeights,
+                    this.gridMatrix.columnWidths
+                );
+                ctx.fillStyle = '#caead8';
+                ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
+            }
+        }
+    }
+
+    fillRangeColumnHeaders(
+        ctx: CanvasRenderingContext2D,
+        minCol: number, maxCol: number,
+        scrollLeft: number
+    ) {
+        for (let col = minCol; col <= maxCol; col++) {
             const { x, y, width, height } = GridCell.getCellRect(
-                this.selectedRow, this.selectedCol,
+                0, col,
                 this.gridMatrix.rowHeights,
                 this.gridMatrix.columnWidths
             );
-            const { x: hx, y: hy, width: hw, height: hh } = GridCell.getCellRect(
-                0, this.selectedCol,
-                this.gridMatrix.rowHeights,
-                this.gridMatrix.columnWidths
-            );
-            const { x: rx, y: ry, width: rw, height: rh } = GridCell.getCellRect(
-                this.selectedRow, 0,
-                this.gridMatrix.rowHeights,
-                this.gridMatrix.columnWidths
-            );
-
-            // --- Highlight column header cell ---
-            ctx.save();
             ctx.fillStyle = "#caead8";
-            ctx.fillRect(hx - scrollLeft, hy - scrollTop, hw, hh);
+            ctx.fillRect(x - scrollLeft, y, width, height);
+        }
+    }
 
-            // Redraw column header text
+    fillRangeRowHeaders(
+        ctx: CanvasRenderingContext2D,
+        minRow: number, maxRow: number,
+        scrollTop: number
+    ) {
+        for (let row = minRow; row <= maxRow; row++) {
+            const { x, y, width, height } = GridCell.getCellRect(
+                row, 0,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
+            ctx.fillStyle = "#caead8";
+            ctx.fillRect(x, y - scrollTop, width, height);
+        }
+    }
+
+    drawRangeHeaderTexts(
+        ctx: CanvasRenderingContext2D,
+        minCol: number, maxCol: number,
+        scrollLeft: number
+    ) {
+        for (let col = minCol; col <= maxCol; col++) {
+            const colHeader = this.gridMatrix.getCell(0, col);
+            const { x, y, width, height } = GridCell.getCellRect(
+                0, col,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
             ctx.font = "14px Arial";
-            ctx.fillStyle = "#616161";
+            ctx.fillStyle = "#0f7d87";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
             ctx.fillText(
-                header.data || "",
-                hx + hw / 2 - scrollLeft,
-                hy + hh / 2 - scrollTop
+                colHeader.data || "",
+                x + width / 2 - scrollLeft,
+                y + height / 2
             );
-            // Draw bottom border for the column header
-            if (this.selectedRow !== 1) {
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(hx - scrollLeft, hy + hh - 1 - scrollTop);
-                ctx.lineTo(hx + hw - scrollLeft, hy + hh - 1 - scrollTop);
-                ctx.stroke();
-                ctx.restore();
-            }
+        }
+    }
 
-            // --- Highlight row header cell ---
-            ctx.save();
-            ctx.fillStyle = "#caead8";
-            ctx.fillRect(rx - scrollLeft, ry - scrollTop, rw, rh);
-
-            // Redraw row header text
+    drawRangeRowHeaderTexts(
+        ctx: CanvasRenderingContext2D,
+        minRow: number, maxRow: number,
+        scrollTop: number
+    ) {
+        for (let row = minRow; row <= maxRow; row++) {
+            const rowHeader = this.gridMatrix.getCell(row, 0);
+            const { x, y, width, height } = GridCell.getCellRect(
+                row, 0,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
             ctx.font = "14px Arial";
-            ctx.fillStyle = "#616161";
+            ctx.fillStyle = "#0f7d87";
             ctx.textAlign = "right";
             ctx.textBaseline = "bottom";
             ctx.fillText(
-                row.data || "",
-                rx + rw - 8 - scrollLeft,
-                ry + rh - 4 - scrollTop
+                rowHeader.data || "",
+                x + width - 8,
+                y + height - 4 - scrollTop
             );
-            // Draw right border for the row header
-            if (this.selectedCol !== 1) {
-                ctx.strokeStyle = this.selectionBorderColor;
-                ctx.lineWidth = 2;
-                ctx.beginPath();
-                ctx.moveTo(rx + rw - 1 - scrollLeft, ry - scrollTop);
-                ctx.lineTo(rx + rw - 1 - scrollLeft, ry + rh - scrollTop);
-                ctx.stroke();
-                ctx.restore();
-            }
+        }
+    }
 
-            // --- Draw selection background for main cell ---
-            ctx.save();
-            ctx.fillStyle = 'rgba(255,255,255,0.125)';
-            ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
+    drawRangeHeaderBorders(
+        ctx: CanvasRenderingContext2D,
+        minCol: number, maxCol: number,
+        scrollLeft: number
+    ) {
+        ctx.save();
+        ctx.strokeStyle = "#107c41";
+        ctx.lineWidth = 2;
+        for (let col = minCol; col <= maxCol; col++) {
+            const { x, y, width, height } = GridCell.getCellRect(
+                0, col,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
+            ctx.beginPath();
+            ctx.moveTo(x - scrollLeft, y + height - 1);
+            ctx.lineTo(x - scrollLeft + width, y + height - 1);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
 
-            // Draw selection border
+    drawRangeRowBorders(
+        ctx: CanvasRenderingContext2D,
+        minRow: number, maxRow: number,
+        scrollTop: number
+    ) {
+        ctx.save();
+        ctx.strokeStyle = "#107c41";
+        ctx.lineWidth = 2;
+        for (let row = minRow; row <= maxRow; row++) {
+            const { x, y, width, height } = GridCell.getCellRect(
+                row, 0,
+                this.gridMatrix.rowHeights,
+                this.gridMatrix.columnWidths
+            );
+            ctx.beginPath();
+            ctx.moveTo(x + width - 1, y - scrollTop);
+            ctx.lineTo(x + width - 1, y + height - scrollTop);
+            ctx.stroke();
+        }
+        ctx.restore();
+    }
+
+    drawRangeSelectionBorder(
+        ctx: CanvasRenderingContext2D,
+        minRow: number, maxRow: number,
+        minCol: number, maxCol: number,
+        scrollLeft: number, scrollTop: number
+    ) {
+        ctx.save();
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        const { x: topLeftX, y: topLeftY } = GridCell.getCellRect(
+            minRow, minCol,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+        const { x: bottomRightX, y: bottomRightY, width: bottomRightW, height: bottomRightH } = GridCell.getCellRect(
+            maxRow, maxCol,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+        ctx.strokeRect(
+            topLeftX - scrollLeft, topLeftY - scrollTop,
+            (bottomRightX + bottomRightW) - topLeftX,
+            (bottomRightY + bottomRightH) - topLeftY
+        );
+        ctx.restore();
+    }
+
+    drawSingleCellHighlight(
+        ctx: CanvasRenderingContext2D,
+        scrollLeft: number,
+        scrollTop: number,
+        suppressHeaderSelection: boolean
+    ) {
+        const cell = this.gridMatrix.getCell(this.selectedRow, this.selectedCol);
+        const header = this.gridMatrix.getCell(0, this.selectedCol);
+        const row = this.gridMatrix.getCell(this.selectedRow, 0);
+
+        const { x, y, width, height } = GridCell.getCellRect(
+            this.selectedRow, this.selectedCol,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+        const { x: hx, y: hy, width: hw, height: hh } = GridCell.getCellRect(
+            0, this.selectedCol,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+        const { x: rx, y: ry, width: rw, height: rh } = GridCell.getCellRect(
+            this.selectedRow, 0,
+            this.gridMatrix.rowHeights,
+            this.gridMatrix.columnWidths
+        );
+
+        if (!suppressHeaderSelection) {
+            this.highlightSingleColumnHeader(ctx, hx, hy, hw, hh, header, scrollLeft, scrollTop);
+        }
+        this.highlightSingleRowHeader(ctx, rx, ry, rw, rh, row, scrollLeft, scrollTop);
+
+        // --- Draw selection background for main cell ---
+        ctx.save();
+        ctx.fillStyle = 'rgba(255,255,255,0.125)';
+        ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
+
+        // Draw selection border
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(x - scrollLeft, y - scrollTop, width, height);
+        ctx.lineWidth = 1; // Reset line width
+        ctx.restore();
+    }
+
+    highlightSingleColumnHeader(
+        ctx: CanvasRenderingContext2D,
+        hx: number, hy: number, hw: number, hh: number,
+        header: any,
+        scrollLeft: number, scrollTop: number
+    ) {
+        ctx.save();
+        ctx.fillStyle = "#caead8";
+        ctx.fillRect(hx - scrollLeft, hy - scrollTop, hw, hh);
+
+        // Redraw column header text
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#616161";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(
+            header.data || "",
+            hx + hw / 2 - scrollLeft,
+            hy + hh / 2 - scrollTop
+        );
+        // Draw bottom border for the column header
+        if (this.selectedRow !== 1) {
             ctx.strokeStyle = this.selectionBorderColor;
             ctx.lineWidth = 2;
-            ctx.strokeRect(x - scrollLeft, y - scrollTop, width, height);
-            ctx.lineWidth = 1; // Reset line width
-            ctx.restore();
+            ctx.beginPath();
+            ctx.moveTo(hx - scrollLeft, hy + hh - 1 - scrollTop);
+            ctx.lineTo(hx + hw - scrollLeft, hy + hh - 1 - scrollTop);
+            ctx.stroke();
         }
+        ctx.restore();
+    }
+
+    highlightSingleRowHeader(
+        ctx: CanvasRenderingContext2D,
+        rx: number, ry: number, rw: number, rh: number,
+        row: any,
+        scrollLeft: number, scrollTop: number
+    ) {
+        ctx.save();
+        ctx.fillStyle = "#caead8";
+        ctx.fillRect(rx - scrollLeft, ry - scrollTop, rw, rh);
+
+        // Redraw row header text
+        ctx.font = "14px Arial";
+        ctx.fillStyle = "#616161";
+        ctx.textAlign = "right";
+        ctx.textBaseline = "bottom";
+        ctx.fillText(
+            row.data || "",
+            rx + rw - 8 - scrollLeft,
+            ry + rh - 4 - scrollTop
+        );
+        // Draw right border for the row header
+        if (this.selectedCol !== 1) {
+            ctx.strokeStyle = this.selectionBorderColor;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(rx + rw - 1 - scrollLeft, ry - scrollTop);
+            ctx.lineTo(rx + rw - 1 - scrollLeft, ry + rh - scrollTop);
+            ctx.stroke();
+        }
+        ctx.restore();
     }
 
     /**

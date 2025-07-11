@@ -1,7 +1,9 @@
 import { RowSelector } from "../../core/RowSelector";
+import { RowSelectorStrategy } from "../../core/strategies/RowSelectorStrategy";
 
 export class Row {
     private rowSelector: RowSelector;
+    private rowSelectorStrategy: RowSelectorStrategy;
     // Autoscroll state
     private autoscrollInterval: number | null = null;
     private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
@@ -11,8 +13,9 @@ export class Row {
     private lastPointerEvent: PointerEvent | null = null;
 
 
-    constructor(r: RowSelector) {
+    constructor(r: RowSelector, rs: RowSelectorStrategy) {
         this.rowSelector = r;
+        this.rowSelectorStrategy = rs;
     }
 
 
@@ -63,7 +66,7 @@ export class Row {
                         clientY: pointerY,
                         bubbles: true
                     });
-                    this.rowSelector.onPointerMove(fakeEvent);
+                    this.rowSelectorStrategy.onPointerMove(fakeEvent);
                 }, this.AUTOSCROLL_INTERVAL_MS);
             }
         } else {
