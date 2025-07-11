@@ -315,7 +315,8 @@ export class GridMatrix {
         selectedColP?: number[],
         cellSelectionArr?: number[],
         previewRowIndex?: number,
-        previewRowHeight?: number
+        previewRowHeight?: number,
+        selectedRowsP?: number[]
     ) {
         this.updateRowHeaderWidth(ctx);
         ctx.save();
@@ -355,7 +356,8 @@ export class GridMatrix {
 
         // 6. Draw row headers
         this.drawRowHeaders(
-            ctx, rowOffsetsHeader, rowHeightsPreview, startRow, endRow, scrollTop
+            ctx, rowOffsetsHeader, rowHeightsPreview, startRow, endRow, scrollTop, previewRowIndex, previewRowHeight, suppressHeaderSelectionColor,
+            selectedRowsP
         );
 
         // 7. Draw corner cell
@@ -574,22 +576,53 @@ export class GridMatrix {
     drawRowHeaders(
         ctx: CanvasRenderingContext2D,
         rowOffsetsHeader: number[], rowHeightsPreview: number[],
-        startRow: number, endRow: number, scrollTop: number
+        startRow: number, endRow: number, scrollTop: number,
+        previewRowIndex?: number, previewRowHeight?: number,
+        suppressHeaderSelectionColor?: boolean,
+        selectedRowsP?: number[]
     ) {
         for (let row = startRow; row < endRow; ++row) {
             const x = 0;
             const y = rowOffsetsHeader[row] - scrollTop;
             const width = this.columnWidths[0];
-            const height = rowHeightsPreview[row];
-            const selectedRow = this.cellSelector?.selectedRow;
-            ctx.fillStyle = selectedRow === row ? "#caead8" : "#f5f5f5";
+            // Use previewRowHeight if appropriate
+            let height = rowHeightsPreview[row];
+            if (
+                typeof previewRowIndex === "number" &&
+                typeof previewRowHeight === "number" &&
+                previewRowIndex === row
+            ) {
+                height = previewRowHeight;
+            }
+
+            // Selection logic (matches column header)
+            let isSelected = false;
+            if (Array.isArray(selectedRowsP) && selectedRowsP.length) {
+                isSelected = selectedRowsP.includes(row);
+            } else if (typeof this.cellSelector?.selectedRow === "number" && this.cellSelector.selectedRow === row) {
+                isSelected = true;
+            }
+            // Pick background color
+            let bgColor = "#f5f5f5";
+            let textColor = "#616161";
+            if (suppressHeaderSelectionColor && isSelected) {
+                if (Array.isArray(selectedRowsP) && selectedRowsP.length) {
+                    bgColor = "#107c41"; // Strong green for multi-select
+                    textColor = "#fff";
+                } else {
+                    bgColor = "#caead8";
+                }
+            }
+            ctx.fillStyle = bgColor;
             ctx.fillRect(x, y, width, height);
 
+            // Border
             ctx.strokeStyle = "#e0e0e0";
             ctx.lineWidth = 1;
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
-            if (selectedRow === row && !this.cellSelector?.isDragging) {
+            // Thick green right border for selected (not during preview)
+            if (suppressHeaderSelectionColor && isSelected && (!selectedRowsP || selectedRowsP.length === 0)) {
                 ctx.save();
                 ctx.strokeStyle = "#107c41";
                 ctx.lineWidth = 3;
@@ -600,9 +633,10 @@ export class GridMatrix {
                 ctx.restore();
             }
 
+            // Text
             const cell = this.getCell(row, 0);
             if (cell.data) {
-                ctx.fillStyle = "#616161";
+                ctx.fillStyle = textColor;
                 ctx.font = "14px Arial";
                 ctx.textAlign = "right";
                 ctx.textBaseline = "bottom";

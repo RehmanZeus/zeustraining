@@ -1,3 +1,4 @@
+import { MIN_GRIDCELL_HEIGHT } from "../../constants.js";
 import { ResizeRowCommand } from "../commands/ResizeRowCommand.js";
 import { GridMatrix } from "../GridMatrix.js";
 import { RowResizer } from "../RowResizer.js";
@@ -28,7 +29,11 @@ export class RowResizeStrategy implements Strategy {
 
     onPointerMove(e: PointerEvent): void {
         if (this.rowResizer.isResizingRow) {
-            this.rowResizer.handleResize(e);
+            const { y } = this.rowResizer.getMousePositionForEdgeDetection(e);
+            const delta = y - this.rowResizer.startY;
+            const previewHeight = Math.max(MIN_GRIDCELL_HEIGHT, this.rowResizer.initialHeight + delta);
+            this.rowResizer.previewRowHeight = previewHeight;
+            this.rowResizer.previewDrawResizeRow(this.rowResizer.resizingRowIndex, previewHeight, this.rowResizer.initialHeight);
             e.preventDefault();
             return;
         } else if (this.hitTest(e) && this.rowResizer.resizingRowIndex > 0) {
@@ -41,13 +46,24 @@ export class RowResizeStrategy implements Strategy {
     onPointerUp(e: PointerEvent): void {
         if (!this.rowResizer.isResizingRow) return;
         this.rowResizer.isResizingRow = false;
-        if (!this.rowResizer.commandManager) throw new Error("Command manager not assigned");
-        const newHeight = this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex];
-        if (this.rowResizer.lastResizeRowOldHeight !== null && newHeight !== this.rowResizer.lastResizeRowOldHeight) {
+        const newHeight = this.rowResizer.previewRowHeight ?? this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex];
+        if (
+            this.rowResizer.lastResizeRowOldHeight !== null &&
+            newHeight !== this.rowResizer.lastResizeRowOldHeight &&
+            this.rowResizer.commandManager
+        ) {
             this.rowResizer.commandManager.executeCommand(
-                new ResizeRowCommand(this.gridMatrix, this.rowResizer.resizingRowIndex, this.rowResizer.lastResizeRowOldHeight, newHeight, this.rowResizer)
+                new ResizeRowCommand(
+                    this.gridMatrix,
+                    this.rowResizer.resizingRowIndex,
+                    this.rowResizer.lastResizeRowOldHeight,
+                    newHeight,
+                    this.rowResizer
+                )
             );
         }
+        this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex] = newHeight;
+        this.rowResizer.previewRowHeight = null;
         this.setCursor("cell");
     }
 
