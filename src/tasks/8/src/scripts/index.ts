@@ -13,42 +13,89 @@ import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 import { Statistics } from "./core/Statistics.js";
 import { ColumnSelectorStrategy } from "./core/strategies/ColumnSelectorStrategy.js";
+import { RowSelectorStrategy } from "./core/strategies/RowSelectorStrategy.js";
 import { Cell } from "./helpers/autoscroll/Cell.js";
 import { Column } from "./helpers/autoscroll/Column.js";
 import { Row } from "./helpers/autoscroll/Row.js";
 
 const NUM_ROWS = 1000, NUM_COLS = 300, CELL_W = 70, CELL_H = 25;
 
-window.onload = () => {
-    console.log(window.innerHeight, window.innerWidth)
-    const setup = new SetupExcelSheet(CELL_W, CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
-    const canvas = setup.init();
-    const ctx = setup.getContext();
-    const commandManager = new CommandManager();
+window.onload = () => setupGridApp();
 
-    const container = document.getElementById('excel-container') as HTMLDivElement;
-    const gridMatrix = new GridMatrix(ctx, NUM_ROWS, NUM_COLS);
+function setupGridApp() {
+    const { canvas, ctx, container, gridMatrix } = createGridEnvironment();
+    const commandManager = new CommandManager();
 
     const rowResizer = new RowResizer(canvas, ctx, gridMatrix);
     const colResizer = new ColumnResizer(canvas, ctx, gridMatrix);
-    
     const cellSelector = new CellSelector(canvas, ctx, gridMatrix);
-   
 
     const gridDataLoader = new GridDataLoader(gridMatrix);
     const dataGen = new GridDataGen(100);
-    const sampleData = dataGen.generateData();
-    gridDataLoader.loadJSONData(sampleData);
-
-    setup.setGridMatrix(gridMatrix);
+    gridDataLoader.loadJSONData(dataGen.generateData());
 
     const rowSelector = new RowSelector(ctx, gridMatrix, cellSelector);
-    rowSelector.setCanvas(canvas);
-
     const colSelector = new ColumnSelector(ctx, gridMatrix, cellSelector);
-    colSelector.setCanvas(canvas);
 
-    const columnSelectorStrategy = new ColumnSelectorStrategy(colSelector, cellSelector, gridMatrix)
+    connectSelectorsAndStrategies({
+        cellSelector, rowSelector, colSelector, gridMatrix,
+        commandManager, rowResizer, colResizer
+    });
+
+    const drawVisibleGrid = createDrawVisibleGrid({
+        canvas, ctx, container, gridMatrix,
+        rowResizer, colResizer, cellSelector, rowSelector, colSelector
+    });
+
+    setupRedrawCallbacks({
+        cellSelector, rowSelector, colSelector,
+        rowResizer, colResizer, drawVisibleGrid
+    });
+
+    attachUIEvents({
+        container, drawVisibleGrid, canvas, commandManager
+    });
+
+    cellSelector.selectCell(1, 1);
+
+    new EventManager(rowResizer, gridMatrix, colResizer, cellSelector, rowSelector, colSelector);
+    new ExcelHeader(cellSelector, gridMatrix, commandManager,
+    new Calculations(cellSelector, colSelector, rowSelector, gridMatrix, ctx, commandManager));
+    new Statistics(cellSelector, gridMatrix);
+}
+
+function createGridEnvironment() {
+    const setup = new SetupExcelSheet(CELL_W, CELL_H, NUM_ROWS, NUM_COLS, window.innerWidth, window.innerHeight);
+    const canvas = setup.init();
+    const ctx = setup.getContext();
+    const container = document.getElementById('excel-container') as HTMLDivElement;
+    const gridMatrix = new GridMatrix(ctx, NUM_ROWS, NUM_COLS);
+    setup.setGridMatrix(gridMatrix);
+    return { canvas, ctx, container, gridMatrix };
+}
+
+function connectSelectorsAndStrategies({
+    cellSelector,
+    rowSelector,
+    colSelector,
+    gridMatrix,
+    commandManager,
+    rowResizer,
+    colResizer
+}: {
+    cellSelector: CellSelector,
+    rowSelector: RowSelector,
+    colSelector: ColumnSelector,
+    gridMatrix: GridMatrix,
+    commandManager: CommandManager,
+    rowResizer: RowResizer,
+    colResizer: ColumnResizer
+}) {
+    rowSelector.setCanvas(cellSelector.canvas);
+    colSelector.setCanvas(cellSelector.canvas);
+
+    const columnSelectorStrategy = new ColumnSelectorStrategy(colSelector, cellSelector, gridMatrix);
+    const rowSelectorStrategy = new RowSelectorStrategy(rowSelector, cellSelector, gridMatrix);
 
     cellSelector.setColumnSelector(colSelector);
     cellSelector.setRowSelector(rowSelector);
@@ -56,22 +103,29 @@ window.onload = () => {
     rowResizer.setCommandManager(commandManager);
     colResizer.setCommandManager(commandManager);
 
-    const colAutoScroll = new Column(colSelector,columnSelectorStrategy );
-    const rowAutoScroll = new Row(rowSelector);
-    const cellAutoScroll = new Cell(cellSelector, gridMatrix);
-
-    colSelector.setColAutoScroll(colAutoScroll);
-    rowSelector.setRowAutoScroll(rowAutoScroll);
-    cellSelector.setCellAutoScroll(cellAutoScroll);
+    colSelector.setColAutoScroll(new Column(colSelector, columnSelectorStrategy));
+    rowSelector.setRowAutoScroll(new Row(rowSelector, rowSelectorStrategy));
+    cellSelector.setCellAutoScroll(new Cell(cellSelector, gridMatrix));
 
     gridMatrix.setCellSelector(cellSelector);
 
     cellSelector.setCommangManager(commandManager);
-    /**
-     * Draws the visible grid area based on the current scroll position and viewport size.  
-     * This function clears the canvas, calculates the viewport bounds, and draws the grid, selections, and corner cell.
-     * It is called on scroll events and initial load to ensure the grid is rendered correctly.
-     */
+}
+
+function createDrawVisibleGrid({
+    canvas, ctx, container, gridMatrix,
+    rowResizer, colResizer, cellSelector, rowSelector, colSelector
+}: {
+    canvas: HTMLCanvasElement,
+    ctx: CanvasRenderingContext2D,
+    container: HTMLDivElement,
+    gridMatrix: GridMatrix,
+    rowResizer: RowResizer,
+    colResizer: ColumnResizer,
+    cellSelector: CellSelector,
+    rowSelector: RowSelector,
+    colSelector: ColumnSelector
+}) {
     function drawVisibleGrid() {
         const scrollLeft = container.scrollLeft;
         const scrollTop = container.scrollTop;
@@ -82,95 +136,81 @@ window.onload = () => {
 
         const viewport = gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
 
-        // Pass viewport to resizer before any pointer event
         rowResizer.setViewportForRows(viewport.startRow, viewport.endRow);
         colResizer.setViewport(viewport.startCol, viewport.endCol);
-        // 1. Draw grid
+
         gridMatrix.drawGrid(ctx, viewport, scrollLeft, scrollTop);
 
-        // 2. Draw selections
         cellSelector.drawSelection(ctx, scrollLeft, scrollTop);
-        if (rowSelector.drawSelection) {
-            rowSelector.drawSelection(ctx, scrollLeft, scrollTop);
-        }
-        if (colSelector.drawSelection) {
-            colSelector.drawSelection(ctx, scrollLeft, scrollTop);
-        }
+        if (rowSelector.drawSelection) rowSelector.drawSelection(ctx, scrollLeft, scrollTop);
+        if (colSelector.drawSelection) colSelector.drawSelection(ctx, scrollLeft, scrollTop);
 
-        // 3. ALWAYS draw corner cell last to ensure it's on top
-        drawCornerCell(ctx);
+        drawCornerCell(ctx, gridMatrix);
     }
+    return drawVisibleGrid;
+}
 
+function drawCornerCell(ctx: CanvasRenderingContext2D, gridMatrix: GridMatrix) {
+    const cornerWidth = gridMatrix.columnWidths[0];
+    const cornerHeight = gridMatrix.rowHeights[0];
+    ctx.save();
+    ctx.fillStyle = "#f5f5f5";
+    ctx.fillRect(0, 0, cornerWidth, cornerHeight);
+    ctx.strokeStyle = "#e0e0e0";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(0.5, 0.5, cornerWidth, cornerHeight);
+    ctx.restore();
+}
 
-    
+function setupRedrawCallbacks({
+    cellSelector, rowSelector, colSelector,
+    rowResizer, colResizer, drawVisibleGrid
+}: {
+    cellSelector: CellSelector,
+    rowSelector: RowSelector,
+    colSelector: ColumnSelector,
+    rowResizer: RowResizer,
+    colResizer: ColumnResizer,
+    drawVisibleGrid: () => void
+}) {
+    cellSelector.setRedrawGridCallback(drawVisibleGrid);
+    rowSelector.redrawGrid = drawVisibleGrid;
+    colSelector.redrawGrid = drawVisibleGrid;
+    rowResizer.redrawGrid = drawVisibleGrid;
+    colResizer.redrawGrid = drawVisibleGrid;
+}
 
-    /**
-     * Draws the top-left corner cell of the grid, which is used for selection.
-     * @param ctx The canvas rendering context to draw the corner cell.
-     * This function draws the top-left corner cell of the grid, which is used for selection
-     */
-    function drawCornerCell(ctx: CanvasRenderingContext2D) {
-        const cornerWidth = gridMatrix.columnWidths[0];
-        const cornerHeight = gridMatrix.rowHeights[0];
-
-        ctx.save();
-        ctx.fillStyle = "#f5f5f5";
-        ctx.fillRect(0, 0, cornerWidth, cornerHeight);
-        ctx.strokeStyle = "#e0e0e0";
-        ctx.lineWidth = 1;
-        ctx.strokeRect(0.5, 0.5, cornerWidth, cornerHeight);
-        ctx.restore();
-    }
-
+function attachUIEvents({
+    container,
+    drawVisibleGrid,
+    canvas,
+    commandManager
+}: {
+    container: HTMLDivElement,
+    drawVisibleGrid: () => void,
+    canvas: HTMLCanvasElement,
+    commandManager: CommandManager
+}) {
     let animationFrameId: number | null = null;
-    /**
-     * Handles the scroll event for the container.
-     */
     container.addEventListener('scroll', () => {
         if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
         animationFrameId = requestAnimationFrame(() => {
-            drawVisibleGrid(); // This should redraw the selection with new scroll position
+            drawVisibleGrid();
             animationFrameId = null;
         });
+    });
+
+    window.addEventListener('resize', () => {
+        drawVisibleGrid();
+    });
+
+    document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 'z') commandManager.undo();
+        if (e.ctrlKey && e.key === 'y') commandManager.redo();
     });
 
     drawVisibleGrid();
 
     canvas.tabIndex = 0;
     canvas.focus();
-
-    cellSelector.setRedrawGridCallback(drawVisibleGrid);
-    rowSelector.redrawGrid = drawVisibleGrid;
-    colSelector.redrawGrid = drawVisibleGrid;
-    rowResizer.redrawGrid = drawVisibleGrid;
-    colResizer.redrawGrid = drawVisibleGrid
- 
-    cellSelector.selectCell(1, 1)
-
-    window.addEventListener('resize', () => {
-        drawVisibleGrid();
-    });
-
-    const calcs = new Calculations(cellSelector, colSelector, rowSelector, gridMatrix, ctx, commandManager)
-
-    // --- Attach all pointer/click events to EventAttacher! ---
-    new EventManager(rowResizer, gridMatrix, colResizer,cellSelector, rowSelector, colSelector);
-
-    new ExcelHeader(cellSelector, gridMatrix, commandManager, calcs);
-
-    new Statistics(cellSelector, gridMatrix);
-    /**
-     * Handles the keydown event for the document.
-     * This function listens for Ctrl+Z and Ctrl+Y key combinations to trigger undo and redo commands.
-     * It uses the CommandManager to manage the command history and execute undo/redo operations
-     */
-    document.addEventListener('keydown', (e) => {
-        if (e.ctrlKey && e.key === 'z') {
-            commandManager.undo();
-        }
-        if (e.ctrlKey && e.key === 'y') {
-            commandManager.redo();
-        }
-    });
-
-};
+}

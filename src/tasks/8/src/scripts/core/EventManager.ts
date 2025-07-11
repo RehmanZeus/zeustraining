@@ -73,12 +73,12 @@ export class EventManager {
         if (this.activeStrategy) {
             this.activeStrategy.onPointerMove(e);
         } else {
-            this.activeStrategy = this.findStrategy(e);
 
-            if (this.activeStrategy) {
-                this.activeStrategy.onPointerMove(e);
+            for (const strategy of this.strategies) {
+                if (typeof strategy.onPointerMove === "function") {
+                    strategy.onPointerMove(e);
+                }
             }
-
         }
     }
 

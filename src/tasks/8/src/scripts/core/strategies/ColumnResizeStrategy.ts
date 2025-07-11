@@ -24,8 +24,7 @@ export class ColumnResizeStrategy implements Strategy {
         this.columnResizer.initialWidth = this.gridMatrix.columnWidths[this.columnResizer.resizingColIndex];
         this.columnResizer.lastResizeColOldWidth = this.columnResizer.initialWidth;
         this.setCursor("ew-resize");
-        window.addEventListener("pointermove", this.onPointerMove.bind(this));
-        window.addEventListener("pointerup", this.onPointerUp.bind(this))
+  
         e.preventDefault();
     }
 
@@ -36,7 +35,7 @@ export class ColumnResizeStrategy implements Strategy {
             const previewWidth = Math.max(MIN_GRIDCELL_WIDTH, this.columnResizer.initialWidth + delta);
             this.columnResizer.previewColWidth = previewWidth;
             this.columnResizer.previewDrawResize(this.columnResizer.resizingColIndex, previewWidth, this.columnResizer.initialWidth);
-            e.preventDefault()
+            e.preventDefault();
             return;
         }
         if(this.hitTest(e) && this.columnResizer.resizingColIndex > 0){
@@ -68,8 +67,7 @@ export class ColumnResizeStrategy implements Strategy {
         this.gridMatrix.columnWidths[this.columnResizer.resizingColIndex] = newWidth;
         this.columnResizer.previewColWidth = null;
         this.setCursor("cell");
-        window.removeEventListener("pointermove", this.onPointerMove.bind(this));
-        window.removeEventListener("pointerup", this.onPointerUp.bind(this))
+      
     }
 
     setCursor(cursor: string) {

@@ -293,7 +293,7 @@ export class GridMatrix {
         this.columnWidths[0] = width;
     }
 
-    
+
 
 
     /**
@@ -318,16 +318,62 @@ export class GridMatrix {
         previewRowHeight?: number
     ) {
         this.updateRowHeaderWidth(ctx);
-        const container = document.getElementById('excel-container') as HTMLDivElement;
-
         ctx.save();
 
+        // 1. Compute Offsets
+        const {
+            colOffsetsHeader,
+            colOffsetsData,
+            rowHeightsPreview,
+            rowOffsetsHeader,
+            rowOffsetsData,
+            startRow,
+            endRow,
+            startCol,
+            endCol
+        } = this.computeOffsets(
+            viewport, previewColIndex, previewColWidth,
+            previewRowIndex, previewRowHeight
+        );
+
+        // 2. Clip to data region
+        this.clipToDataRegion(ctx);
+
+        // 3. Draw data grid lines
+        this.drawGridLines(ctx, colOffsetsData, rowOffsetsData, startCol, endCol, startRow, endRow, scrollLeft, scrollTop);
+
+        // 4. Draw data cells
+        this.drawDataCells(ctx, colOffsetsData, rowOffsetsData, startCol, endCol, startRow, endRow, scrollLeft, scrollTop);
+
+        ctx.restore(); // Remove clipping
+
+        // 5. Draw column headers
+        this.drawColumnHeaders(
+            ctx, colOffsetsHeader, startCol, endCol, scrollLeft, previewColIndex, previewColWidth,
+            suppressHeaderSelectionColor, selectedColP, cellSelectionArr
+        );
+
+        // 6. Draw row headers
+        this.drawRowHeaders(
+            ctx, rowOffsetsHeader, rowHeightsPreview, startRow, endRow, scrollTop
+        );
+
+        // 7. Draw corner cell
+        this.drawCornerCell(ctx);
+
+        ctx.restore();
+    }
+
+    computeOffsets(
+        viewport?: { startRow: number, endRow: number, startCol: number, endCol: number },
+        previewColIndex?: number, previewColWidth?: number,
+        previewRowIndex?: number, previewRowHeight?: number
+    ) {
         const startRow = viewport?.startRow ?? 0;
         const endRow = viewport?.endRow ?? this.noOfRows;
         const startCol = viewport?.startCol ?? 0;
         const endCol = viewport?.endCol ?? this.noOfCols;
 
-        // === Calculate column and row offsets ===
         let colOffsetsHeader: number[] = [0];
         let colOffsetsData: number[] = [0];
         for (let c = 0; c < this.noOfCols; ++c) {
@@ -338,6 +384,7 @@ export class GridMatrix {
             colOffsetsHeader[c + 1] = colOffsetsHeader[c] + headerW;
             colOffsetsData[c + 1] = colOffsetsData[c] + this.columnWidths[c];
         }
+
         let rowHeightsPreview = [...this.rowHeights];
         if (
             typeof previewRowIndex === "number" &&
@@ -354,6 +401,20 @@ export class GridMatrix {
             rowOffsetsData[r + 1] = rowOffsetsData[r] + this.rowHeights[r];
         }
 
+        return {
+            colOffsetsHeader,
+            colOffsetsData,
+            rowHeightsPreview,
+            rowOffsetsHeader,
+            rowOffsetsData,
+            startRow,
+            endRow,
+            startCol,
+            endCol
+        };
+    }
+
+    clipToDataRegion(ctx: CanvasRenderingContext2D) {
         ctx.save();
         ctx.beginPath();
         ctx.rect(
@@ -363,11 +424,16 @@ export class GridMatrix {
             ctx.canvas.offsetHeight - this.rowHeights[0]
         );
         ctx.clip();
+    }
 
-        // === 1. Draw Data Grid Lines ===
+    drawGridLines(
+        ctx: CanvasRenderingContext2D,
+        colOffsetsData: number[], rowOffsetsData: number[],
+        startCol: number, endCol: number, startRow: number, endRow: number,
+        scrollLeft: number, scrollTop: number
+    ) {
         ctx.strokeStyle = "#e0e0e0";
         ctx.lineWidth = 1;
-
         const align = (v: number) => Math.round(v) + 0.5;
 
         // Vertical lines
@@ -378,7 +444,6 @@ export class GridMatrix {
             ctx.lineTo(x, rowOffsetsData[endRow] - scrollTop);
             ctx.stroke();
         }
-
         // Horizontal lines
         for (let r = Math.max(1, startRow); r <= endRow; ++r) {
             let y = align(rowOffsetsData[r] - scrollTop);
@@ -387,8 +452,14 @@ export class GridMatrix {
             ctx.lineTo(colOffsetsData[endCol] - scrollLeft, y);
             ctx.stroke();
         }
+    }
 
-        // === 2. Draw Data Cells ===
+    drawDataCells(
+        ctx: CanvasRenderingContext2D,
+        colOffsetsData: number[], rowOffsetsData: number[],
+        startCol: number, endCol: number, startRow: number, endRow: number,
+        scrollLeft: number, scrollTop: number
+    ) {
         ctx.font = "14px Arial";
         ctx.fillStyle = "#000";
         for (let row = Math.max(1, startRow); row < endRow; ++row) {
@@ -400,7 +471,6 @@ export class GridMatrix {
                 const cell = this.getCell(row, col);
                 const displayValue = this.evaluateCell(cell);
 
-                // Default alignment: left for text, right for numbers
                 let text = "";
                 let isNumber = false;
 
@@ -427,11 +497,17 @@ export class GridMatrix {
                 }
             }
         }
+    }
 
-
-        ctx.restore(); // Remove clipping
-
-        // === 3. Draw Column Headers (row 0) ===
+    drawColumnHeaders(
+        ctx: CanvasRenderingContext2D,
+        colOffsetsHeader: number[], startCol: number, endCol: number,
+        scrollLeft: number,
+        previewColIndex?: number, previewColWidth?: number,
+        suppressHeaderSelectionColor?: boolean,
+        selectedColP?: number[],
+        cellSelectionArr?: number[]
+    ) {
         for (let col = startCol; col < endCol; ++col) {
             const x = colOffsetsHeader[col] - scrollLeft;
             const y = 0;
@@ -493,8 +569,13 @@ export class GridMatrix {
                 ctx.fillText(cell.data, x + width / 2, y + height / 2);
             }
         }
+    }
 
-        // === 4. Draw Sticky Row Headers (col 0, fixed at left, use rowOffsetsHeader and rowHeightsPreview) ===
+    drawRowHeaders(
+        ctx: CanvasRenderingContext2D,
+        rowOffsetsHeader: number[], rowHeightsPreview: number[],
+        startRow: number, endRow: number, scrollTop: number
+    ) {
         for (let row = startRow; row < endRow; ++row) {
             const x = 0;
             const y = rowOffsetsHeader[row] - scrollTop;
@@ -528,8 +609,9 @@ export class GridMatrix {
                 ctx.fillText(cell.data, x + width - 8, y + height - 4);
             }
         }
+    }
 
-        // === 5. Draw Corner Cell (0,0) ===
+    drawCornerCell(ctx: CanvasRenderingContext2D) {
         const cornerX = 0;
         const cornerY = 0;
         const cornerWidth = this.columnWidths[0];
@@ -539,7 +621,5 @@ export class GridMatrix {
         ctx.strokeStyle = "#e0e0e0";
         ctx.lineWidth = 1;
         ctx.strokeRect(cornerX + 0.5, cornerY + 0.5, cornerWidth, cornerHeight);
-
-        ctx.restore();
     }
 }

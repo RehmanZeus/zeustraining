@@ -56,11 +56,11 @@ export class ColumnResizer {
         this.viewportEndCol = endCol;
     }
     /**
-         * Gets the mouse position for edge detection.
-         * @param e Takes a pointer event and returns the mouse position relative to the grid content (ignoring scroll).
-         * This is used for edge detection logic, so DO NOT add scroll offset here!
-         * @returns The mouse position relative to the grid content.
-         */
+     * Gets the mouse position for edge detection.
+     * @param e Takes a pointer event and returns the mouse position relative to the grid content (ignoring scroll).
+     * This is used for edge detection logic, so DO NOT add scroll offset here!
+     * @returns The mouse position relative to the grid content.
+     */
     getMousePositionForEdgeDetection(e: PointerEvent) {
         const rect = this.canvas.getBoundingClientRect();
         // DO NOT add scroll offset here for edge detection!
