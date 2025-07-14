@@ -204,10 +204,9 @@ export class CellSelector {
                 e.preventDefault();
 
                 if (this.isEditing) {
-                    console.log("yolo", this.selectedRow, this.selectedCol)
+
                     this.moveSelection(-1, 0);
                 } else {
-                    console.log("fkkaf", this.selectedRow, this.selectedCol)
                     this.moveSelection(1, 0);
 
                 }
@@ -373,10 +372,8 @@ export class CellSelector {
      * @param colOffset The number of columns to move the selection (can be negative).
      */
     moveSelection(rowOffset: number, colOffset: number) {
-        console.log("Move selection", rowOffset, colOffset)
         const newRow = Math.max(1, Math.min(this.gridMatrix.noOfRows - 1, this.selectedRow + rowOffset));
         const newCol = Math.max(1, Math.min(this.gridMatrix.noOfCols - 1, this.selectedCol + colOffset));
-        console.log("move selection", newRow, newCol)
         this.selectCell(newRow, newCol);
     }
 
@@ -742,50 +739,39 @@ export class CellSelector {
         scrollTop: number,
         suppressHeaderSelection: boolean = false
     ) {
-        const header = this.gridMatrix.getCell(0, this.selectedCol);
-        const row = this.gridMatrix.getCell(this.selectedRow, 0);
+        const headerHeight = this.gridMatrix.rowHeights[0];
+        const headerWidth = this.gridMatrix.columnWidths[0];
 
+        // Cell coordinates
         const { x, y, width, height } = GridCell.getCellRect(
             this.selectedRow, this.selectedCol,
             this.gridMatrix.rowHeights,
             this.gridMatrix.columnWidths
         );
-        const { x: hx, y: hy, width: hw, height: hh } = GridCell.getCellRect(
-            0, this.selectedCol,
-            this.gridMatrix.rowHeights,
-            this.gridMatrix.columnWidths
-        );
-        const { x: rx, y: ry, width: rw, height: rh } = GridCell.getCellRect(
-            this.selectedRow, 0,
-            this.gridMatrix.rowHeights,
-            this.gridMatrix.columnWidths
-        );
 
-
-        // this.highlightSingleColumnHeader(ctx, hx, hy, hw, hh, header, scrollLeft, scrollTop);
-
-        // this.highlightSingleRowHeader(ctx, rx, ry, rw, rh, row, scrollLeft, scrollTop);
-
-        // --- Draw selection background for main cell ---
+        // Clip to grid body (exclude both top header and left header)
         ctx.save();
+        ctx.beginPath();
+        ctx.rect(
+            headerWidth,           // left
+            headerHeight,          // top
+            ctx.canvas.width - headerWidth,   // width
+            ctx.canvas.height - headerHeight  // height
+        );
+        ctx.clip();
+
+        // Draw selection border/background
         ctx.fillStyle = 'rgba(255,255,255,0.125)';
         ctx.fillRect(x - scrollLeft, y - scrollTop, width, height);
 
         ctx.strokeStyle = this.selectionBorderColor;
         ctx.lineWidth = 2;
         ctx.strokeRect(x - scrollLeft, y - scrollTop, width, height);
+
         ctx.restore();
 
-        // --- Highlight column header cell (skip only if in preview) ---
-        if (!suppressHeaderSelection) {
-            this.highlightSingleColumnHeader(ctx, hx, hy, hw, hh, header, scrollLeft, scrollTop);
-        }
-
-        // --- Highlight row header cell (skip only if in preview) ---
-        if (!suppressHeaderSelection) {
-            this.highlightSingleRowHeader(ctx, rx, ry, rw, rh, row, scrollLeft, scrollTop);
-        }
-
+        // Optionally, still highlight the header cells as before
+       
     }
 
     highlightSingleColumnHeader(
@@ -808,15 +794,16 @@ export class CellSelector {
             hx + hw / 2 - scrollLeft,
             hy + hh / 2 - scrollTop
         );
-        // Draw bottom border for the column header
-        if (this.selectedRow !== 1) {
-            ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(hx - scrollLeft, hy + hh - 1 - scrollTop);
-            ctx.lineTo(hx + hw - scrollLeft, hy + hh - 1 - scrollTop);
-            ctx.stroke();
-        }
+        ctx.restore();
+
+        // Draw bottom selection border OVER the header (always)
+        ctx.save();
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(hx - scrollLeft, hy + hh - 1 - scrollTop);
+        ctx.lineTo(hx + hw - scrollLeft, hy + hh - 1 - scrollTop);
+        ctx.stroke();
         ctx.restore();
     }
 
@@ -960,11 +947,11 @@ export class CellSelector {
         return { cell, cellBounds };
     }
 
-     /**
-   * Handles the double click event to start editing a cell.
-   * @param _e The mouse event to get the position from.
-   * @returns void
-   */
+    /**
+  * Handles the double click event to start editing a cell.
+  * @param _e The mouse event to get the position from.
+  * @returns void
+  */
     onDoubleClick(_e: MouseEvent) {
         if (this.selectedRow > 0 && this.selectedCol > 0) {
             this.startEditing();

@@ -118,7 +118,7 @@ export class GridMatrix {
             const nums = cells
                 .map(cell => parseFloat(cell.data ?? ""))
                 .filter(n => !isNaN(n));
-        
+
             return nums.length ? Math.min(...nums) : "#N/A";
         }
 
@@ -146,7 +146,7 @@ export class GridMatrix {
      */
     getCellsForRange(rangeStr: string): GridCell[] {
         const match = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i);
-      
+
         if (!match) return [];
         const [, colA, rowA, colB, rowB] = match;
         const rowStart = Math.min(parseInt(rowA, 10), parseInt(rowB, 10));
@@ -321,9 +321,12 @@ export class GridMatrix {
         // ---- DATA REGION ----
         this.clipToDataRegion(ctx);
 
+
         // Draw grid lines
         this.drawGridLines(ctx, colOffsetsData, rowOffsetsData, startCol, endCol, startRow, endRow, scrollLeft, scrollTop);
 
+        // Draw cell selection highlights (ensure NO highlight leaks into header region!)
+       
 
         // Draw data cells
         this.drawDataCells(ctx, colOffsetsData, rowOffsetsData, startCol, endCol, startRow, endRow, scrollLeft, scrollTop);
@@ -512,7 +515,7 @@ export class GridMatrix {
             } else if (Array.isArray(cellSelectionArr) && cellSelectionArr.length) {
                 isSelected = cellSelectionArr.includes(col);
             }
-          
+
 
             // Pick background color
             let bgColor = "#f5f5f5";
@@ -526,7 +529,7 @@ export class GridMatrix {
                 } else {
                     bgColor = "#caead8";
                 }
-            } else if(this.cellSelector && this.cellSelector.selectedCol === col){
+            } else if (this.cellSelector && this.cellSelector.selectedCol === col) {
                 bgColor = "#caead8";
             }
             ctx.fillStyle = bgColor;
@@ -552,7 +555,7 @@ export class GridMatrix {
             // Text
             const cell = this.getCell(0, col);
             if (cell.data) {
-                ctx.font = (isSelected ? "bold " : "") + "14px Arial";
+                ctx.font =  "14px Arial";
                 ctx.textAlign = "center";
                 ctx.textBaseline = "middle";
                 ctx.fillStyle = textColor;
@@ -600,7 +603,7 @@ export class GridMatrix {
                 } else {
                     bgColor = "#caead8";
                 }
-            }else if(this.cellSelector && this.cellSelector.selectedRow === row){
+            } else if (this.cellSelector && this.cellSelector.selectedRow === row) {
                 bgColor = "#caead8";
             }
             ctx.fillStyle = bgColor;
@@ -646,4 +649,5 @@ export class GridMatrix {
         ctx.lineWidth = 1;
         ctx.strokeRect(cornerX + 0.5, cornerY + 0.5, cornerWidth, cornerHeight);
     }
+
 }
