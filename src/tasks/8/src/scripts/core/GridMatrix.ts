@@ -98,13 +98,11 @@ export class GridMatrix {
     evaluateFormula(formulaString: string): number | string {
         // Remove leading '='
         const expr = formulaString.slice(1).trim();
-        console.log(formulaString)
         // Match function name and argument
         const match = expr.match(/^(\w+)\(([^)]+)\)$/);
         if (!match) return "#FORMULA!";
         const fn = match[1].toUpperCase();
         const arg = match[2];
-        console.log(fn, "ARGS", arg)
         if (fn === "SUM" || fn === "AVERAGE") {
             const cells = this.getCellsForRange(arg);
             const nums = cells
@@ -120,7 +118,7 @@ export class GridMatrix {
             const nums = cells
                 .map(cell => parseFloat(cell.data ?? ""))
                 .filter(n => !isNaN(n));
-            console.log(nums)
+        
             return nums.length ? Math.min(...nums) : "#N/A";
         }
 
@@ -514,6 +512,7 @@ export class GridMatrix {
             } else if (Array.isArray(cellSelectionArr) && cellSelectionArr.length) {
                 isSelected = cellSelectionArr.includes(col);
             }
+          
 
             // Pick background color
             let bgColor = "#f5f5f5";
@@ -527,6 +526,8 @@ export class GridMatrix {
                 } else {
                     bgColor = "#caead8";
                 }
+            } else if(this.cellSelector && this.cellSelector.selectedCol === col){
+                bgColor = "#caead8";
             }
             ctx.fillStyle = bgColor;
             ctx.fillRect(x, y, width, height);
@@ -537,7 +538,7 @@ export class GridMatrix {
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
             // Thick green border for selected (not during preview)
-            if (suppressHeaderSelectionColor && isSelected && (!selectedColP || selectedColP.length === 0)) {
+            if ((suppressHeaderSelectionColor && isSelected && (!selectedColP || selectedColP.length === 0)) || (this.cellSelector && this.cellSelector.selectedCol === col)) {
                 ctx.save();
                 ctx.strokeStyle = "#107c41";
                 ctx.lineWidth = 2;
@@ -599,6 +600,8 @@ export class GridMatrix {
                 } else {
                     bgColor = "#caead8";
                 }
+            }else if(this.cellSelector && this.cellSelector.selectedRow === row){
+                bgColor = "#caead8";
             }
             ctx.fillStyle = bgColor;
             ctx.fillRect(x, y, width, height);
@@ -609,7 +612,7 @@ export class GridMatrix {
             ctx.strokeRect(x + 0.5, y + 0.5, width, height);
 
             // Thick green right border for selected (not during preview)
-            if (suppressHeaderSelectionColor && isSelected && (!selectedRowsP || selectedRowsP.length === 0)) {
+            if ((suppressHeaderSelectionColor && isSelected && (!selectedRowsP || selectedRowsP.length === 0)) || (this.cellSelector && this.cellSelector.selectedRow === row)) {
                 ctx.save();
                 ctx.strokeStyle = "#107c41";
                 ctx.lineWidth = 3;
