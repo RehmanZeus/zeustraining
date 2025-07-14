@@ -23,8 +23,7 @@ export class ColumnResizeStrategy implements Strategy {
         this.columnResizer.startX = x;
         this.columnResizer.initialWidth = this.gridMatrix.columnWidths[this.columnResizer.resizingColIndex];
         this.columnResizer.lastResizeColOldWidth = this.columnResizer.initialWidth;
-        this.setCursor("ew-resize");
-  
+       
         e.preventDefault();
     }
 
@@ -38,11 +37,7 @@ export class ColumnResizeStrategy implements Strategy {
             e.preventDefault();
             return;
         }
-        if(this.hitTest(e) && this.columnResizer.resizingColIndex > 0){
-            this.setCursor("ew-resize");
-        }else{
-            this.setCursor("cell");
-        }
+      
     }
 
     onPointerUp(e: PointerEvent): void {
@@ -66,13 +61,12 @@ export class ColumnResizeStrategy implements Strategy {
         }
         this.gridMatrix.columnWidths[this.columnResizer.resizingColIndex] = newWidth;
         this.columnResizer.previewColWidth = null;
-        this.setCursor("cell");
       
     }
 
-    setCursor(cursor: string) {
-        if (this.columnResizer.canvas.style.cursor !== cursor) {
-            this.columnResizer.canvas.style.cursor = cursor;
-        }
+    getCursor(): string {
+        return "ew-resize"
     }
+
+
 }

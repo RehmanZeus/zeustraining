@@ -1,8 +1,8 @@
+import { MIN_GRIDCELL_HEIGHT } from "../../constants.js";
 import { ResizeRowCommand } from "../commands/ResizeRowCommand.js";
 import { GridMatrix } from "../GridMatrix.js";
 import { RowResizer } from "../RowResizer.js";
 import { Strategy } from "./Strategy.js";
-
 export class RowResizeStrategy implements Strategy {
     rowResizer: RowResizer;
     gridMatrix: GridMatrix;
@@ -13,6 +13,8 @@ export class RowResizeStrategy implements Strategy {
     }
 
     hitTest(e: PointerEvent): boolean {
+        // Set the resizingRowIndex if near an edge, so it's available for preview
+        
         return this.rowResizer.isNearRowEdge(e);
     }
 
@@ -22,38 +24,48 @@ export class RowResizeStrategy implements Strategy {
         this.rowResizer.startY = y;
         this.rowResizer.initialHeight = this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex];
         this.rowResizer.lastResizeRowOldHeight = this.rowResizer.initialHeight;
-        this.setCursor("ns-resize");
         e.preventDefault();
     }
 
     onPointerMove(e: PointerEvent): void {
         if (this.rowResizer.isResizingRow) {
-            this.rowResizer.handleResize(e);
+            const { y } = this.rowResizer.getMousePositionForEdgeDetection(e);
+            const delta = y - this.rowResizer.startY;
+            const previewHeight = Math.max(MIN_GRIDCELL_HEIGHT, this.rowResizer.initialHeight + delta);
+            this.rowResizer.previewRowHeight = previewHeight;
+            this.rowResizer.previewDrawResizeRow(this.rowResizer.resizingRowIndex, previewHeight, this.rowResizer.initialHeight);
             e.preventDefault();
             return;
-        } else if (this.hitTest(e) && this.rowResizer.resizingRowIndex > 0) {
-            this.setCursor("ns-resize");
-        } else {
-            this.setCursor("cell");
-        }
+        } 
+       
     }
 
     onPointerUp(e: PointerEvent): void {
         if (!this.rowResizer.isResizingRow) return;
         this.rowResizer.isResizingRow = false;
-        if (!this.rowResizer.commandManager) throw new Error("Command manager not assigned");
-        const newHeight = this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex];
-        if (this.rowResizer.lastResizeRowOldHeight !== null && newHeight !== this.rowResizer.lastResizeRowOldHeight) {
+        const newHeight = this.rowResizer.previewRowHeight ?? this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex];
+        if (
+            this.rowResizer.lastResizeRowOldHeight !== null &&
+            newHeight !== this.rowResizer.lastResizeRowOldHeight &&
+            this.rowResizer.commandManager
+        ) {
             this.rowResizer.commandManager.executeCommand(
-                new ResizeRowCommand(this.gridMatrix, this.rowResizer.resizingRowIndex, this.rowResizer.lastResizeRowOldHeight, newHeight, this.rowResizer)
+                new ResizeRowCommand(
+                    this.gridMatrix,
+                    this.rowResizer.resizingRowIndex,
+                    this.rowResizer.lastResizeRowOldHeight,
+                    newHeight,
+                    this.rowResizer
+                )
             );
         }
-        this.setCursor("cell");
+        this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex] = newHeight;
+        this.rowResizer.previewRowHeight = null;
     }
 
-    setCursor(cursor: string) {
-        if (this.rowResizer.canvas.style.cursor !== cursor) {
-            this.rowResizer.canvas.style.cursor = cursor;
-        }
+    getCursor(): string {
+        return "ns-resize";
     }
+
+  
 }

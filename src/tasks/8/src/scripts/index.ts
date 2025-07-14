@@ -12,6 +12,7 @@ import { RowResizer } from "./core/RowResizer.js";
 import { RowSelector } from "./core/RowSelector.js";
 import { SetupExcelSheet } from "./core/SetupExcelSheet.js";
 import { Statistics } from "./core/Statistics.js";
+import { CellSelectionStrategy } from "./core/strategies/CellSelectionStrategy.js";
 import { ColumnSelectorStrategy } from "./core/strategies/ColumnSelectorStrategy.js";
 import { RowSelectorStrategy } from "./core/strategies/RowSelectorStrategy.js";
 import { Cell } from "./helpers/autoscroll/Cell.js";
@@ -23,6 +24,7 @@ const NUM_ROWS = 1000, NUM_COLS = 300, CELL_W = 70, CELL_H = 25;
 window.onload = () => setupGridApp();
 
 function setupGridApp() {
+    console.log("hello")
     const { canvas, ctx, container, gridMatrix } = createGridEnvironment();
     const commandManager = new CommandManager();
 
@@ -57,8 +59,8 @@ function setupGridApp() {
     });
 
     cellSelector.selectCell(1, 1);
-
-    new EventManager(rowResizer, gridMatrix, colResizer, cellSelector, rowSelector, colSelector);
+    console.log("setup app")
+    new EventManager(rowResizer, gridMatrix, colResizer, cellSelector, rowSelector, colSelector, canvas, container);
     new ExcelHeader(cellSelector, gridMatrix, commandManager,
     new Calculations(cellSelector, colSelector, rowSelector, gridMatrix, ctx, commandManager));
     new Statistics(cellSelector, gridMatrix);
@@ -96,16 +98,20 @@ function connectSelectorsAndStrategies({
 
     const columnSelectorStrategy = new ColumnSelectorStrategy(colSelector, cellSelector, gridMatrix);
     const rowSelectorStrategy = new RowSelectorStrategy(rowSelector, cellSelector, gridMatrix);
-
+    const cellSelectorStrategy = new CellSelectionStrategy(cellSelector);
     cellSelector.setColumnSelector(colSelector);
     cellSelector.setRowSelector(rowSelector);
 
     rowResizer.setCommandManager(commandManager);
     colResizer.setCommandManager(commandManager);
+    colResizer.setCellSelector(cellSelector);
+    colResizer.setColumnSelector(colSelector);
+    rowResizer.setCellSelector(cellSelector);
+    rowResizer.setRowSelector(rowSelector);
 
     colSelector.setColAutoScroll(new Column(colSelector, columnSelectorStrategy));
     rowSelector.setRowAutoScroll(new Row(rowSelector, rowSelectorStrategy));
-    cellSelector.setCellAutoScroll(new Cell(cellSelector, gridMatrix));
+    cellSelector.setCellAutoScroll(new Cell(cellSelector, gridMatrix, cellSelectorStrategy));;
 
     gridMatrix.setCellSelector(cellSelector);
 

@@ -16,4 +16,8 @@ export class Strategy{
     onPointerUp(e: PointerEvent){
         
     }
+
+    getCursor(): string {
+        return "default";
+    }
 }

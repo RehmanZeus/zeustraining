@@ -1,6 +1,8 @@
 import { MIN_GRIDCELL_HEIGHT } from "../constants.js";
+import { CellSelector } from "./CellSelector.js";
 import { CommandManager } from "./commands/CommandManager";
 import { GridMatrix } from "./GridMatrix";
+import { RowSelector } from "./RowSelector.js";
 
 export class RowResizer {
     canvas: HTMLCanvasElement;
@@ -17,13 +19,15 @@ export class RowResizer {
     resizeThreshold = 5;
 
     commandManager?: CommandManager;
+    cellSelector?: CellSelector;
+    rowSelector?: RowSelector
 
     lastResizeRowOldHeight: number | null = null;
+    previewRowHeight: number | null = null;
 
-    
     redrawGrid: () => void = () => { };
 
-   
+
     private viewportStartRow: number = 0;
     private viewportEndRow: number = 0;
 
@@ -36,6 +40,14 @@ export class RowResizer {
 
     setCommandManager(cm: CommandManager) {
         this.commandManager = cm;
+    }
+
+    setRowSelector(rs: RowSelector){
+        this.rowSelector = rs;
+    }
+
+    setCellSelector(cs: CellSelector){
+        this.cellSelector = cs;
     }
 
     /**
@@ -85,6 +97,87 @@ export class RowResizer {
         }
     }
 
+    previewDrawResizeRow(rowIndex: number, previewHeight: number, initialHeight: number) {
+        const container = document.getElementById('excel-container') as HTMLDivElement;
+        const scrollLeft = container.scrollLeft;
+        const scrollTop = container.scrollTop;
+        const viewportWidth = container.clientWidth;
+        const viewportHeight = container.clientHeight;
+        const viewport = this.gridMatrix.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
+
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        let cellSelectionArr = [];
+        if (this.cellSelector && this.cellSelector.selectionStartRow !== -1 && this.cellSelector.selectionEndRow !== -1) {
+            for (let i = this.cellSelector.selectionStartRow; i <= this.cellSelector.selectionEndRow; ++i) {
+                cellSelectionArr.push(i);
+            }
+        }
+
+        // Draw grid with preview ONLY for row header, and suppress header selection color
+        this.gridMatrix.drawGrid(
+            this.ctx,
+            viewport,
+            scrollLeft,
+            scrollTop,
+            undefined, // previewColIndex
+            undefined, // previewColWidth
+            true,      // suppressHeaderSelectionColor
+            undefined, // selectedColP (for column highlight)
+            cellSelectionArr, // cellSelectionArr (for column/row highlight)
+            rowIndex,  // previewRowIndex
+            previewHeight, // previewRowHeight
+            this.rowSelector?.selectedRows
+        );
+
+        // Draw overlays for selection (they will skip header fill if suppressHeaderSelectionColor is true)
+        if (this.cellSelector) {
+            this.cellSelector.drawSelection(this.ctx, scrollLeft, scrollTop, true);
+        }
+        if (this.rowSelector) {
+            // Pass previewRowIndex and previewRowHeight, suppressHeaderSelectionColor:true for preview overlay
+            this.rowSelector.drawSelection(
+                this.ctx, scrollLeft, scrollTop,
+                rowIndex, previewHeight, true
+            );
+        }
+        if (this.cellSelector?.colSelector) {
+            this.cellSelector.colSelector.drawSelection(this.ctx, scrollLeft, scrollTop, undefined, undefined, true);
+        }
+
+        // Y for top of row 
+        let y = 0;
+        for (let i = 0; i < rowIndex; i++) y += this.gridMatrix.rowHeights[i];
+
+        // Green top border for header
+        this.ctx.save();
+        this.ctx.strokeStyle = "#137e43";
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.gridMatrix.columnWidths[0], y - scrollTop);
+        this.ctx.lineTo(container.clientWidth, y - scrollTop);
+        this.ctx.stroke();
+
+        // Green bottom border for header (at initial/original height)
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.gridMatrix.columnWidths[0], y + initialHeight - scrollTop);
+        this.ctx.lineTo(container.clientWidth, y + initialHeight - scrollTop);
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // Dotted line at previewHeight for header
+        this.ctx.save();
+        this.ctx.setLineDash([6, 4]);
+        this.ctx.strokeStyle = "#1a7f37";
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.gridMatrix.columnWidths[0], y + previewHeight - scrollTop);
+        this.ctx.lineTo(container.clientWidth, y + previewHeight - scrollTop);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+        this.ctx.restore();
+    }
+
     /**
      * Returns true if pointer is near a row edge in the row header area (col 0)
      * Uses canvas-relative pointer position for hit-testing (ignores scroll offset)
@@ -101,6 +194,7 @@ export class RowResizer {
         const x = rawX + (rawX > headerWidth ? container.scrollLeft : 0);
         if (x > headerWidth) {
             this.resizingRowIndex = -1;
+            this.canvas.style.cursor = "cell";
             return false;
         }
 
@@ -121,6 +215,7 @@ export class RowResizer {
             if (Math.abs(y - bottomEdge) < this.resizeThreshold) {
                 if (row === 0) return false;
                 this.resizingRowIndex = row;
+                this.canvas.style.cursor = "ns-resize";
                 return true;
             }
             cumY = bottomEdge;
@@ -128,8 +223,9 @@ export class RowResizer {
         }
 
         this.resizingRowIndex = -1;
+        this.canvas.style.cursor = "cell";
         return false;
     }
 
- 
+
 }

@@ -1,10 +1,12 @@
 import { CellSelector } from "../../core/CellSelector";
 import { GridCell } from "../../core/GridCell.js";
 import { GridMatrix } from "../../core/GridMatrix";
+import { CellSelectionStrategy } from "../../core/strategies/CellSelectionStrategy";
 
 export class Cell {
     private cellSelector: CellSelector;
-    private gridMatrix: GridMatrix
+    private gridMatrix: GridMatrix;
+    private cellStrategy: CellSelectionStrategy;
 
     private autoscrollInterval: number | null = null;
     private AUTOSCROLL_EDGE_THRESHOLD = 35; // px from edge to trigger autoscroll
@@ -15,9 +17,10 @@ export class Cell {
     private lastPointerEvent: PointerEvent | null = null;
 
 
-    constructor(c: CellSelector, g: GridMatrix) {
+    constructor(c: CellSelector, g: GridMatrix, cellStr: CellSelectionStrategy) {
         this.cellSelector = c;
         this.gridMatrix = g;
+        this.cellStrategy = cellStr;
     }
 
     checkAutoScroll(e: PointerEvent) {
@@ -94,7 +97,7 @@ export class Cell {
                         clientY: py,
                         bubbles: true
                     });
-                    this.cellSelector.onPointerMove(fakeEvent);
+                    this.cellStrategy.onPointerMove(fakeEvent);
 
                     // // Always redraw grid
                     // this.cellSelector.redrawGrid();
@@ -160,4 +163,5 @@ export class Cell {
             });
         }
     }
+   
 }
