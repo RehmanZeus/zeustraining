@@ -712,9 +712,11 @@ export class CellSelector {
         minCol: number, maxCol: number,
         scrollLeft: number, scrollTop: number
     ) {
-        ctx.save();
-        ctx.strokeStyle = this.selectionBorderColor;
-        ctx.lineWidth = 2;
+        // Get header sizes
+        const headerHeight = this.gridMatrix.rowHeights[0];
+        const headerWidth = this.gridMatrix.columnWidths[0];
+
+        // Compute selection rect in canvas coords
         const { x: topLeftX, y: topLeftY } = GridCell.getCellRect(
             minRow, minCol,
             this.gridMatrix.rowHeights,
@@ -725,11 +727,28 @@ export class CellSelector {
             this.gridMatrix.rowHeights,
             this.gridMatrix.columnWidths
         );
+
+        ctx.save();
+
+        // CLIP to grid body (not headers)
+        ctx.beginPath();
+        ctx.rect(
+            headerWidth,                          // left (exclude row headers)
+            headerHeight,                         // top (exclude column headers)
+            ctx.canvas.width - headerWidth,       // width
+            ctx.canvas.height - headerHeight      // height
+        );
+        ctx.clip();
+
+        // Draw border
+        ctx.strokeStyle = this.selectionBorderColor;
+        ctx.lineWidth = 2;
         ctx.strokeRect(
             topLeftX - scrollLeft, topLeftY - scrollTop,
             (bottomRightX + bottomRightW) - topLeftX,
             (bottomRightY + bottomRightH) - topLeftY
         );
+
         ctx.restore();
     }
 
@@ -771,7 +790,7 @@ export class CellSelector {
         ctx.restore();
 
         // Optionally, still highlight the header cells as before
-       
+
     }
 
     highlightSingleColumnHeader(
