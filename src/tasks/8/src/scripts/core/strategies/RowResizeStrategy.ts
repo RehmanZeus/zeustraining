@@ -3,7 +3,6 @@ import { ResizeRowCommand } from "../commands/ResizeRowCommand.js";
 import { GridMatrix } from "../GridMatrix.js";
 import { RowResizer } from "../RowResizer.js";
 import { Strategy } from "./Strategy.js";
-
 export class RowResizeStrategy implements Strategy {
     rowResizer: RowResizer;
     gridMatrix: GridMatrix;
@@ -14,6 +13,8 @@ export class RowResizeStrategy implements Strategy {
     }
 
     hitTest(e: PointerEvent): boolean {
+        // Set the resizingRowIndex if near an edge, so it's available for preview
+        
         return this.rowResizer.isNearRowEdge(e);
     }
 
@@ -36,7 +37,9 @@ export class RowResizeStrategy implements Strategy {
             this.rowResizer.previewDrawResizeRow(this.rowResizer.resizingRowIndex, previewHeight, this.rowResizer.initialHeight);
             e.preventDefault();
             return;
-        } else if (this.hitTest(e) && this.rowResizer.resizingRowIndex > 0) {
+        } 
+        // Always update cursor if near edge
+        if (this.hitTest(e)) {
             this.setCursor("ns-resize");
         } else {
             this.setCursor("cell");

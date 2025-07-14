@@ -28,12 +28,11 @@ export class GridDataLoader {
 
         // 1. Get column names and dimensions up front
         const columnNames = Object.keys(dataArray[0] as object);
-        const requiredRows = dataArray.length + 2;
-        const requiredCols = columnNames.length + 1;
+
         const gridMatrix = this.gridMatrix; // local for speed
 
         // 2. Expand grid if needed (this is fast, only updates headers and arrays)
-        gridMatrix.addMoreGrids(requiredRows, requiredCols);
+       
 
         // 3. Write custom headers (row 1)
         for (let col = 0; col < columnNames.length; ++col) {

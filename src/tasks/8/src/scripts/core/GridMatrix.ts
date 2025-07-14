@@ -74,23 +74,6 @@ export class GridMatrix {
         return cell;
     }
 
-    /**
-     * Adds more rows and columns to the grid as needed.
-     * @param requiredRows The total number of rows required.
-     * @param requiredCols The total number of columns required.
-     */
-    addMoreGrids(requiredRows: number, requiredCols: number) {
-        // Add more rows if needed
-        while (this.noOfRows < requiredRows) {
-            this.rowHeights.push(MIN_GRIDCELL_HEIGHT);
-            this.noOfRows++;
-        }
-        // Add more columns if needed
-        while (this.noOfCols < requiredCols) {
-            this.columnWidths.push(MIN_GRIDCELL_WIDTH);
-            this.noOfCols++;
-        }
-    }
 
     /**
      * Evaluates the display value for a cell.
@@ -165,7 +148,7 @@ export class GridMatrix {
      */
     getCellsForRange(rangeStr: string): GridCell[] {
         const match = rangeStr.match(/^([A-Z]+)(\d+):([A-Z]+)(\d+)$/i);
-        console.log(match);
+      
         if (!match) return [];
         const [, colA, rowA, colB, rowB] = match;
         const rowStart = Math.min(parseInt(rowA, 10), parseInt(rowB, 10));
@@ -321,7 +304,7 @@ export class GridMatrix {
         this.updateRowHeaderWidth(ctx);
         ctx.save();
 
-        // 1. Compute Offsets
+        // Compute Offsets
         const {
             colOffsetsHeader,
             colOffsetsData,
@@ -337,34 +320,38 @@ export class GridMatrix {
             previewRowIndex, previewRowHeight
         );
 
-        // 2. Clip to data region
+        // ---- DATA REGION ----
         this.clipToDataRegion(ctx);
 
-        // 3. Draw data grid lines
+        // Draw grid lines
         this.drawGridLines(ctx, colOffsetsData, rowOffsetsData, startCol, endCol, startRow, endRow, scrollLeft, scrollTop);
 
-        // 4. Draw data cells
+
+        // Draw data cells
         this.drawDataCells(ctx, colOffsetsData, rowOffsetsData, startCol, endCol, startRow, endRow, scrollLeft, scrollTop);
 
         ctx.restore(); // Remove clipping
 
-        // 5. Draw column headers
+        // ---- HEADER REGION ----
+        // Draw column headers, including selection highlight
         this.drawColumnHeaders(
             ctx, colOffsetsHeader, startCol, endCol, scrollLeft, previewColIndex, previewColWidth,
             suppressHeaderSelectionColor, selectedColP, cellSelectionArr
         );
 
-        // 6. Draw row headers
+        // Draw row headers, including selection highlight
         this.drawRowHeaders(
             ctx, rowOffsetsHeader, rowHeightsPreview, startRow, endRow, scrollTop, previewRowIndex, previewRowHeight, suppressHeaderSelectionColor,
             selectedRowsP
         );
 
-        // 7. Draw corner cell
+        // Draw corner cell
         this.drawCornerCell(ctx);
 
         ctx.restore();
     }
+
+
 
     computeOffsets(
         viewport?: { startRow: number, endRow: number, startCol: number, endCol: number },

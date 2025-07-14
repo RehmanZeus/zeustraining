@@ -114,49 +114,7 @@ export class CellSelector {
     setCellAutoScroll(c: Cell) {
         this.cellAutoScroll = c;
     }
-    /**
-     * Handles the pointer down event to initiate cell selection.   
-     * @param e The mouse or pointer event to get the position from.
-     * @returns void
-     */
-    onPointerDown(e: PointerEvent) {
-        if (e.button !== 0) return;
-        this.pointerDownPosition = { x: e.clientX, y: e.clientY };
-        this.dragStarted = false;
 
-        if ((e.target as HTMLElement).setPointerCapture) {
-            (e.target as HTMLElement).setPointerCapture(e.pointerId);
-        }
-
-        if (!this.dragStarted) {
-            if (this.canvas.style.cursor === 'col-resize' || this.canvas.style.cursor === 'row-resize') {
-                return;
-            }
-            const { x, y } = this.getMousePosition(e);
-            const { row, col } = this.getCellFromPosition(x, y);
-            this.selectCell(row, col);
-            this.colSelector?.clearSelection();
-            this.rowSelector?.clearSelection();
-            this.clearRangeSelection();
-        }
-
-
-
-        const { x, y } = this.getMousePosition(e);
-        const { row, col } = this.getCellFromPosition(x, y);
-        if (row > 0 && col > 0) {
-            this.isDragging = true;
-            this.selectionStartRow = row;
-            this.selectionStartCol = col;
-            this.selectionEndRow = row;
-            this.selectionEndCol = col;
-            // don't clear selection yet
-            this.anchorRow = row;
-            this.anchorCol = col;
-
-
-        }
-    }
 
 
     setColumnSelector(c: ColumnSelector) {
@@ -167,71 +125,7 @@ export class CellSelector {
         this.rowSelector = r;
     }
 
-    /**
-     * Handles the pointer move event to update the cell selection.
-     * @param e The mouse or pointer event to get the position from.
-     * @returns void
-     */
-    onPointerMove = (e: PointerEvent) => {
-        if (!this.isDragging) return;
-        if (!this.dragStarted) {
-            const dx = Math.abs(e.clientX - this.pointerDownPosition.x);
-            const dy = Math.abs(e.clientY - this.pointerDownPosition.y);
-            if (dx > 3 || dy > 3) {
-                this.dragStarted = true;
-                this.selectedRow = -1;
-                this.selectedCol = -1;
-            }
-        }
 
-
-        if (this.cellAutoScroll) {
-            this.cellAutoScroll.checkAutoScroll(e);
-        }
-
-        const { x, y } = this.getMousePosition(e);
-        const { row, col } = this.getCellFromPosition(x, y);
-        if (row > 0 && col > 0) {
-            this.selectionEndRow = row;
-            this.selectionEndCol = col;
-            this.redrawGrid();
-        }
-    }
-
-    /**
-     * Handles the pointer up event to finalize cell selection.
-     * @param e The mouse or pointer event to get the position from.
-     * @returns void
-     */
-    onPointerUp = (e: PointerEvent) => {
-
-        if (this.isDragging) {
-            this.isDragging = false;
-            if ((e.target as HTMLElement).releasePointerCapture) {
-                (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-            }
-            this.dragStarted = false;
-            if (this.cellAutoScroll) {
-                this.cellAutoScroll.clearAutoScroll();
-            }
-            window.removeEventListener('pointermove', this.onPointerMove);
-            window.removeEventListener('pointerup', this.onPointerUp);
-            this.redrawGrid();
-        }
-    }
-
-
-
-    /**
-     * Handles the double click event to start editing a cell.
-     * @param _e The mouse event to get the position from.
-     * @returns void
-     */
-    onDoubleClick(_e: MouseEvent) {
-        if (this.selectedRow > 0 && this.selectedCol > 0) {
-            this.startEditing();
-        }
-    }
 
     /**
      * Creates the input element for editing cell data.
@@ -651,19 +545,22 @@ export class CellSelector {
         this.fillRangeCells(ctx, minRow, maxRow, minCol, maxCol, scrollLeft, scrollTop);
         if (!suppressHeaderSelection) {
             this.fillRangeColumnHeaders(ctx, minCol, maxCol, scrollLeft);
+            this.fillRangeRowHeaders(ctx, minRow, maxRow, scrollTop);
         }
-        this.fillRangeRowHeaders(ctx, minRow, maxRow, scrollTop);
+
         ctx.globalAlpha = 1.0;
 
         if (!suppressHeaderSelection) {
             this.drawRangeHeaderTexts(ctx, minCol, maxCol, scrollLeft);
+            this.drawRangeRowHeaderTexts(ctx, minRow, maxRow, scrollTop);
         }
-        this.drawRangeRowHeaderTexts(ctx, minRow, maxRow, scrollTop);
+
 
         if (!suppressHeaderSelection) {
             this.drawRangeHeaderBorders(ctx, minCol, maxCol, scrollLeft);
+            this.drawRangeRowBorders(ctx, minRow, maxRow, scrollTop);
         }
-        this.drawRangeRowBorders(ctx, minRow, maxRow, scrollTop);
+
 
         this.drawRangeSelectionBorder(ctx, minRow, maxRow, minCol, maxCol, scrollLeft, scrollTop);
     }
@@ -864,10 +761,10 @@ export class CellSelector {
             this.gridMatrix.columnWidths
         );
 
-        if (!suppressHeaderSelection) {
-            this.highlightSingleColumnHeader(ctx, hx, hy, hw, hh, header, scrollLeft, scrollTop);
-        }
-        this.highlightSingleRowHeader(ctx, rx, ry, rw, rh, row, scrollLeft, scrollTop);
+
+        // this.highlightSingleColumnHeader(ctx, hx, hy, hw, hh, header, scrollLeft, scrollTop);
+
+        // this.highlightSingleRowHeader(ctx, rx, ry, rw, rh, row, scrollLeft, scrollTop);
 
         // --- Draw selection background for main cell ---
         ctx.save();
@@ -888,13 +785,13 @@ export class CellSelector {
         if (!suppressHeaderSelection) {
             this.highlightSingleRowHeader(ctx, rx, ry, rw, rh, row, scrollLeft, scrollTop);
         }
-        
+
     }
 
     highlightSingleColumnHeader(
         ctx: CanvasRenderingContext2D,
         hx: number, hy: number, hw: number, hh: number,
-        header: any,
+        header: GridCell,
         scrollLeft: number, scrollTop: number
     ) {
         ctx.save();
@@ -1063,5 +960,15 @@ export class CellSelector {
         return { cell, cellBounds };
     }
 
+     /**
+   * Handles the double click event to start editing a cell.
+   * @param _e The mouse event to get the position from.
+   * @returns void
+   */
+    onDoubleClick(_e: MouseEvent) {
+        if (this.selectedRow > 0 && this.selectedCol > 0) {
+            this.startEditing();
+        }
+    }
 
 }

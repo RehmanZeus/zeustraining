@@ -45,7 +45,7 @@ export class EventManager {
     }
 
     findStrategy(e: PointerEvent) {
-
+        console.log("find strategy called")
         for (const strategy of this.strategies) {
             if (strategy.hitTest(e)) {
                 return strategy;
@@ -55,6 +55,7 @@ export class EventManager {
     }
 
     attachEvents() {
+        console.log("attach events called")
         window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
         window.addEventListener('pointermove', this.handlePointerMove.bind(this));
         window.addEventListener('pointerup', this.handlePointerUp.bind(this));
@@ -63,6 +64,7 @@ export class EventManager {
     }
 
     handlePointerDown(e: PointerEvent) {
+        
         this.activeStrategy = this.findStrategy(e);
         if (this.activeStrategy) {
             this.activeStrategy.onPointerDown(e);

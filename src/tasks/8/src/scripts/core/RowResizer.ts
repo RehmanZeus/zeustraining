@@ -194,6 +194,7 @@ export class RowResizer {
         const x = rawX + (rawX > headerWidth ? container.scrollLeft : 0);
         if (x > headerWidth) {
             this.resizingRowIndex = -1;
+            this.canvas.style.cursor = "cell";
             return false;
         }
 
@@ -214,6 +215,7 @@ export class RowResizer {
             if (Math.abs(y - bottomEdge) < this.resizeThreshold) {
                 if (row === 0) return false;
                 this.resizingRowIndex = row;
+                this.canvas.style.cursor = "ns-resize";
                 return true;
             }
             cumY = bottomEdge;
@@ -221,6 +223,7 @@ export class RowResizer {
         }
 
         this.resizingRowIndex = -1;
+        this.canvas.style.cursor = "cell";
         return false;
     }
 
