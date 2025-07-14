@@ -89,4 +89,7 @@ export class CellSelectionStrategy implements Strategy{
             this.cellSelector.redrawGrid();
         }
     }
+    getCursor(): string {
+        return "cell";
+    }
 }

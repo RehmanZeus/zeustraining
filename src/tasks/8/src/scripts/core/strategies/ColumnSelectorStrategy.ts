@@ -145,5 +145,9 @@ export class ColumnSelectorStrategy implements Strategy {
         }
     }
 
+    getCursor(): string {
+        return "cell";
+    }
+
 
 }

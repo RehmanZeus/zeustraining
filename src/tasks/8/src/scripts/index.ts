@@ -60,7 +60,7 @@ function setupGridApp() {
 
     cellSelector.selectCell(1, 1);
     console.log("setup app")
-    new EventManager(rowResizer, gridMatrix, colResizer, cellSelector, rowSelector, colSelector);
+    new EventManager(rowResizer, gridMatrix, colResizer, cellSelector, rowSelector, colSelector, canvas, container);
     new ExcelHeader(cellSelector, gridMatrix, commandManager,
     new Calculations(cellSelector, colSelector, rowSelector, gridMatrix, ctx, commandManager));
     new Statistics(cellSelector, gridMatrix);

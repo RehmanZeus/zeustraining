@@ -24,7 +24,6 @@ export class RowResizeStrategy implements Strategy {
         this.rowResizer.startY = y;
         this.rowResizer.initialHeight = this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex];
         this.rowResizer.lastResizeRowOldHeight = this.rowResizer.initialHeight;
-        this.setCursor("ns-resize");
         e.preventDefault();
     }
 
@@ -38,12 +37,7 @@ export class RowResizeStrategy implements Strategy {
             e.preventDefault();
             return;
         } 
-        // Always update cursor if near edge
-        if (this.hitTest(e)) {
-            this.setCursor("ns-resize");
-        } else {
-            this.setCursor("cell");
-        }
+       
     }
 
     onPointerUp(e: PointerEvent): void {
@@ -67,12 +61,11 @@ export class RowResizeStrategy implements Strategy {
         }
         this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex] = newHeight;
         this.rowResizer.previewRowHeight = null;
-        this.setCursor("cell");
     }
 
-    setCursor(cursor: string) {
-        if (this.rowResizer.canvas.style.cursor !== cursor) {
-            this.rowResizer.canvas.style.cursor = cursor;
-        }
+    getCursor(): string {
+        return "ns-resize";
     }
+
+  
 }

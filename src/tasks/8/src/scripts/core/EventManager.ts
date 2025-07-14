@@ -10,30 +10,43 @@ import { RowSelector } from "./RowSelector.js";
 import { RowSelectorStrategy } from "./strategies/RowSelectorStrategy.js";
 import { CellSelectionStrategy } from "./strategies/CellSelectionStrategy.js";
 
+type Strategy =
+    | RowResizeStrategy
+    | ColumnResizeStrategy
+    | ColumnSelectorStrategy
+    | RowSelectorStrategy
+    | CellSelectionStrategy;
+
 export class EventManager {
-    rowResizer: RowResizer;
-    gridMatrix: GridMatrix;
-    colResizer: ColumnResizer;
-    cellSelector: CellSelector;
-    rowSelector: RowSelector;
-    columnSelector: ColumnSelector;
-    strategies: [RowResizeStrategy, ColumnResizeStrategy, ColumnSelectorStrategy, RowSelectorStrategy, CellSelectionStrategy];
-    activeStrategy: RowResizeStrategy | ColumnResizeStrategy | ColumnSelectorStrategy | RowSelectorStrategy | CellSelectionStrategy | null = null;
-    container = document.getElementById('excel-container') as HTMLDivElement;
+    private rowResizer: RowResizer;
+    private gridMatrix: GridMatrix;
+    private colResizer: ColumnResizer;
+    private cellSelector: CellSelector;
+    private rowSelector: RowSelector;
+    private columnSelector: ColumnSelector;
+    private canvas: HTMLCanvasElement;
+    private container: HTMLDivElement;
+    private strategies: Strategy[];
+    private activeStrategy: Strategy | null = null;
+
     constructor(
-        rowR: RowResizer,
-        gm: GridMatrix,
-        colR: ColumnResizer,
-        cellS: CellSelector,
-        rowS: RowSelector,
-        colS: ColumnSelector
+        rowResizer: RowResizer,
+        gridMatrix: GridMatrix,
+        colResizer: ColumnResizer,
+        cellSelector: CellSelector,
+        rowSelector: RowSelector,
+        columnSelector: ColumnSelector,
+        canvas: HTMLCanvasElement,
+        container: HTMLDivElement 
     ) {
-        this.rowResizer = rowR;
-        this.gridMatrix = gm;
-        this.colResizer = colR;
-        this.columnSelector = colS;
-        this.cellSelector = cellS;
-        this.rowSelector = rowS;
+        this.rowResizer = rowResizer;
+        this.gridMatrix = gridMatrix;
+        this.colResizer = colResizer;
+        this.columnSelector = columnSelector;
+        this.cellSelector = cellSelector;
+        this.rowSelector = rowSelector;
+        this.canvas = canvas;
+        this.container = container;
         this.strategies = [
             new RowResizeStrategy(this.rowResizer, this.gridMatrix),
             new ColumnResizeStrategy(this.colResizer, this.gridMatrix),
@@ -44,65 +57,57 @@ export class EventManager {
         this.attachEvents();
     }
 
-    findStrategy(e: PointerEvent) {
-        console.log("find strategy called")
-        for (const strategy of this.strategies) {
-            if (strategy.hitTest(e)) {
-                return strategy;
-            }
-        }
-        return null;
+    private findStrategy(e: PointerEvent): Strategy | null {
+        return this.strategies.find(strategy => strategy.hitTest(e)) ?? null;
     }
 
-    attachEvents() {
-        console.log("attach events called")
-        window.addEventListener('pointerdown', this.handlePointerDown.bind(this));
-        window.addEventListener('pointermove', this.handlePointerMove.bind(this));
-        window.addEventListener('pointerup', this.handlePointerUp.bind(this));
-        this.container.addEventListener('dblclick', this.handleDoubleClick.bind(this));
-        document.addEventListener('keydown', this.handleKeydown.bind(this));
+    private setCursor(cursor: string = "default") {
+        this.canvas.style.cursor = cursor;
     }
 
-    handlePointerDown(e: PointerEvent) {
-        
+    private attachEvents() {
+        window.addEventListener("pointerdown", this.handlePointerDown);
+        window.addEventListener("pointermove", this.handlePointerMove);
+        window.addEventListener("pointerup", this.handlePointerUp);
+        this.container.addEventListener("dblclick", this.handleDoubleClick);
+        document.addEventListener("keydown", this.handleKeydown);
+    }
+
+    private handlePointerDown = (e: PointerEvent) => {
         this.activeStrategy = this.findStrategy(e);
         if (this.activeStrategy) {
             this.activeStrategy.onPointerDown(e);
+            this.setCursor(this.activeStrategy.getCursor());
         }
-    }
+    };
 
-    handlePointerMove(e: PointerEvent) {
+    private handlePointerMove = (e: PointerEvent) => {
         if (this.activeStrategy) {
             this.activeStrategy.onPointerMove(e);
+            this.setCursor(this.activeStrategy.getCursor());
         } else {
-
-            for (const strategy of this.strategies) {
-                if (typeof strategy.onPointerMove === "function") {
-                    strategy.onPointerMove(e);
-                }
-            }
+            const hovered = this.findStrategy(e);
+            this.setCursor(hovered ? hovered.getCursor() : "default");
         }
-    }
+    };
 
-    handlePointerUp(e: PointerEvent) {
+    private handlePointerUp = (e: PointerEvent) => {
         if (this.activeStrategy) {
             this.activeStrategy.onPointerUp(e);
+            const hovered = this.findStrategy(e);
+            this.setCursor(hovered ? hovered.getCursor() : "default");
             this.activeStrategy = null;
         }
-    }
+    };
 
-    handleDoubleClick(e: MouseEvent) {
+    private handleDoubleClick = (e: MouseEvent) => {
         if (this.cellSelector.isCell(e)) {
             this.cellSelector.onDoubleClick(e);
         }
-    }
+    };
 
-    handleKeydown(e: KeyboardEvent) {
-        if (typeof this.cellSelector.handleKeydown === "function") {
-            this.cellSelector.handleKeydown(e);
-        }
-        if (typeof this.columnSelector.handleKeydown === "function") {
-            this.columnSelector.handleKeydown(e);
-        }
-    }
+    private handleKeydown = (e: KeyboardEvent) => {
+        this.cellSelector.handleKeydown?.(e);
+        this.columnSelector.handleKeydown?.(e);
+    };
 }

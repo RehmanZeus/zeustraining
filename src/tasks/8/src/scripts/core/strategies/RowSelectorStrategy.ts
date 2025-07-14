@@ -149,4 +149,8 @@ export class RowSelectorStrategy implements Strategy {
             this.rowSelector.dragStarted = false;
         }
     }
+
+    getCursor(): string {
+        return "cell";
+    }
 }
