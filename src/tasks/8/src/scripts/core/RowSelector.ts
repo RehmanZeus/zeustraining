@@ -229,8 +229,6 @@ export class RowSelector {
         row: number,
         rect: any,
         scrollTop: number,
-        previewRowIndex?: number,
-        previewRowHeight?: number
     ) {
         const headerCell = this.gridMatrix.getCell(row, 0);
         ctx.save();

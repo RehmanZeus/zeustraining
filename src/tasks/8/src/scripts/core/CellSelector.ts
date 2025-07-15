@@ -799,9 +799,14 @@ export class CellSelector {
         header: GridCell,
         scrollLeft: number, scrollTop: number
     ) {
+        const x = Math.round(hx - scrollLeft);
+        const y = Math.round(hy - scrollTop);
+        const w = Math.round(hw);
+        const h = Math.round(hh);
+
         ctx.save();
         ctx.fillStyle = "#caead8";
-        ctx.fillRect(hx - scrollLeft, hy - scrollTop, hw, hh);
+        ctx.fillRect(x, y, w, h);
 
         // Redraw column header text
         ctx.font = "14px Arial";
@@ -810,21 +815,23 @@ export class CellSelector {
         ctx.textBaseline = "middle";
         ctx.fillText(
             header.data || "",
-            hx + hw / 2 - scrollLeft,
-            hy + hh / 2 - scrollTop
+            x + w / 2,
+            y + h / 2
         );
         ctx.restore();
 
-        // Draw bottom selection border OVER the header (always)
+        // Draw bottom selection border
         ctx.save();
+        ctx.translate(0.5, 0.5); // Pixel-perfect alignment
         ctx.strokeStyle = this.selectionBorderColor;
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        ctx.moveTo(hx - scrollLeft, hy + hh - 1 - scrollTop);
-        ctx.lineTo(hx + hw - scrollLeft, hy + hh - 1 - scrollTop);
+        ctx.moveTo(x, y + h - 1);
+        ctx.lineTo(x + w, y + h - 1);
         ctx.stroke();
         ctx.restore();
     }
+
 
     highlightSingleRowHeader(
         ctx: CanvasRenderingContext2D,
@@ -832,9 +839,14 @@ export class CellSelector {
         row: any,
         scrollLeft: number, scrollTop: number
     ) {
+        const x = Math.round(rx - scrollLeft);
+        const y = Math.round(ry - scrollTop);
+        const w = Math.round(rw);
+        const h = Math.round(rh);
+
         ctx.save();
         ctx.fillStyle = "#caead8";
-        ctx.fillRect(rx - scrollLeft, ry - scrollTop, rw, rh);
+        ctx.fillRect(x, y, w, h);
 
         // Redraw row header text
         ctx.font = "14px Arial";
@@ -843,20 +855,23 @@ export class CellSelector {
         ctx.textBaseline = "bottom";
         ctx.fillText(
             row.data || "",
-            rx + rw - 8 - scrollLeft,
-            ry + rh - 4 - scrollTop
+            x + w - 8,
+            y + h - 4
         );
+
         // Draw right border for the row header
         if (this.selectedCol !== 1) {
+            ctx.translate(0.5, 0.5); // Pixel-perfect alignment
             ctx.strokeStyle = this.selectionBorderColor;
-            ctx.lineWidth = 2;
+            ctx.lineWidth = 1;
             ctx.beginPath();
-            ctx.moveTo(rx + rw - 1 - scrollLeft, ry - scrollTop);
-            ctx.lineTo(rx + rw - 1 - scrollLeft, ry + rh - scrollTop);
+            ctx.moveTo(x + w - 1, y);
+            ctx.lineTo(x + w - 1, y + h);
             ctx.stroke();
         }
         ctx.restore();
     }
+
 
     /**
      * Clears the current editing session.

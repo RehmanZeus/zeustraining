@@ -145,7 +145,7 @@ export class SetupExcelSheet {
         const viewportHeight = container.clientHeight;
 
         const viewport = this.gridMatrix?.getViewportBounds(scrollLeft, scrollTop, viewportWidth, viewportHeight);
-        this.gridMatrix?.drawGrid(this.ctx)
+        this.gridMatrix?.drawGrid(this.ctx, viewport)
 
     }
 }

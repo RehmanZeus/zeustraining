@@ -82,6 +82,7 @@ export class CellSelectionStrategy implements Strategy{
                 (e.target as HTMLElement).releasePointerCapture(e.pointerId);
             }
             this.cellSelector.dragStarted = false;
+            
             if (this.cellSelector.cellAutoScroll) {
                 this.cellSelector.cellAutoScroll.clearAutoScroll();
             }
