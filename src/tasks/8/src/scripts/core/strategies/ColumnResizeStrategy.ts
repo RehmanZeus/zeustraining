@@ -37,7 +37,6 @@ export class ColumnResizeStrategy implements Strategy {
             e.preventDefault();
             return;
         }
-      
     }
 
     onPointerUp(e: PointerEvent): void {
@@ -60,13 +59,18 @@ export class ColumnResizeStrategy implements Strategy {
             );
         }
         this.gridMatrix.columnWidths[this.columnResizer.resizingColIndex] = newWidth;
+
+        // Update prefix sums after resizing the column
+        let cumWidth = 0;
+        for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
+            cumWidth += this.gridMatrix.columnWidths[i];
+            this.gridMatrix.prefixColumnWidths[i] = cumWidth;
+        }
+
         this.columnResizer.previewColWidth = null;
-      
     }
 
     getCursor(): string {
         return "ew-resize"
     }
-
-
 }

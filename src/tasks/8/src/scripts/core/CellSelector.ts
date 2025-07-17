@@ -464,33 +464,28 @@ export class CellSelector {
     }
 
     /**
-     * Gets the cell coordinates from the mouse position.
-     * @param x The x-coordinate of the mouse position.
-     * @param y The y-coordinate of the mouse position.
-     * @returns The row and column indices of the cell.
-     */
+ * Gets the cell coordinates from the mouse position.
+ * @param x The x-coordinate of the mouse position.
+ * @param y The y-coordinate of the mouse position.
+ * @returns The row and column indices of the cell.
+ */
     getCellFromPosition(x: number, y: number): { row: number, col: number } {
-        let totalX = 0;
-        let totalY = 0;
-        let row = -1;
-        let col = -1;
-        for (let i = 0; i < this.gridMatrix.columnWidths.length; i++) {
-            totalX += this.gridMatrix.columnWidths[i];
-            if (x < totalX) {
-                col = i;
-                break;
+        // Use prefix sums and binary search for fast lookup
+        function lowerBound(arr: number[], value: number): number {
+            let low = 0, high = arr.length;
+            while (low < high) {
+                let mid = (low + high) >> 1;
+                if (arr[mid] <= value) low = mid + 1;
+                else high = mid;
             }
+            return low;
         }
-        for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
-            totalY += this.gridMatrix.rowHeights[i];
-            if (y < totalY) {
-                row = i;
-                break;
-            }
-        }
+
+        const col = lowerBound(this.gridMatrix.prefixColumnWidths, x);
+        const row = lowerBound(this.gridMatrix.prefixRowHeights, y);
+
         return { row, col };
     }
-
 
     /**
      * Draws the selection rectangle on the canvas.

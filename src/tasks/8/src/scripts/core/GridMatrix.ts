@@ -22,9 +22,11 @@ export class GridMatrix {
     /** Heights of each row in pixels */
     rowHeights: number[] = [];
 
+    /** Prefix sums of column widths and row heights */
+    prefixColumnWidths: number[] = [];
+    prefixRowHeights: number[] = [];
+
     cellSelector: CellSelector | undefined;
-
-
 
     /**
      * Creates a new GridMatrix instance.
@@ -37,8 +39,26 @@ export class GridMatrix {
         this.noOfCols = cols;
         this.columnWidths = Array(this.noOfCols).fill(MIN_GRIDCELL_WIDTH);
         this.rowHeights = Array(this.noOfRows).fill(MIN_GRIDCELL_HEIGHT);
+
+        // Calculate prefix sums for column widths
+        this.prefixColumnWidths = [];
+        let cumWidth = 0;
+        for (let w of this.columnWidths) {
+            cumWidth += w;
+            this.prefixColumnWidths.push(cumWidth);
+        }
+
+        // Calculate prefix sums for row heights
+        this.prefixRowHeights = [];
+        let cumHeight = 0;
+        for (let h of this.rowHeights) {
+            cumHeight += h;
+            this.prefixRowHeights.push(cumHeight);
+        }
+
         this.initializeGrid();
     }
+
 
     /**
      * Initializes the grid with empty cells.
@@ -177,16 +197,14 @@ export class GridMatrix {
         return idx;
     }
 
-
     /**
      * Gets the vertical offset position of a specific row.
      * @param row The row index (zero-based).
      * @returns The vertical offset in pixels.
      */
     getRowOffset(row: number): number {
-        let sum = 0;
-        for (let i = 0; i < row; ++i) sum += this.rowHeights[i];
-        return sum;
+        // Prefix sum: The offset to the start of 'row' is the sum of all previous row heights
+        return row > 0 ? this.prefixRowHeights[row - 1] : 0;
     }
 
     /**
@@ -195,11 +213,20 @@ export class GridMatrix {
      * @returns The horizontal offset in pixels.
      */
     getColOffset(col: number): number {
-        let sum = 0;
-        for (let i = 0; i < col; ++i) sum += this.columnWidths[i];
-        return sum;
+        // Prefix sum: The offset to the start of 'col' is the sum of all previous column widths
+        return col > 0 ? this.prefixColumnWidths[col - 1] : 0;
     }
 
+    lowerBound(arr: number[], value: number): number {
+        // Returns the first index where arr[index] >= value
+        let low = 0, high = arr.length;
+        while (low < high) {
+            let mid = (low + high) >> 1;
+            if (arr[mid] < value) low = mid + 1;
+            else high = mid;
+        }
+        return low;
+    }
 
     /**
      * Gets the bounds of the visible viewport in the grid.
@@ -215,64 +242,66 @@ export class GridMatrix {
         viewportWidth: number,
         viewportHeight: number
     ): { startRow: number; endRow: number; startCol: number; endCol: number } {
-        let y = 0, startRow = 0, endRow = this.noOfRows;
-        for (let r = 0; r < this.noOfRows; r++) {
-            const rowHeight = this.rowHeights[r];
-            if (y + rowHeight > scrollTop && startRow === 0) startRow = r;
-            if (y > scrollTop + viewportHeight) { endRow = r; break; }
-            y += rowHeight;
-        }
-        let x = 0, startCol = 0, endCol = this.noOfCols;
-        for (let c = 0; c < this.noOfCols; c++) {
-            const colWidth = this.columnWidths[c];
-            if (x + colWidth > scrollLeft && startCol === 0) startCol = c;
-            if (x > scrollLeft + viewportWidth) { endCol = c; break; }
-            x += colWidth;
-        }
-        startRow = Math.max(0, startRow - 1);
-        startCol = Math.max(0, startCol - 1);
-        return { startRow, endRow, startCol, endCol };
+        // Use prefix sums and binary search
+        const startRow = this.lowerBound(this.prefixRowHeights, scrollTop);
+        const endRow = this.lowerBound(this.prefixRowHeights, scrollTop + viewportHeight);
+
+        const startCol = this.lowerBound(this.prefixColumnWidths, scrollLeft);
+        const endCol = this.lowerBound(this.prefixColumnWidths, scrollLeft + viewportWidth);
+
+        return {
+            startRow: Math.max(0, startRow - 1),
+            endRow: Math.min(this.noOfRows, endRow + 1),
+            startCol: Math.max(0, startCol - 1),
+            endCol: Math.min(this.noOfCols, endCol + 1)
+        };
     }
 
 
+//     /**
+//    * Ensures the row header is wide enough for its largest label.
+//    * Call this before drawing the grid, or whenever the row header text can change.
+//    */
+//     updateRowHeaderWidth(ctx: CanvasRenderingContext2D) {
+//         ctx.save();
+//         ctx.font = "14px Arial";
+//         let maxWidth = 0;
 
-    /**
-     * Ensures the row header is wide enough for its largest label.
-     * Call this before drawing the grid, or whenever the row header text can change.
-     */
-    updateRowHeaderWidth(ctx: CanvasRenderingContext2D) {
-        ctx.save();
-        ctx.font = "14px Arial";
-        let maxWidth = 0;
+//         // Check all header cells in the first column (row headers)
+//         for (let row = 1; row < this.noOfRows; ++row) {
+//             const cell = this.getCell(row, 0);
+//             let label = cell.data ? cell.data.toString() : row.toString();
+//             const metrics = ctx.measureText(label);
+//             maxWidth = Math.max(maxWidth, metrics.width);
+//         }
 
-        // Check all header cells in the first column (row headers)
-        for (let row = 1; row < this.noOfRows; ++row) {
-            const cell = this.getCell(row, 0);
-            let label = cell.data ? cell.data.toString() : row.toString();
-            const metrics = ctx.measureText(label);
-            maxWidth = Math.max(maxWidth, metrics.width);
-        }
+//         // Optionally check the corner cell (0,0)
+//         const cornerCell = this.getCell(0, 0);
+//         if (cornerCell.data) {
+//             maxWidth = Math.max(maxWidth, ctx.measureText(cornerCell.data.toString()).width);
+//         }
 
-        // Optionally check the corner cell (0,0)
-        const cornerCell = this.getCell(0, 0);
-        if (cornerCell.data) {
-            maxWidth = Math.max(maxWidth, ctx.measureText(cornerCell.data.toString()).width);
-        }
+//         ctx.restore();
 
-        ctx.restore();
+//         // Add padding and minimum width
+//         const padding = 20;
+//         const minWidth = MIN_GRIDCELL_WIDTH;
+//         let width = Math.ceil(maxWidth + padding);
+//         width = Math.max(width, minWidth);
 
-        // Add padding and minimum width
-        const padding = 20;
-        const minWidth = MIN_GRIDCELL_WIDTH;
-        let width = Math.ceil(maxWidth + padding);
-        width = Math.max(width, minWidth);
+//         // Optional: Smoother growth for very large numbers
+//         // if (width > 100) width = 100 + Math.log(width - 99) * 40;
 
-        // Optional: Smoother growth for very large numbers
-        // if (width > 100) width = 100 + Math.log(width - 99) * 40;
+//         // Set the width for the row header column (col 0)
+//         this.columnWidths[0] = width;
 
-        // Set the width for the row header column (col 0)
-        this.columnWidths[0] = width;
-    }
+//         // Update prefix sums after changing the header width
+//         let cumWidth = 0;
+//         for (let i = 0; i < this.columnWidths.length; i++) {
+//             cumWidth += this.columnWidths[i];
+//             this.prefixColumnWidths[i] = cumWidth;
+//         }
+//     }
 
 
 
@@ -299,7 +328,7 @@ export class GridMatrix {
         previewRowHeight?: number,
         selectedRowsP?: number[]
     ) {
-        this.updateRowHeaderWidth(ctx);
+        // this.updateRowHeaderWidth(ctx);
         ctx.save();
 
         // Compute Offsets
@@ -326,7 +355,7 @@ export class GridMatrix {
         // Draw data cells
         this.drawDataCells(ctx, colOffsetsData, rowOffsetsData, startCol, endCol, startRow, endRow, scrollLeft, scrollTop);
 
-        ctx.restore(); 
+        ctx.restore();
 
         ctx.save();
         // ---- HEADER REGION ----
@@ -360,8 +389,10 @@ export class GridMatrix {
         const startCol = viewport?.startCol ?? 0;
         const endCol = viewport?.endCol ?? this.noOfCols;
 
+        // Use column widths, previewColIndex, previewColWidth for header offsets
         let colOffsetsHeader: number[] = [0];
         let colOffsetsData: number[] = [0];
+
         for (let c = 0; c < this.noOfCols; ++c) {
             let headerW = this.columnWidths[c];
             if (previewColIndex !== undefined && previewColWidth !== undefined && c === previewColIndex) {
@@ -371,6 +402,7 @@ export class GridMatrix {
             colOffsetsData[c + 1] = colOffsetsData[c] + this.columnWidths[c];
         }
 
+        // Use row heights, previewRowIndex, previewRowHeight for header offsets
         let rowHeightsPreview = [...this.rowHeights];
         if (
             typeof previewRowIndex === "number" &&
@@ -379,13 +411,22 @@ export class GridMatrix {
         ) {
             rowHeightsPreview[previewRowIndex] = previewRowHeight;
         }
+
         let rowOffsetsHeader: number[] = [0];
         let rowOffsetsData: number[] = [0];
+
         for (let r = 0; r < this.noOfRows; ++r) {
             let rh = rowHeightsPreview[r];
             rowOffsetsHeader[r + 1] = rowOffsetsHeader[r] + rh;
             rowOffsetsData[r + 1] = rowOffsetsData[r] + this.rowHeights[r];
         }
+
+        // If no preview, you can use prefix sums for colOffsetsData and rowOffsetsData directly
+        // (but still need to build colOffsetsHeader/rowOffsetsHeader with preview values if present)
+        // If you want to use prefix arrays for optimization:
+        // const colOffsetsData = [0, ...this.prefixColumnWidths];
+        // const rowOffsetsData = [0, ...this.prefixRowHeights];
+        // But if preview is present, need to manually build for header.
 
         return {
             colOffsetsHeader,
@@ -460,7 +501,7 @@ export class GridMatrix {
                 //     isNumber = !isNaN(parseFloat(text)) && isFinite(parseFloat(text));
                 // }
 
-               if(cell.data) {
+                if (cell.data) {
                     text = cell.data;
                     isNumber = !isNaN(parseFloat(text)) && isFinite(parseFloat(text));
                 }

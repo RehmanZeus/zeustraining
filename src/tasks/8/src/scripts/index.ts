@@ -19,7 +19,7 @@ import { Cell } from "./helpers/autoscroll/Cell.js";
 import { Column } from "./helpers/autoscroll/Column.js";
 import { Row } from "./helpers/autoscroll/Row.js";
 
-const NUM_ROWS = 1000, NUM_COLS = 300, CELL_W = 70, CELL_H = 25;
+const NUM_ROWS = 100000, NUM_COLS = 300, CELL_W = 70, CELL_H = 25;
 
 window.onload = () => setupGridApp();
 
@@ -33,7 +33,7 @@ function setupGridApp() {
     const cellSelector = new CellSelector(canvas, ctx, gridMatrix);
 
     const gridDataLoader = new GridDataLoader(gridMatrix);
-    const dataGen = new GridDataGen(100);
+    const dataGen = new GridDataGen(100000);
     gridDataLoader.loadJSONData(dataGen.generateData());
 
     const rowSelector = new RowSelector(ctx, gridMatrix, cellSelector);

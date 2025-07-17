@@ -10,8 +10,6 @@ export class ColumnResizer {
     ctx: CanvasRenderingContext2D;
     gridMatrix: GridMatrix;
 
-
-
     isResizingCol = false;
     resizingColIndex = -1;
 
@@ -27,7 +25,6 @@ export class ColumnResizer {
     columnSelector?: ColumnSelector;
 
     lastResizeColOldWidth: number | null = null;
-
 
     redrawGrid: () => void = () => { };
 
@@ -53,7 +50,6 @@ export class ColumnResizer {
         this.columnSelector = cs;
     }
 
-
     /**
      * 
      * @param startCol defines the column from where to start rendering
@@ -63,6 +59,7 @@ export class ColumnResizer {
         this.viewportStartCol = startCol;
         this.viewportEndCol = endCol;
     }
+
     /**
      * Gets the mouse position for edge detection.
      * @param e Takes a pointer event and returns the mouse position relative to the grid content (ignoring scroll).
@@ -100,12 +97,11 @@ export class ColumnResizer {
         // X always uses scrollLeft (columns still slide under the sticky header)
         const x = rawX + container.scrollLeft;
 
-        // Compute hidden width of columns left of viewportStartCol
-        const hiddenOffset = this.gridMatrix.columnWidths
-            .slice(0, this.viewportStartCol)
-            .reduce((sum, w) => sum + w, 0);
+        // Use prefix sum for hidden offset of columns left of viewportStartCol
+        const hiddenOffset = this.viewportStartCol > 0
+            ? this.gridMatrix.prefixColumnWidths[this.viewportStartCol - 1]
+            : 0;
 
-        // Walk visible columns
         let cumX = hiddenOffset;
         for (let col = this.viewportStartCol; col < this.viewportEndCol; col++) {
             const w = this.gridMatrix.columnWidths[col];
@@ -169,10 +165,8 @@ export class ColumnResizer {
             );
         }
 
-        // X for left edge of column
-        let x = 0;
-        for (let i = 0; i < colIndex; i++) x += this.gridMatrix.columnWidths[i];
-
+        // X for left edge of column using prefix sum
+        let x = colIndex > 0 ? this.gridMatrix.prefixColumnWidths[colIndex - 1] : 0;
 
         // Green left border for header
         this.ctx.save();
@@ -202,6 +196,4 @@ export class ColumnResizer {
         this.ctx.setLineDash([]);
         this.ctx.restore();
     }
-
-
 }

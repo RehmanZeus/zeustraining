@@ -145,9 +145,8 @@ export class RowResizer {
             this.cellSelector.colSelector.drawSelection(this.ctx, scrollLeft, scrollTop, undefined, undefined, true);
         }
 
-        // Y for top of row 
-        let y = 0;
-        for (let i = 0; i < rowIndex; i++) y += this.gridMatrix.rowHeights[i];
+        // Y for top of row using prefix sum
+        let y = rowIndex > 0 ? this.gridMatrix.prefixRowHeights[rowIndex - 1] : 0;
 
         // Green top border for header
         this.ctx.save();
@@ -201,10 +200,10 @@ export class RowResizer {
         // Y always uses scrollTop (rows still slide under the sticky row header)
         const y = rawY + container.scrollTop;
 
-        // Compute hidden height of rows above viewportStartRow
-        const hiddenOffset = this.gridMatrix.rowHeights
-            .slice(0, this.viewportStartRow)
-            .reduce((sum, h) => sum + h, 0);
+        // Use prefix sum for hidden offset of rows above viewportStartRow
+        const hiddenOffset = this.viewportStartRow > 0
+            ? this.gridMatrix.prefixRowHeights[this.viewportStartRow - 1]
+            : 0;
 
         // Walk visible rows
         let cumY = hiddenOffset;
@@ -226,6 +225,4 @@ export class RowResizer {
         this.canvas.style.cursor = "cell";
         return false;
     }
-
-
 }

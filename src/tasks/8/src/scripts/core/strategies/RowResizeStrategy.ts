@@ -3,6 +3,7 @@ import { ResizeRowCommand } from "../commands/ResizeRowCommand.js";
 import { GridMatrix } from "../GridMatrix.js";
 import { RowResizer } from "../RowResizer.js";
 import { Strategy } from "./Strategy.js";
+
 export class RowResizeStrategy implements Strategy {
     rowResizer: RowResizer;
     gridMatrix: GridMatrix;
@@ -14,7 +15,6 @@ export class RowResizeStrategy implements Strategy {
 
     hitTest(e: PointerEvent): boolean {
         // Set the resizingRowIndex if near an edge, so it's available for preview
-        
         return this.rowResizer.isNearRowEdge(e);
     }
 
@@ -37,7 +37,6 @@ export class RowResizeStrategy implements Strategy {
             e.preventDefault();
             return;
         } 
-       
     }
 
     onPointerUp(e: PointerEvent): void {
@@ -60,12 +59,18 @@ export class RowResizeStrategy implements Strategy {
             );
         }
         this.gridMatrix.rowHeights[this.rowResizer.resizingRowIndex] = newHeight;
+
+        // Update prefix sums after resizing the row
+        let cumHeight = 0;
+        for (let i = 0; i < this.gridMatrix.rowHeights.length; i++) {
+            cumHeight += this.gridMatrix.rowHeights[i];
+            this.gridMatrix.prefixRowHeights[i] = cumHeight;
+        }
+
         this.rowResizer.previewRowHeight = null;
     }
 
     getCursor(): string {
         return "ns-resize";
     }
-
-  
 }
